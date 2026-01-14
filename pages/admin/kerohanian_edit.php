@@ -7,6 +7,25 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
 }
 
 include '../../config/database.php';
+include '../../auth/PermissionManager.php';
+include '../../helpers/navbar.php';
+
+// Initialize permission manager
+$permission_manager = new PermissionManager(
+    $conn,
+    $_SESSION['user_id'],
+    $_SESSION['role'],
+    $_SESSION['pengurus_id'] ?? null,
+    $_SESSION['ranting_id'] ?? null
+);
+
+// Store untuk global use
+$GLOBALS['permission_manager'] = $permission_manager;
+
+// Check permission untuk action ini
+if (!$permission_manager->can('anggota_read')) {
+    die("❌ Akses ditolak!");
+}
 
 $id = (int)$_GET['id'];
 $error = '';
@@ -127,10 +146,7 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <h2>✏️ Edit Kerohanian</h2>
-        <a href="kerohanian_detail.php?id=<?php echo $id; ?>" style="color: white;">← Kembali</a>
-    </div>
+    <?php renderNavbar('✏️ Edit Kerohanian'); ?>
     
     <div class="container">
         <div class="form-container">

@@ -7,6 +7,25 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 include '../../config/database.php';
+include '../../auth/PermissionManager.php';
+include '../../helpers/navbar.php';
+
+// Initialize permission manager
+$permission_manager = new PermissionManager(
+    $conn,
+    $_SESSION['user_id'],
+    $_SESSION['role'],
+    $_SESSION['pengurus_id'] ?? null,
+    $_SESSION['ranting_id'] ?? null
+);
+
+// Store untuk global use
+$GLOBALS['permission_manager'] = $permission_manager;
+
+// Check permission untuk action ini
+if (!$permission_manager->can('anggota_read')) {
+    die("❌ Akses ditolak!");
+}
 
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $filter_jenis = isset($_GET['filter_jenis']) ? $_GET['filter_jenis'] : '';
@@ -136,13 +155,7 @@ $is_readonly = $_SESSION['role'] == 'user';
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <h2>🏢 Manajemen Unit / Ranting</h2>
-        <div>
-            <span style="margin-right: 20px;">Halo, <?php echo $_SESSION['nama']; ?></span>
-            <a href="../../index.php" style="color: white;">← Kembali</a>
-        </div>
-    </div>
+    <?php renderNavbar('🏢 Manajemen Unit / Ranting'); ?>
     
     <div class="container">
         <div class="header">

@@ -30,8 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
-            $_SESSION['role'] = $user['role'];
             $_SESSION['nama'] = $user['nama_lengkap'];
+            $_SESSION['role'] = $user['role'];
+            $_SESSION['pengurus_id'] = $user['pengurus_id'];  // ← Tambah
+            $_SESSION['ranting_id'] = $user['ranting_id'];    // ← Tambah
             
             header("Location: index.php");
             exit();

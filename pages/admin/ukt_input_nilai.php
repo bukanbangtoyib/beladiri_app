@@ -7,6 +7,25 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
 }
 
 include '../../config/database.php';
+include '../../auth/PermissionManager.php';
+include '../../helpers/navbar.php';
+
+// Initialize permission manager
+$permission_manager = new PermissionManager(
+    $conn,
+    $_SESSION['user_id'],
+    $_SESSION['role'],
+    $_SESSION['pengurus_id'] ?? null,
+    $_SESSION['ranting_id'] ?? null
+);
+
+// Store untuk global use
+$GLOBALS['permission_manager'] = $permission_manager;
+
+// Check permission untuk action ini
+if (!$permission_manager->can('anggota_read')) {
+    die("❌ Akses ditolak!");
+}
 
 // Pastikan kolom untuk nilai per materi dan rata-rata ada di tabel ukt_peserta
 $required_columns = ['nilai_a','nilai_b','nilai_c','nilai_d','nilai_e','nilai_f','nilai_g','nilai_h','nilai_i','nilai_j','rata_rata'];
@@ -295,10 +314,7 @@ $total_peserta = $peserta_result->num_rows;
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <h2>📊 Input Nilai UKT</h2>
-        <a href="ukt_detail.php?id=<?php echo $id; ?>" style="color: white;">← Kembali</a>
-    </div>
+    <?php renderNavbar('📊 Input Nilai UKT'); ?>
     
     <div class="container">
         <div class="form-container">

@@ -8,6 +8,42 @@ if (!isset($_SESSION['user_id'])) {
 
 include '../../config/database.php';
 include '../../pages/admin/ukt_eligibility_helper.php';
+include '../../auth/PermissionManager.php';
+include '../../helpers/navbar.php';
+
+// Initialize permission manager
+$permission_manager = new PermissionManager(
+    $conn,
+    $_SESSION['user_id'],
+    $_SESSION['role'],
+    $_SESSION['pengurus_id'] ?? null,
+    $_SESSION['ranting_id'] ?? null
+);
+
+// Store untuk global use
+$GLOBALS['permission_manager'] = $permission_manager;
+
+// Check permission untuk action ini
+if (!$permission_manager->can('anggota_read')) {
+    die("❌ Akses ditolak!");
+}
+
+// Initialize permission manager
+$permission_manager = new PermissionManager(
+    $conn,
+    $_SESSION['user_id'],
+    $_SESSION['role'],  
+    $_SESSION['pengurus_id'] ?? null,
+    $_SESSION['ranting_id'] ?? null
+);
+
+// Check permission
+if (!$permission_manager->can('anggota_read')) {
+    die("❌ Akses ditolak. Anda tidak memiliki permission untuk melihat data anggota.");
+}
+
+// Store untuk global use
+$GLOBALS['permission_manager'] = $permission_manager;
 
 // Ambil data anggota
 $search = isset($_GET['search']) ? $_GET['search'] : '';
@@ -135,10 +171,15 @@ if ($print_mode) {
             .no-print { display: none; }
         }
     </style>
+    <!-- CSS untuk print -->
+    <style media="print">
+        @page { size: A4 landscape; margin: 10mm; }
+        body { margin: 0; }
+    </style>
 </head>
 <body>
     <div class="header">
-        <h1>DAFTAR ANGGOTA LEMBAGA BELADIRI</h1>
+        <h1>DAFTAR ANGGOTA PERISAI DIRI</h1>
         <p>Tanggal Cetak: <?php echo date('d M Y H:i:s'); ?></p>
         <p>Total Anggota: <?php echo $total_anggota; ?></p>
     </div>
@@ -183,7 +224,7 @@ if ($print_mode) {
     </table>
     
     <div class="print-info">
-        <p>Halaman ini dicetak dari Sistem Manajemen Lembaga Beladiri</p>
+        <p>Halaman ini dicetak dari Sistem Manajemen Perisai Diri</p>
     </div>
     
     <script>
@@ -469,16 +510,11 @@ if ($print_mode) {
             flex-wrap: wrap;
         }
     </style>
+    <link rel="stylesheet" href="../../styles/print.css">
 </head>
 <body>
-    <div class="navbar">
-        <h2>👥 Manajemen Anggota</h2>
-        <div>
-            <span style="margin-right: 20px;">Halo, <?php echo $_SESSION['nama']; ?></span>
-            <a href="../../index.php">← Kembali</a>
-        </div>
-    </div>
-    
+    <?php renderNavbar('👥 Manajemen Anggota'); ?>
+
     <div class="container">
         <div class="header">
             <div>

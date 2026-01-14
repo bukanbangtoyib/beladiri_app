@@ -7,6 +7,25 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
 }
 
 include '../../config/database.php';
+include '../../auth/PermissionManager.php';
+include '../../helpers/navbar.php';
+
+// Initialize permission manager
+$permission_manager = new PermissionManager(
+    $conn,
+    $_SESSION['user_id'],
+    $_SESSION['role'],
+    $_SESSION['pengurus_id'] ?? null,
+    $_SESSION['ranting_id'] ?? null
+);
+
+// Store untuk global use
+$GLOBALS['permission_manager'] = $permission_manager;
+
+// Check permission untuk action ini
+if (!$permission_manager->can('anggota_read')) {
+    die("❌ Akses ditolak!");
+}
 
 $error = '';
 $success = '';
@@ -161,10 +180,7 @@ $users_result = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <h2>👤 Kelola User</h2>
-        <a href="../../index.php" style="color: white;">← Kembali</a>
-    </div>
+    <?php renderNavbar('👤 Kelola User'); ?>
     
     <div class="container">
         <?php if ($error): ?>

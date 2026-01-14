@@ -7,6 +7,25 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 include '../../config/database.php';
+include '../../auth/PermissionManager.php';
+include '../../helpers/navbar.php';
+
+// Initialize permission manager
+$permission_manager = new PermissionManager(
+    $conn,
+    $_SESSION['user_id'],
+    $_SESSION['role'],
+    $_SESSION['pengurus_id'] ?? null,
+    $_SESSION['ranting_id'] ?? null
+);
+
+// Store untuk global use
+$GLOBALS['permission_manager'] = $permission_manager;
+
+// Check permission untuk action ini
+if (!$permission_manager->can('anggota_read')) {
+    die("❌ Akses ditolak!");
+}
 
 // Hitung jumlah tiap jenis pengurus
 $pusat = $conn->query("SELECT COUNT(*) as count FROM pengurus WHERE jenis_pengurus = 'pusat'")->fetch_assoc();
@@ -114,13 +133,7 @@ $kota = $conn->query("SELECT COUNT(*) as count FROM pengurus WHERE jenis_penguru
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <h2>📋 Manajemen Pengurus</h2>
-        <div>
-            <span style="margin-right: 20px;">Halo, <?php echo $_SESSION['nama']; ?></span>
-            <a href="../../index.php" style="color: white;">← Kembali</a>
-        </div>
-    </div>
+    <?php renderNavbar('📋 Manajemen Pengurus'); ?>
     
     <div class="container">
         <h1>Manajemen Struktur Kepengurusan</h1>

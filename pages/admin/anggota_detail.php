@@ -7,6 +7,25 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 include '../../config/database.php';
+include '../../auth/PermissionManager.php';
+include '../../helpers/navbar.php';
+
+// Initialize permission manager
+$permission_manager = new PermissionManager(
+    $conn,
+    $_SESSION['user_id'],
+    $_SESSION['role'],
+    $_SESSION['pengurus_id'] ?? null,
+    $_SESSION['ranting_id'] ?? null
+);
+
+// Store untuk global use
+$GLOBALS['permission_manager'] = $permission_manager;
+
+// Check permission untuk action ini
+if (!$permission_manager->can('anggota_read')) {
+    die("❌ Akses ditolak!");
+}
 
 $id = (int)$_GET['id'];
 
@@ -396,10 +415,7 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <h2>📋 Detail Anggota</h2>
-        <a href="anggota.php">← Kembali ke Daftar</a>
-    </div>
+    <?php renderNavbar('👥 Manajemen Anggota'); ?>
     
     <div class="container">
         <!-- Profile Card -->

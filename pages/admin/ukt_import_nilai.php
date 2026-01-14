@@ -8,6 +8,25 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
 
 include '../../config/database.php';
 include 'ukt_helper.php'; // Include helper functions
+include '../../helpers/navbar.php';
+include '../../auth/PermissionManager.php';
+
+// Initialize permission manager
+$permission_manager = new PermissionManager(
+    $conn,
+    $_SESSION['user_id'],
+    $_SESSION['role'],
+    $_SESSION['pengurus_id'] ?? null,
+    $_SESSION['ranting_id'] ?? null
+);
+
+// Store untuk global use
+$GLOBALS['permission_manager'] = $permission_manager;
+
+// Check permission untuk action ini
+if (!$permission_manager->can('anggota_read')) {
+    die("❌ Akses ditolak!");
+}
 
 $ukt_id = (int)($_GET['ukt_id'] ?? 0);
 $error = '';
@@ -313,10 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <h2>📥 Import Nilai UKT</h2>
-        <a href="ukt_input_nilai.php?id=<?php echo $ukt_id; ?>" style="color: white;">← Kembali</a>
-    </div>
+    <?php renderNavbar('📥 Import Nilai UKT'); ?>
     
     <div class="container">
         <div class="form-container">

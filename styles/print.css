@@ -1,0 +1,165 @@
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 10mm;
+        padding: 0;
+    }
+    
+    html, body {
+        width: 297mm;
+        height: 210mm;
+        margin: 0;
+        padding: 0;
+        background: white;
+        color: black;
+    }
+    
+    body {
+        font-size: 11pt;
+        line-height: 1.4;
+    }
+    
+    /* Hide navigation elements */
+    .navbar,
+    .sidebar,
+    .button-group,
+    .search-filter,
+    .action-buttons,
+    .btn,
+    .icon-btn {
+        display: none !important;
+    }
+    
+    /* Print container styling */
+    .container,
+    .print-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        background: white;
+        box-shadow: none;
+    }
+    
+    /* Header styling */
+    h1, h2, h3 {
+        page-break-after: avoid;
+        margin: 8px 0;
+        color: black;
+    }
+    
+    h1 {
+        font-size: 16pt;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 4px;
+    }
+    
+    .print-header {
+        text-align: center;
+        margin-bottom: 12px;
+        border-bottom: 2px solid black;
+        padding-bottom: 8px;
+    }
+    
+    .print-header p {
+        margin: 2px 0;
+        font-size: 10pt;
+    }
+    
+    /* Table styling */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+        page-break-inside: avoid;
+    }
+    
+    th, td {
+        border: 1px solid #333;
+        padding: 4px 6px;
+        text-align: left;
+        font-size: 9pt;
+    }
+    
+    th {
+        background: #f0f0f0 !important;
+        font-weight: bold;
+        color: black;
+    }
+    
+    tr {
+        page-break-inside: avoid;
+    }
+    
+    tr:nth-child(odd) {
+        background: white !important;
+    }
+    
+    /* Remove colors and backgrounds in print */
+    .badge,
+    .status-display,
+    .card {
+        background: white !important;
+        color: black !important;
+        border: 1px solid #999 !important;
+    }
+    
+    /* Footer */
+    .print-footer {
+        margin-top: 15px;
+        text-align: right;
+        font-size: 9pt;
+        color: #666;
+        border-top: 1px solid #ccc;
+        padding-top: 8px;
+    }
+    
+    /* Grid adjustments */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+    
+    .card {
+        page-break-inside: avoid;
+        padding: 8px;
+        border: 1px solid #999;
+    }
+    
+    /* Hide specific print elements */
+    .no-print,
+    .page-break-hide {
+        display: none !important;
+    }
+    
+    /* Force page break for large sections */
+    .page-break {
+        page-break-before: always;
+    }
+    
+    /* Adjust font sizes for print */
+    .card-number {
+        font-size: 18pt !important;
+    }
+    
+    .card-title {
+        font-size: 9pt !important;
+    }
+}
+
+/* Preview mode styling */
+.print-preview-mode {
+    background: #f0f0f0;
+    padding: 20px;
+}
+
+.print-preview-page {
+    background: white;
+    width: 297mm;
+    height: 210mm;
+    margin: 10px auto;
+    padding: 10mm;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
