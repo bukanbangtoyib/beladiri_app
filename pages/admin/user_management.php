@@ -46,9 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type'])) {
             $error = "Username sudah terdaftar!";
         } else {
             $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-            $sql = "INSERT INTO users (username, password, nama_lengkap, role) VALUES (?, ?, ?, ?)";
+            $sql = "INSERT INTO users (username, password, nama_lengkap, role, pengurus_id, ranting_id) VALUES (?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ssss", $username, $hashed_password, $nama_lengkap, $role);
+            $stmt->bind_param("ssssi", $username, $hashed_password, $nama_lengkap, $role, $pengurus_id, $ranting_id);
             
             if ($stmt->execute()) {
                 $success = "User berhasil ditambahkan!";
@@ -60,10 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type'])) {
         $edit_id = (int)$_POST['user_id'];
         $nama_lengkap = $_POST['nama_lengkap'];
         $role = $_POST['role'];
+        $pengurus_id = !empty($_POST['pengurus_id']) ? (int)$_POST['pengurus_id'] : NULL;
+        $ranting_id = !empty($_POST['ranting_id']) ? (int)$_POST['ranting_id'] : NULL;
         
-        $sql = "UPDATE users SET nama_lengkap = ?, role = ? WHERE id = ?";
+        $sql = "UPDATE users SET nama_lengkap = ?, role = ?, pengurus_id = ?, ranting_id = ? WHERE id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssi", $nama_lengkap, $role, $edit_id);
+        $stmt->bind_param("ssiii", $nama_lengkap, $role, $pengurus_id, $ranting_id, $edit_id);
         
         if ($stmt->execute()) {
             $success = "User berhasil diupdate!";
@@ -155,7 +157,7 @@ $users_result = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
             font-weight: 600;
             border-bottom: 2px solid #ddd;
         }
-        td { padding: 12px 15px; border-bottom: 1px solid #eee; }
+        td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 13px; }
         
         .form-container {
             background: white;
