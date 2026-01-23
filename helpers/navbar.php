@@ -4,7 +4,14 @@
  * @param string $page_title Judul halaman saat ini
  * @param bool $show_back Tampilkan tombol kembali atau gunakan history.back()
  */
-function renderNavbar($page_title, $show_back = true) {
+function renderNavbar($page_title) {
+    // Initialize navigation history
+    if (!function_exists('initNavigationHistory')) {
+        include_once __DIR__ . '/history_navigator.php';    
+    }
+    
+    initNavigationHistory();
+    
     $username = htmlspecialchars($_SESSION['nama'] ?? 'User');
     $role_label = isset($GLOBALS['permission_manager']) 
         ? $GLOBALS['permission_manager']->getRoleName()
@@ -20,6 +27,9 @@ function renderNavbar($page_title, $show_back = true) {
     ];
     
     $role_display = $role_map[$_SESSION['role'] ?? ''] ?? $role_label;
+    
+    // Get back button URL
+    $back_url = getBackButtonUrl('../../index.php');
     
     ?>
     <div class="navbar">
