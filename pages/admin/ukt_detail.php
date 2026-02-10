@@ -62,6 +62,14 @@ $is_readonly = $_SESSION['role'] == 'user';
 $print_mode = filter_input(INPUT_GET, 'print', FILTER_VALIDATE_BOOLEAN);
 
 if ($print_mode) {
+    // Hitung statistik per tingkat (berdasarkan tingkat dari)
+    $stat_tingkat = [];
+    $tingkat_list = ['Dasar I', 'Dasar II', 'Calon Keluarga', 'Putih', 'Putih Hijau', 'Hijau', 'Hijau Biru', 'Biru', 'Biru Merah', 'Merah', 'Merah Kuning', 'Kuning', 'Pendekar'];
+    foreach ($tingkat_list as $tingkat) {
+        $count = $conn->query("SELECT COUNT(*) as count FROM ukt_peserta up JOIN anggota a ON up.anggota_id = a.id JOIN tingkatan t ON up.tingkat_dari_id = t.id WHERE up.ukt_id = $id AND t.nama_tingkat = '" . $conn->real_escape_string($tingkat) . "'")->fetch_assoc();
+        $stat_tingkat[$tingkat] = $count['count'];
+    }
+    
     // Set proper headers for print
     header('Content-Type: text/html; charset=UTF-8');
     header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -83,12 +91,16 @@ if ($print_mode) {
         .ukt-info-row:last-child { margin-bottom: 0; }
         .ukt-info-label { font-weight: 600; color: #333; }
         .ukt-info-value { color: #666; }
+        .ukt-info-2col { display: flex; gap: 30px; }
+        .ukt-info-col { flex: 1; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #333; padding: 8px; text-align: left; font-size: 11px; }
         th { background: #f0f0f0; font-weight: bold; }
-        .stat-summary { margin-top: 20px; display: flex; gap: 30px; }
-        .stat-item { font-size: 12px; }
-        .stat-item span { font-weight: 600; }
+        .stat-summary { margin-top: 20px; }
+        .stat-tingkat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 15px; }
+        .stat-col { border: 1px solid #ddd; padding: 10px; border-radius: 5px; }
+        .stat-col h4 { margin-bottom: 10px; font-size: 12px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px; }
         .print-info { text-align: right; font-size: 10px; color: #666; margin-top: 20px; }
         @page { size: A4 landscape; margin: 10mm; }
         @media print {
@@ -109,17 +121,35 @@ if ($print_mode) {
     </div>
     
     <div class="ukt-info">
-        <div class="ukt-info-row">
-            <span class="ukt-info-label">Penyelenggara: </span>
-            <span class="ukt-info-value"><?php echo htmlspecialchars($ukt['nama_penyelenggara'] ?? '-'); ?></span>
-        </div>
-        <div class="ukt-info-row">
-            <span class="ukt-info-label">Tanggal Ujian:</span>
-            <span class="ukt-info-value"><?php echo date('d M Y', strtotime($ukt['tanggal'] ?? 'now')); ?></span>
-        </div>
-        <div class="ukt-info-row">
-            <span class="ukt-info-label">Lokasi:</span>
-            <span class="ukt-info-value"><?php echo htmlspecialchars($ukt['lokasi'] ?? '-'); ?></span>
+        <div class="ukt-info-2col">
+            <div class="ukt-info-col">
+                <div class="ukt-info-row">
+                    <span class="ukt-info-label">Penyelenggara: </span>
+                    <span class="ukt-info-value"><?php echo htmlspecialchars($ukt['nama_penyelenggara'] ?? '-'); ?></span>
+                </div>
+                <div class="ukt-info-row">
+                    <span class="ukt-info-label">Tanggal Ujian:</span>
+                    <span class="ukt-info-value"><?php echo date('d M Y', strtotime($ukt['tanggal'] ?? 'now')); ?></span>
+                </div>
+                <div class="ukt-info-row">
+                    <span class="ukt-info-label">Lokasi:</span>
+                    <span class="ukt-info-value"><?php echo htmlspecialchars($ukt['lokasi'] ?? '-'); ?></span>
+                </div>
+            </div>
+            <div class="ukt-info-col">
+                <div class="ukt-info-row">
+                    <span class="ukt-info-label">Jumlah Peserta:</span>
+                    <span class="ukt-info-value"><?php echo $total_peserta; ?></span>
+                </div>
+                <div class="ukt-info-row">
+                    <span class="ukt-info-label">Lulus:</span>
+                    <span class="ukt-info-value" style="color: #27ae60;"><?php echo $stat_lulus['count']; ?></span>
+                </div>
+                <div class="ukt-info-row">
+                    <span class="ukt-info-label">Tidak Lulus:</span>
+                    <span class="ukt-info-value" style="color: #e74c3c;"><?php echo $stat_tidak['count']; ?></span>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -157,10 +187,25 @@ if ($print_mode) {
         </tbody>
     </table>
     
-    <div class="stat-summary">
-        <div class="stat-item">Total Peserta: <span><?php echo $total_peserta; ?></span></div>
-        <div class="stat-item">Lulus: <span style="color: #27ae60;"><?php echo $stat_lulus['count']; ?></span></div>
-        <div class="stat-item">Tidak Lulus: <span style="color: #e74c3c;"><?php echo $stat_tidak['count']; ?></span></div>
+    <div class="stat-summary" style="margin-top: 20px; font-size: 10px;">
+        <h4 style="font-size: 10px; margin-bottom: 8px;">Ringkasan Peserta Berdasarkan Tingkat:</h4>
+        <div class="stat-tingkat" style="display: flex; gap: 20px; font-size: 10px;">
+            <div style="flex: 1;">
+                <span>DI: <?php echo $stat_tingkat['Dasar I'] ?? 0; ?></span> |
+                <span>DII: <?php echo $stat_tingkat['Dasar II'] ?? 0; ?></span> |
+                <span>Cakel: <?php echo $stat_tingkat['Calon Keluarga'] ?? 0; ?></span> |
+                <span>P: <?php echo $stat_tingkat['Putih'] ?? 0; ?></span> |
+                <span>PH: <?php echo $stat_tingkat['Putih Hijau'] ?? 0; ?></span> |
+                <span>H: <?php echo $stat_tingkat['Hijau'] ?? 0; ?></span> |
+                <span>HB: <?php echo $stat_tingkat['Hijau Biru'] ?? 0; ?></span> |
+                <span>B: <?php echo $stat_tingkat['Biru'] ?? 0; ?></span> |
+                <span>BM: <?php echo $stat_tingkat['Biru Merah'] ?? 0; ?></span> |
+                <span>M: <?php echo $stat_tingkat['Merah'] ?? 0; ?></span> |
+                <span>MK: <?php echo $stat_tingkat['Merah Kuning'] ?? 0; ?></span> |
+                <span>K: <?php echo $stat_tingkat['Kuning'] ?? 0; ?></span> |
+                <span>PKE: <?php echo $stat_tingkat['Pendekar'] ?? 0; ?></span>
+            </div>
+        </div>
     </div>
     
     <div class="print-info">

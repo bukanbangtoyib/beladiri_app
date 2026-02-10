@@ -483,7 +483,14 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
                     
                     <div class="info-row">
                         <div class="label">Unit/Ranting Saat Ini</div>
-                        <div class="value"><?php echo $anggota['nama_ranting'] ?? '-'; ?></div>
+                        <div class="value">
+                            <?php if (!empty($anggota['nama_ranting'])): ?>
+                                <a href="ranting_detail.php?id=<?php echo $anggota['ranting_saat_ini_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                                    <?php echo htmlspecialchars($anggota['nama_ranting']); ?> ↗
+                                </a>
+                            <?php else: echo '-';
+                            endif; ?>
+                        </div>
                     </div>
                     
                     <div class="info-row">
@@ -507,6 +514,22 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
                                 echo '-';
                             }
                             ?>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="label">Status Anggota</div>
+                        <div class="value">
+                            <?php 
+                            // Check if is_active column exists, default to 1 if not set
+                            $is_active = isset($anggota['is_active']) ? (int)$anggota['is_active'] : 1;
+                            
+                            if ($is_active === 1): 
+                            ?>
+                                <span style="color: #27ae60; font-weight: 600; font-size: 15px;">✓ Aktif</span>
+                            <?php else: ?>
+                                <span style="color: #e74c3c; font-weight: 600; font-size: 15px;">✗ Tidak Aktif</span>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

@@ -80,7 +80,7 @@ $sql = "SELECT k.*, a.nama_lengkap, a.no_anggota, a.tingkat_id, t.nama_tingkat, 
         FROM kerohanian k
         JOIN anggota a ON k.anggota_id = a.id
         LEFT JOIN tingkatan t ON a.tingkat_id = t.id
-        LEFT JOIN ranting r ON k.ranting_id = r.id
+        LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id
         LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.id
         ORDER BY k.tanggal_pembukaan DESC";
 

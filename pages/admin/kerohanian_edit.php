@@ -42,12 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $pembuka_nama = $conn->real_escape_string($_POST['pembuka_nama']);
     $penyelenggara = $conn->real_escape_string($_POST['penyelenggara']);
     $tingkat_pembuka_id = !empty($_POST['tingkat_pembuka_id']) ? (int)$_POST['tingkat_pembuka_id'] : NULL;
-    $ranting_id = !empty($_POST['ranting_id']) ? (int)$_POST['ranting_id'] : NULL;
     
-    $sql = "UPDATE kerohanian SET tanggal_pembukaan = ?, lokasi = ?, pembuka_nama = ?, penyelenggara = ?, tingkat_pembuka_id = ?, ranting_id = ? WHERE id = ?";
+    $sql = "UPDATE kerohanian SET tanggal_pembukaan = ?, lokasi = ?, pembuka_nama = ?, penyelenggara = ?, tingkat_pembuka_id = ? WHERE id = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssssii", $tanggal_pembukaan, $lokasi, $pembuka_nama, $penyelenggara, $tingkat_pembuka_id, $ranting_id, $id);
+    $stmt->bind_param("ssssii", $tanggal_pembukaan, $lokasi, $pembuka_nama, $penyelenggara, $tingkat_pembuka_id, $id);
     
     if ($stmt->execute()) {
         $success = "Data kerohanian berhasil diupdate!";
@@ -56,9 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error = "Error: " . $stmt->error;
     }
 }
-
-// Ambil daftar ranting
-$ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY nama_ranting");
 
 // Ambil daftar tingkat
 $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY urutan");
@@ -172,15 +168,8 @@ $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
                     </div>
                     
                     <div class="form-group">
-                        <label>Unit/Ranting</label>
-                        <select name="ranting_id">
-                            <option value="">-- Pilih Unit/Ranting --</option>
-                            <?php while ($row = $ranting_result->fetch_assoc()): ?>
-                                <option value="<?php echo $row['id']; ?>" <?php echo $kerohanian['ranting_id'] == $row['id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($row['nama_ranting']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
+                        <label>Lokasi Pembukaan <span class="required">*</span></label>
+                        <input type="text" name="lokasi" value="<?php echo htmlspecialchars($kerohanian['lokasi']); ?>" required>
                     </div>
                 </div>
                 

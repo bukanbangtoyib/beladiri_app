@@ -30,7 +30,6 @@ $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $anggota_id = (int)$_POST['anggota_id'];
-    $ranting_id = !empty($_POST['ranting_id']) ? (int)$_POST['ranting_id'] : NULL;
     $tanggal_pembukaan = $_POST['tanggal_pembukaan'];
     $lokasi = $conn->real_escape_string($_POST['lokasi']);
     $pembuka_nama = $conn->real_escape_string($_POST['pembuka_nama']);
@@ -42,13 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($check->num_rows > 0) {
         $error = "Anggota sudah memiliki pembukaan kerohanian!";
     } else {
-        $sql = "INSERT INTO kerohanian (anggota_id, ranting_id, tanggal_pembukaan, lokasi, pembuka_nama, penyelenggara, tingkat_pembuka_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO kerohanian (anggota_id, tanggal_pembukaan, lokasi, pembuka_nama, penyelenggara, tingkat_pembuka_id)
+                VALUES (?, ?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
         
         if ($stmt) {
-            $stmt->bind_param("iisssssi", $anggota_id, $ranting_id, $tanggal_pembukaan, $lokasi, $pembuka_nama, $penyelenggara, $tingkat_pembuka_id);
+            $stmt->bind_param("isssi", $anggota_id, $tanggal_pembukaan, $lokasi, $pembuka_nama, $penyelenggara, $tingkat_pembuka_id);
             
             if ($stmt->execute()) {
                 // Update status kerohanian di anggota
@@ -72,9 +71,6 @@ $anggota_result = $conn->query("SELECT a.id, a.no_anggota, a.nama_lengkap
                                 FROM anggota a
                                 WHERE NOT EXISTS (SELECT 1 FROM kerohanian WHERE anggota_id = a.id)
                                 ORDER BY a.nama_lengkap");
-
-// Ambil daftar ranting
-$ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY nama_ranting");
 
 // Ambil daftar tingkat
 $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY urutan");
@@ -205,15 +201,8 @@ $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
                     </div>
                     
                     <div class="form-group">
-                        <label>Unit/Ranting <span class="required">*</span></label>
-                        <select name="ranting_id" required>
-                            <option value="">-- Pilih Unit/Ranting --</option>
-                            <?php while ($row = $ranting_result->fetch_assoc()): ?>
-                                <option value="<?php echo $row['id']; ?>">
-                                    <?php echo htmlspecialchars($row['nama_ranting']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
+                        <label>Lokasi Pembukaan <span class="required">*</span></label>
+                        <input type="text" name="lokasi" required placeholder="Contoh: Gedung Olahraga">
                     </div>
                 </div>
                 

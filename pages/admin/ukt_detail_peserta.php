@@ -202,7 +202,7 @@ if ($print_mode) {
                 <th style="width: 10%;">No Anggota</th>
                 <th style="width: 18%;">Nama Lengkap</th>                
                 <th style="width: 8%;">Tingkat</th>
-                <th style="width: 15%;">Unit/Ranting</th>
+                <th style="width: 15%;">Unit / Ranting</th>
                 <th style="width: 4%;">Nilai 1</th>
                 <th style="width: 4%;">Nilai 2</th>
                 <th style="width: 4%;">Nilai 3</th>
@@ -270,7 +270,7 @@ if ($print_mode) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail Nilai Peserta - Sistem Beladiri</title>
+    <title>Detail Nilai Peserta - Perisai Diri</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; }
@@ -281,6 +281,7 @@ if ($print_mode) {
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
         
         .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
@@ -337,11 +338,17 @@ if ($print_mode) {
             font-weight: 500;
         }
         
-        h2 {
+        h1 {
             color: #333;
             margin-bottom: 20px;
             border-bottom: 2px solid #667eea;
             padding-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        
+        h2 {
+            color: white;
         }
         
         h3 {
@@ -467,7 +474,7 @@ if ($print_mode) {
     
     <div class="container">          
         <div class="info-card">
-            <h2>📋 Informasi Peserta UKT</h2>
+            <h1>📋 Informasi Peserta UKT</h1>
             
             <div class="info-grid">
                 <div class="info-item">
@@ -523,7 +530,7 @@ if ($print_mode) {
         </div>
         
         <div class="info-card">
-            <h2>📊 Detail Nilai Penilaian</h2>
+            <h1>📊 Detail Nilai Penilaian</h1>
             
             <h3>Statistik Nilai</h3>
             <div class="stats-grid">

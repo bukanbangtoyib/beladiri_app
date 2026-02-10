@@ -68,6 +68,104 @@ if ($filter_pengprov > 0) {
 }
 
 $is_readonly = $_SESSION['role'] == 'user';
+
+// Handle print mode
+$print_mode = filter_input(INPUT_GET, 'print', FILTER_VALIDATE_BOOLEAN);
+
+if ($print_mode) {
+    // Set proper headers for print
+    header('Content-Type: text/html; charset=UTF-8');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    ?>
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print - Daftar Unit / Ranting</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { margin: 5px 0; font-size: 18px; }
+        .header p { color: #666; font-size: 13px; margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; font-size: 12px; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .print-info { text-align: right; font-size: 11px; color: #666; margin-top: 15px; }
+        .badge { display: inline-block; padding: 3px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+        .badge-ukm { background: #e3f2fd; color: #1976d2; }
+        .badge-ranting { background: #f3e5f5; color: #7b1fa2; }
+        .badge-unit { background: #fff3e0; color: #e65100; }
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+    <style media="print">
+        @page { size: A4 landscape; margin: 10mm; }
+        body { margin: 0; }
+    </style>
+</head>
+<body>
+    <div style="padding: 10px; text-align: right; border-bottom: 1px solid #ddd;" class="no-print">
+        <button onclick="window.history.back()" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+            ← Kembali
+        </button>
+    </div>
+    <div class="header">
+        <h1>DAFTAR UNIT / RANTING PERISAI DIRI</h1>
+        <p>Tanggal Cetak: <?php echo date('d M Y H:i:s'); ?></p>
+        <p>Total Unit / Ranting: <?php echo $total_ranting; ?></p>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 5%;">No</th>
+                <th style="width: 18%;">Nama Unit / Ranting</th>
+                <th style="width: 8%;">Jenis</th>
+                <th style="width: 15%;">Ketua</th>
+                <th style="width: 20%;">Alamat</th>
+                <th style="width: 12%;">Kontak</th>
+                <th style="width: 17%;">Pengurus Kota</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php 
+            $no = 1;
+            $result->data_seek(0);
+            while ($row = $result->fetch_assoc()): 
+            ?>
+            <tr>
+                <td><?php echo $no++; ?></td>
+                <td><strong><?php echo htmlspecialchars($row['nama_ranting']); ?></strong></td>
+                <td><span class="badge badge-<?php echo $row['jenis']; ?>"><?php echo strtoupper($row['jenis']); ?></span></td>
+                <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
+                <td><?php echo htmlspecialchars($row['alamat'] ?? '-'); ?></td>
+                <td><?php echo htmlspecialchars($row['no_kontak'] ?? '-'); ?></td>
+                <td><?php echo htmlspecialchars($row['nama_pengurus'] ?? '-'); ?></td>
+            </tr>
+            <?php endwhile; ?>
+        </tbody>
+    </table>
+    
+    <div class="print-info">
+        <p>Halaman ini dicetak dari Sistem Manajemen Perisai Diri</p>
+        <p>Printed: <?php echo date('d/m/Y H:i'); ?></p>
+    </div>
+    
+    <script>
+        window.print();
+    </script>
+</body>
+</html>
+    <?php
+    http_response_code(200);
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -75,7 +173,7 @@ $is_readonly = $_SESSION['role'] == 'user';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Unit/Ranting - Kelatnas Indonesia Perisai Diri</title>
+    <title>Manajemen Unit / Ranting - Kelatnas Indonesia Perisai Diri</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -237,10 +335,10 @@ $is_readonly = $_SESSION['role'] == 'user';
             </div>
             <div class="button-group">
                 <?php if (!$is_readonly): ?>
-                <a href="ranting_tambah.php" class="btn btn-primary">+ Tambah Unit/Ranting</a>
+                <a href="ranting_tambah.php" class="btn btn-primary">+ Tambah Unit / Ranting</a>
                 <a href="ranting_import.php" class="btn btn-success">⬆️ Impor CSV</a>
                 <?php endif; ?>
-                <button onclick="window.print()" class="btn btn-print">🖨️ Cetak</button>
+                <button onclick="window.location.href='ranting.php?print=true'" class="btn btn-print">🖨️ Cetak</button>
             </div>
         </div>
         
@@ -306,7 +404,7 @@ $is_readonly = $_SESSION['role'] == 'user';
             <table>
                 <thead>
                     <tr>
-                        <th>Nama Unit/Ranting</th>
+                        <th>Nama Unit / Ranting</th>
                         <th>Jenis</th>
                         <th>Ketua</th>
                         <th>Alamat</th>
@@ -344,7 +442,7 @@ $is_readonly = $_SESSION['role'] == 'user';
                 </tbody>
             </table>
             <?php else: ?>
-            <div class="no-data">🔍 Tidak ada data unit/ranting</div>
+            <div class="no-data">🔍 Tidak ada data unit / ranting</div>
             <?php endif; ?>
         </div>
     </div>

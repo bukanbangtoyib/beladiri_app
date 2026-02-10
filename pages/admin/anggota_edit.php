@@ -107,19 +107,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     if (!$error) {
+        $is_active = isset($_POST['is_active']) ? (int)$_POST['is_active'] : 1;
+        
         $sql = "UPDATE anggota SET 
                 no_anggota = ?,
                 nama_lengkap = ?, tempat_lahir = ?, tanggal_lahir = ?, 
                 jenis_kelamin = ?, ranting_saat_ini_id = ?, tingkat_id = ?, 
                 jenis_anggota = ?, tahun_bergabung = ?, no_handphone = ?,
-                ukt_terakhir = ?, nama_foto = ? WHERE id = ?";
+                ukt_terakhir = ?, nama_foto = ?, is_active = ? WHERE id = ?";
         
         $stmt = $conn->prepare($sql);
         
         if ($stmt) {
-            // Total 13 parameter
+            // Total 14 parameter
             $stmt->bind_param(
-                "sssssisisissi",
+                "sssssisisissii",
                 $no_anggota,
                 $nama_lengkap, 
                 $tempat_lahir, 
@@ -132,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $no_handphone,
                 $ukt_terakhir,
                 $foto_path,
+                $is_active,
                 $id
             );
             
@@ -570,8 +573,12 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     </div>
                     
                     <div class="form-group">
-                        <label>Tahun Bergabung</label>
-                        <input type="number" name="tahun_bergabung" min="1900" max="2100" value="<?php echo $anggota['tahun_bergabung'] ?? ''; ?>" placeholder="Contoh: 2024">
+                        <label>Status Keanggotaan</label>
+                        <select name="is_active">
+                            <option value="1" <?php echo (isset($anggota['is_active']) && $anggota['is_active'] == 1) ? 'selected' : ''; ?>>✓ Aktif</option>
+                            <option value="0" <?php echo (isset($anggota['is_active']) && $anggota['is_active'] == 0) ? 'selected' : (!isset($anggota['is_active']) ? 'selected' : ''); ?>>✗ Tidak Aktif</option>
+                        </select>
+                        <div class="form-hint">Aktif = anggota bisa login & terlihat di sistem</div>
                     </div>
                 </div>
                 

@@ -7,6 +7,10 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 include 'config/database.php';
+include 'helpers/navbar.php';
+
+// Inisialisasi riwayat navigasi
+initNavigationHistory();
 
 // Hitung total anggota
 $total_anggota = $conn->query("SELECT COUNT(*) as count FROM anggota")->fetch_assoc()['count'];
@@ -251,16 +255,7 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
     </style>
 </head>
 <body>
-    <!-- Navbar Sederhana -->
-    <div class="navbar">
-        <h1>🥋 Sistem Informasi & Manajemen Perisai Diri</h1>
-        <div class="navbar-right">
-            <div class="user-info">
-                <span><?php echo htmlspecialchars($_SESSION['nama'] ?? 'User'); ?></span>
-            </div>
-            <a href="logout.php" class="logout-btn">🚪 Logout</a>
-        </div>
-    </div>
+    <?php renderSimpleNavbar('🥋 Dashboard - Sistem Informasi & Manajemen Perisai Diri'); ?>
     
     <div class="container">
         <div class="sidebar">
