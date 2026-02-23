@@ -26,6 +26,25 @@ if (!$permission_manager->can('anggota_read')) {
 }
 
 $id = (int)$_GET['id'];
+$jenis = isset($_GET['jenis']) ? $_GET['jenis'] : 'pusat';
+if (!in_array($jenis, ['pusat', 'provinsi', 'kota'])) {
+    $jenis = 'pusat';
+}
+
+// Map jenis to table
+$table_map = [
+    'pusat' => ['table' => 'negara', 'label' => 'Negara'],
+    'provinsi' => ['table' => 'provinsi', 'label' => 'Provinsi'],
+    'kota' => ['table' => 'kota', 'label' => 'Kota/Kabupaten']
+];
+
+$table_info = $table_map[$jenis];
+$table_name = $table_info['table'];
+$label = $table_info['label'];
+
+// Label jenis - for display
+$label_jenis = $table_info['label'];
+
 $error = '';
 $success = '';
 
@@ -48,9 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['sk_file'])) {
                 mkdir($upload_dir, 0755, true);
             }
             
-            // Get pengurus data untuk naming
-            $pengurus_data = $conn->query("SELECT * FROM pengurus WHERE id = $id")->fetch_assoc();
-            $nama_clean = preg_replace("/[^a-z0-9 -]/i", "_", $pengurus_data['nama_pengurus']);
+            // Get data untuk naming
+            $data = $conn->query("SELECT * FROM $table_name WHERE id = $id")->fetch_assoc();
+            $nama_clean = preg_replace("/[^a-z0-9 -]/i", "_", $data['nama']);
             $nama_clean = str_replace(" ", "_", $nama_clean);
             
             // Get next revision number
@@ -96,21 +115,19 @@ if (isset($_GET['delete_sk']) && $_SESSION['role'] == 'admin') {
     }
 }
 
-$sql = "SELECT p.*, 
-        (SELECT nama_pengurus FROM pengurus p2 WHERE p2.id = p.pengurus_induk_id) as pengurus_induk
-        FROM pengurus p
-        WHERE p.id = $id";
+// Ambil data pengurus - tanpa join untuk menghindari error kolom
+$sql = "SELECT * FROM $table_name WHERE id = $id";
 
 $result = $conn->query($sql);
 
 if ($result->num_rows == 0) {
-    die("Pengurus tidak ditemukan!");
+    die("$label tidak ditemukan!");
 }
 
 $pengurus = $result->fetch_assoc();
 
-// Ambil anak pengurus
-$anak_sql = "SELECT id, nama_pengurus, jenis_pengurus FROM pengurus WHERE pengurus_induk_id = $id ORDER BY nama_pengurus";
+// Ambil anak (child) data
+$anak_sql = "SELECT id, nama FROM $table_name WHERE " . ($jenis == 'pusat' ? '1=1' : ($jenis == 'provinsi' ? 'negara_id' : 'provinsi_id')) . " = $id ORDER BY nama";
 $anak_result = $conn->query($anak_sql);
 
 // Cari SK files
@@ -118,7 +135,7 @@ $upload_dir = '../../uploads/sk_pengurus/';
 $sk_files = [];
 
 if (is_dir($upload_dir)) {
-    $nama_clean = preg_replace("/[^a-z0-9 -]/i", "_", $pengurus['nama_pengurus']);
+    $nama_clean = preg_replace("/[^a-z0-9 -]/i", "_", $pengurus['nama']);
     $nama_clean = str_replace(" ", "_", $nama_clean);
     $pattern = 'SK-' . $nama_clean . '-';
     
@@ -133,19 +150,19 @@ if (is_dir($upload_dir)) {
 }
 
 // Label jenis
-$label_jenis = [
-    'pusat' => 'Pengurus Pusat',
-    'provinsi' => 'Pengurus Provinsi',
-    'kota' => 'Pengurus Kota'
+$label_jenis_text = [
+    'pusat' => 'Negara',
+    'provinsi' => 'Provinsi',
+    'kota' => 'Kota/Kabupaten'
 ];
 
-// Ranting count (khusus pengurus kota)
+// Ranting count (khusus untuk kota)
 $ranting_count = 0;
 $ranting_result = NULL;
-if ($pengurus['jenis_pengurus'] == 'kota') {
-    $r = $conn->query("SELECT COUNT(*) as count FROM ranting WHERE pengurus_kota_id = $id")->fetch_assoc();
+if ($jenis == 'kota') {
+    $r = $conn->query("SELECT COUNT(*) as count FROM ranting WHERE kota_id = $id")->fetch_assoc();
     $ranting_count = $r['count'];
-    $ranting_result = $conn->query("SELECT id, nama_ranting, jenis, ketua_nama FROM ranting WHERE pengurus_kota_id = $id ORDER BY nama_ranting");
+    $ranting_result = $conn->query("SELECT id, nama_ranting, jenis, ketua_nama FROM ranting WHERE kota_id = $id ORDER BY nama_ranting");
 }
 
 // Status aktif
@@ -155,7 +172,7 @@ $status_class = $status == 'Aktif' ? 'status-aktif' : 'status-tidak';
 // Format tanggal to DD-MM-YYYY
 function formatTanggal($date) {
     if (empty($date)) return '-';
-    return date('d-m-Y', strtotime($date));
+    return date('d/m/Y', strtotime($date));
 }
 
 function getRevisionNumber($filename) {
@@ -171,7 +188,7 @@ function getRevisionNumber($filename) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail <?php echo $label_jenis[$pengurus['jenis_pengurus']]; ?> - Sistem Beladiri</title>
+    <title>Detail <?php echo $label_jenis; ?> - Sistem Beladiri</title>
     <style>
         * {
             margin: 0;
@@ -498,13 +515,13 @@ function getRevisionNumber($filename) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('📋 Detail ' . $label_jenis[$pengurus['jenis_pengurus']]); ?>
+    <?php renderNavbar('📋 Detail ' . $label_jenis); ?>
     
     <div class="container">
         <div class="breadcrumb">
             <a href="pengurus.php">Pengurus</a> > 
-            <a href="pengurus_list.php?jenis=<?php echo $pengurus['jenis_pengurus']; ?>"><?php echo $label_jenis[$pengurus['jenis_pengurus']]; ?></a> > 
-            <strong><?php echo htmlspecialchars($pengurus['nama_pengurus']); ?></strong>
+            <a href="pengurus_list.php?jenis=<?php echo $jenis; ?>"><?php echo $label_jenis; ?></a> > 
+            <strong><?php echo htmlspecialchars($pengurus['nama']); ?></strong>
         </div>
         
         <?php if ($error): ?>
@@ -518,9 +535,9 @@ function getRevisionNumber($filename) {
         <!-- Header Card -->
         <div class="header-card">
             <div class="header-info">
-                <h1><?php echo htmlspecialchars($pengurus['nama_pengurus']); ?></h1>
+                <h1><?php echo htmlspecialchars($pengurus['nama']); ?></h1>
                 <p style="margin-bottom: 15px;">
-                    <span class="badge"><?php echo $label_jenis[$pengurus['jenis_pengurus']]; ?></span>
+                    <span class="badge"><?php echo $label_jenis; ?></span>
                     <span class="<?php echo $status_class; ?>">● <?php echo $status; ?></span>
                 </p>
                 <p><strong>Ketua:</strong> <?php echo htmlspecialchars($pengurus['ketua_nama'] ?? '-'); ?></p>
@@ -539,7 +556,7 @@ function getRevisionNumber($filename) {
             
             <div class="info-row">
                 <div class="label">Jenis Pengurus</div>
-                <div class="value"><?php echo $label_jenis[$pengurus['jenis_pengurus']]; ?></div>
+                <div class="value"><?php echo $label_jenis; ?></div>
             </div>
             
             <div class="info-row">
@@ -552,7 +569,7 @@ function getRevisionNumber($filename) {
                 <div class="value"><?php echo formatTanggal($pengurus['periode_mulai']); ?> - <?php echo formatTanggal($pengurus['periode_akhir']); ?></div>
             </div>
             
-            <?php if ($pengurus['pengurus_induk']): ?>
+            <?php if (isset($pengurus['pengurus_induk']) && $pengurus['pengurus_induk']): ?>
             <div class="info-row">
                 <div class="label">Pengurus Induk</div>
                 <div class="value">
@@ -646,7 +663,7 @@ function getRevisionNumber($filename) {
                     <div class="stat-number"><?php echo $anak_result->num_rows; ?></div>
                     <div class="stat-label">
                         <?php 
-                        if ($pengurus['jenis_pengurus'] == 'pusat') {
+                        if ($jenis == 'pusat') {
                             echo 'Pengurus Provinsi';
                         } else {
                             echo 'Pengurus Kota';
@@ -670,15 +687,16 @@ function getRevisionNumber($filename) {
                     <?php 
                     $anak_result->data_seek(0);
                     while ($row = $anak_result->fetch_assoc()): 
-                        $child_detail = $conn->query("SELECT ketua_nama, periode_mulai, periode_akhir FROM pengurus WHERE id = " . $row['id'])->fetch_assoc();
+                        $child_table = ($jenis == 'pusat' ? 'negara' : ($jenis == 'provinsi' ? 'provinsi' : 'kota'));
+                        $child_detail = $conn->query("SELECT nama, kode FROM $child_table WHERE id = " . $row['id'])->fetch_assoc();
                     ?>
                     <tr>
-                        <td><strong><?php echo htmlspecialchars($row['nama_pengurus']); ?></strong></td>
-                        <td><?php echo $label_jenis[$row['jenis_pengurus']]; ?></td>
-                        <td><?php echo htmlspecialchars($child_detail['ketua_nama'] ?? '-'); ?></td>
-                        <td><?php echo date('Y', strtotime($child_detail['periode_mulai'])); ?> - <?php echo date('Y', strtotime($child_detail['periode_akhir'])); ?></td>
+                        <td><strong><?php echo htmlspecialchars($row['nama']); ?></strong></td>
+                        <td><?php echo $label_jenis_text[$jenis]; ?></td>
+                        <td><?php echo htmlspecialchars($child_detail['kode'] ?? '-'); ?></td>
+                        <td><?php echo htmlspecialchars($child_detail['nama'] ?? '-'); ?></td>
                         <td>
-                            <a href="pengurus_detail.php?id=<?php echo $row['id']; ?>" class="link-nav">Lihat →</a>
+                            <a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis == 'pusat' ? 'provinsi' : 'kota'; ?>" class="link-nav">Lihat →</a>
                         </td>
                     </tr>
                     <?php endwhile; ?>
@@ -688,7 +706,7 @@ function getRevisionNumber($filename) {
         <?php endif; ?>
         
         <!-- Unit/Ranting yang Dinaungi (khusus Pengurus Kota) -->
-        <?php if ($pengurus['jenis_pengurus'] == 'kota'): ?>
+        <?php if ($jenis == 'kota'): ?>
         <div class="info-card">
             <h3>🌳 Unit / Ranting yang Dinaungi</h3>
             

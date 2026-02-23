@@ -107,8 +107,26 @@ if (isset($_GET['delete'])) {
 // Ambil data semua user
 $users_result = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
 
-// Ambil daftar pengurus
-$pengurus_result = $conn->query("SELECT id, nama_pengurus FROM pengurus ORDER BY nama_pengurus");
+// Ambil daftar (gabungkan negara, provinsi, kota)
+$all_orgs = [];
+
+// Get negara
+$negara_result = $conn->query("SELECT id, nama, 'pusat' as jenis FROM negara ORDER BY nama");
+while ($row = $negara_result->fetch_assoc()) {
+    $all_orgs[] = $row;
+}
+
+// Get provinsi
+$provinsi_result = $conn->query("SELECT id, nama, 'provinsi' as jenis FROM provinsi ORDER BY nama");
+while ($row = $provinsi_result->fetch_assoc()) {
+    $all_orgs[] = $row;
+}
+
+// Get kota
+$kota_result = $conn->query("SELECT id, nama, 'kota' as jenis FROM kota ORDER BY nama");
+while ($row = $kota_result->fetch_assoc()) {
+    $all_orgs[] = $row;
+}
 
 // Ambil daftar ranting
 $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY nama_ranting");
@@ -304,8 +322,11 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                         // Ambil nama pengurus dan ranting
                         $pengurus_info = '';
                         if ($row['pengurus_id']) {
-                            $org = $conn->query("SELECT nama_pengurus FROM pengurus WHERE id = " . $row['pengurus_id'])->fetch_assoc();
-                            if ($org) $pengurus_info = $org['nama_pengurus'];
+                            // Try to find in negara, provinsi, or kota
+                            $org = $conn->query("SELECT nama FROM negara WHERE id = " . $row['pengurus_id'])->fetch_assoc();
+                            if (!$org) $org = $conn->query("SELECT nama FROM provinsi WHERE id = " . $row['pengurus_id'])->fetch_assoc();
+                            if (!$org) $org = $conn->query("SELECT nama FROM kota WHERE id = " . $row['pengurus_id'])->fetch_assoc();
+                            if ($org) $pengurus_info = $org['nama'];
                         }
                         
                         if ($row['ranting_id']) {

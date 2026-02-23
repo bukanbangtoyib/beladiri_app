@@ -35,12 +35,12 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     $lokasi = isset($_GET['lokasi']) ? $conn->real_escape_string(trim($_GET['lokasi'])) : '';
     $penyelenggara = isset($_GET['penyelenggara']) ? $conn->real_escape_string(trim($_GET['penyelenggara'])) : '';
     
-    $sql = "SELECT u.id, u.tanggal_pelaksanaan, u.lokasi, p.nama_pengurus as nama_penyelenggara,
+    $sql = "SELECT u.id, u.tanggal_pelaksanaan, u.lokasi, p.nama as nama_penyelenggara,
             COUNT(up.id) as total_peserta,
             SUM(CASE WHEN up.status = 'lulus' THEN 1 ELSE 0 END) as peserta_lulus,
             SUM(CASE WHEN up.status = 'tidak_lulus' THEN 1 ELSE 0 END) as peserta_tidak_lulus
             FROM ukt u
-            LEFT JOIN pengurus p ON u.penyelenggara_id = p.id
+            LEFT JOIN kota p ON u.penyelenggara_id = p.id
             LEFT JOIN ukt_peserta up ON u.id = up.ukt_id
             WHERE 1=1";
     
@@ -53,7 +53,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     }
     
     if ($penyelenggara) {
-        $sql .= " AND p.nama_pengurus LIKE '%$penyelenggara%'";
+        $sql .= " AND p.nama LIKE '%$penyelenggara%'";
     }
     
     $sql .= " GROUP BY u.id ORDER BY u.tanggal_pelaksanaan DESC";
@@ -78,9 +78,9 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 }
 
 // Query awal untuk semua data UKT
-$sql = "SELECT u.*, p.nama_pengurus as nama_penyelenggara
+$sql = "SELECT u.*, p.nama as nama_penyelenggara
         FROM ukt u
-        LEFT JOIN pengurus p ON u.penyelenggara_id = p.id
+        LEFT JOIN kota p ON u.penyelenggara_id = p.id
         ORDER BY u.tanggal_pelaksanaan DESC";
 $result = $conn->query($sql);
 

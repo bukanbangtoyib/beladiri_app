@@ -24,16 +24,20 @@ $GLOBALS['permission_manager'] = $permission_manager;
 
 // Check permission untuk action ini
 if (!$permission_manager->can('anggota_read')) {
-    die("âŒ Akses ditolak!");
+    die("❌ Akses ditolak!");
 }
 
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $filter_jenis = isset($_GET['filter_jenis']) ? $_GET['filter_jenis'] : '';
-$filter_pengprov = isset($_GET['filter_pengprov']) ? (int)$_GET['filter_pengprov'] : 0;
-$filter_pengkot = isset($_GET['filter_pengkot']) ? (int)$_GET['filter_pengkot'] : 0;
+$filter_negara = isset($_GET['filter_negara']) ? (int)$_GET['filter_negara'] : 0;
+$filter_provinsi = isset($_GET['filter_provinsi']) ? (int)$_GET['filter_provinsi'] : 0;
+$filter_kota = isset($_GET['filter_kota']) ? (int)$_GET['filter_kota'] : 0;
 
-$sql = "SELECT r.*, p.nama_pengurus FROM ranting r 
-        LEFT JOIN pengurus p ON r.pengurus_kota_id = p.id
+$sql = "SELECT r.*, k.nama as nama_kota, p.nama as nama_provinsi, n.nama as nama_negara 
+        FROM ranting r 
+        LEFT JOIN kota k ON r.kota_id = k.id
+        LEFT JOIN provinsi p ON k.provinsi_id = p.id
+        LEFT JOIN negara n ON p.negara_id = n.id
         WHERE 1=1";
 
 if ($search) {
@@ -46,12 +50,16 @@ if ($filter_jenis) {
     $sql .= " AND r.jenis = '" . $filter_jenis . "'";
 }
 
-if ($filter_pengprov > 0) {
-    $sql .= " AND p.pengurus_induk_id = " . intval($filter_pengprov);
+if ($filter_negara > 0) {
+    $sql .= " AND n.id = " . intval($filter_negara);
 }
 
-if ($filter_pengkot > 0) {
-    $sql .= " AND r.pengurus_kota_id = " . intval($filter_pengkot);
+if ($filter_provinsi > 0) {
+    $sql .= " AND p.id = " . intval($filter_provinsi);
+}
+
+if ($filter_kota > 0) {
+    $sql .= " AND r.kota_id = " . intval($filter_kota);
 }
 
 $sql .= " ORDER BY r.nama_ranting";
@@ -59,12 +67,17 @@ $sql .= " ORDER BY r.nama_ranting";
 $result = $conn->query($sql);
 $total_ranting = $result->num_rows;
 
-// Ambil daftar pengurus untuk dropdown
-$pengprov_result = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'provinsi' ORDER BY nama_pengurus");
-$pengkot_result = null;
+// Ambil daftar untuk dropdown
+$negara_result = $conn->query("SELECT id, nama FROM negara ORDER BY nama");
+$provinsi_result = null;
+$kota_result = null;
 
-if ($filter_pengprov > 0) {
-    $pengkot_result = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'kota' AND pengurus_induk_id = " . intval($filter_pengprov) . " ORDER BY nama_pengurus");
+if ($filter_negara > 0) {
+    $provinsi_result = $conn->query("SELECT id, nama FROM provinsi WHERE negara_id = " . intval($filter_negara) . " ORDER BY nama");
+}
+
+if ($filter_provinsi > 0) {
+    $kota_result = $conn->query("SELECT id, nama FROM kota WHERE provinsi_id = " . intval($filter_provinsi) . " ORDER BY nama");
 }
 
 $is_readonly = $_SESSION['role'] == 'user';
@@ -146,7 +159,7 @@ if ($print_mode) {
                 <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
                 <td><?php echo htmlspecialchars($row['alamat'] ?? '-'); ?></td>
                 <td><?php echo htmlspecialchars($row['no_kontak'] ?? '-'); ?></td>
-                <td><?php echo htmlspecialchars($row['nama_pengurus'] ?? '-'); ?></td>
+                <td><?php echo htmlspecialchars($row['nama_kota'] ?? '-'); ?></td>
             </tr>
             <?php endwhile; ?>
         </tbody>
@@ -344,7 +357,7 @@ if ($print_mode) {
         
         <!-- Filter Cascade -->
         <div class="search-filter">
-            <form method="GET" action="">
+            <form method="GET" action="" id="rantingForm">
                 <div class="filter-section-title">🔍 Pencarian & Filter</div>
                 <div class="filter-row">
                     <input type="text" name="search" placeholder="Cari nama atau alamat..." value="<?php echo htmlspecialchars($search); ?>">
@@ -357,32 +370,49 @@ if ($print_mode) {
                     </select>
                 </div>
 
-                <div class="filter-section-title">📋 Filter Struktur Organisasi (Cascade)</div>
+                <div class="filter-section-title">📋 Filter Regional (Cascade)</div>
                 <div class="filter-row">
                     <div>
-                        <select name="filter_pengprov" id="filter_pengprov" onchange="updatePengKotRanting()">
-                            <option value="">-- Semua Pengurus Provinsi --</option>
+                        <select name="filter_negara" id="filter_negara" onchange="updateProvinsiKota()">
+                            <option value="">-- Semua Negara --</option>
                             <?php 
-                            $pengprov_result->data_seek(0);
-                            while ($row = $pengprov_result->fetch_assoc()): 
+                            $negara_result->data_seek(0);
+                            while ($row = $negara_result->fetch_assoc()): 
                             ?>
-                                <option value="<?php echo $row['id']; ?>" <?php echo $filter_pengprov == $row['id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($row['nama_pengurus']); ?>
+                                <option value="<?php echo $row['id']; ?>" <?php echo $filter_negara == $row['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($row['nama']); ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
                     </div>
 
                     <div>
-                        <select name="filter_pengkot" id="filter_pengkot" onchange="this.form.submit()" <?php echo $filter_pengprov == 0 ? 'disabled' : ''; ?>>
-                            <option value="">-- Semua Pengurus Kota --</option>
+                        <select name="filter_provinsi" id="filter_provinsi" onchange="updateKota()">
+                            <option value="">-- Semua Provinsi --</option>
                             <?php 
-                            if ($pengkot_result) {
-                                $pengkot_result->data_seek(0);
-                                while ($row = $pengkot_result->fetch_assoc()): 
+                            if ($provinsi_result) {
+                                $provinsi_result->data_seek(0);
+                                while ($row = $provinsi_result->fetch_assoc()): 
                                 ?>
-                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_pengkot == $row['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($row['nama_pengurus']); ?>
+                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_provinsi == $row['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($row['nama']); ?>
+                                    </option>
+                                <?php endwhile;
+                            }
+                            ?>
+                        </select>
+                    </div>
+
+                    <div>
+                        <select name="filter_kota" id="filter_kota" onchange="this.form.submit()">
+                            <option value="">-- Semua Kota --</option>
+                            <?php 
+                            if ($kota_result) {
+                                $kota_result->data_seek(0);
+                                while ($row = $kota_result->fetch_assoc()): 
+                                ?>
+                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_kota == $row['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($row['nama']); ?>
                                     </option>
                                 <?php endwhile;
                             }
@@ -448,32 +478,74 @@ if ($print_mode) {
     </div>
 
     <script>
-        function updatePengKotRanting() {
-            const pengprovSelect = document.getElementById('filter_pengprov');
-            const pengkotSelect = document.getElementById('filter_pengkot');
+        function updateProvinsiKota() {
+            const negaraSelect = document.getElementById('filter_negara');
+            const provinsiSelect = document.getElementById('filter_provinsi');
+            const kotaSelect = document.getElementById('filter_kota');
             
-            const pengprovId = pengprovSelect.value;
+            const negaraId = negaraSelect.value;
             
-            if (pengprovId === '') {
-                pengkotSelect.disabled = true;
-                pengkotSelect.innerHTML = '<option value="">-- Semua Pengurus Kota --</option>';
+            // Reset and disable dependent dropdowns
+            provinsiSelect.innerHTML = '<option value="">-- Semua Provinsi --</option>';
+            kotaSelect.innerHTML = '<option value="">-- Semua Kota --</option>';
+            provinsiSelect.disabled = true;
+            kotaSelect.disabled = true;
+            
+            if (negaraId === '') {
                 return;
             }
             
-            pengkotSelect.disabled = false;
-            
-            fetch('../../api/get_pengkot.php?pengprov_id=' + pengprovId)
+            // Fetch provinces
+            fetch('../../api/get_provinsi.php?negara_id=' + negaraId)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        let html = '<option value="">-- Semua Pengurus Kota --</option>';
-                        data.data.forEach(pengkot => {
-                            html += '<option value="' + pengkot.id + '">' + pengkot.nama_pengurus + '</option>';
+                        let html = '<option value="">-- Semua Provinsi --</option>';
+                        data.data.forEach(provinsi => {
+                            html += '<option value="' + provinsi.id + '">' + provinsi.nama + '</option>';
                         });
-                        pengkotSelect.innerHTML = html;
+                        provinsiSelect.innerHTML = html;
+                        provinsiSelect.disabled = false;
                     }
                 })
                 .catch(error => console.error('Error:', error));
+            
+            // Submit form
+            document.getElementById('rantingForm').submit();
+        }
+        
+        function updateKota() {
+            const provinsiSelect = document.getElementById('filter_provinsi');
+            const kotaSelect = document.getElementById('filter_kota');
+            
+            const provinsiId = provinsiSelect.value;
+            
+            // Reset and disable dependent dropdown
+            kotaSelect.innerHTML = '<option value="">-- Semua Kota --</option>';
+            kotaSelect.disabled = true;
+            
+            if (provinsiId === '') {
+                document.getElementById('rantingForm').submit();
+                return;
+            }
+            
+            // Fetch cities
+            fetch('../../api/get_kota.php?provinsi_id=' + provinsiId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        let html = '<option value="">-- Semua Kota --</option>';
+                        data.data.forEach(kota => {
+                            html += '<option value="' + kota.id + '">' + kota.nama + '</option>';
+                        });
+                        kotaSelect.innerHTML = html;
+                        kotaSelect.disabled = false;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            
+            // Submit form
+            document.getElementById('rantingForm').submit();
         }
     </script>
 </body>

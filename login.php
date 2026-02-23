@@ -9,6 +9,13 @@ if (isset($_SESSION['user_id'])) {
 
 $error = '';
 
+// Load settings for logo
+$logo_path = '';
+if (file_exists('config/settings.php')) {
+    include 'config/settings.php';
+    $logo_path = $settings['logo'] ?? '';
+}
+
 // Jika form di-submit
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     include 'config/database.php';
@@ -73,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             border-radius: 10px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
             padding: 40px;
         }
         
@@ -82,6 +89,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             color: #333;
             margin-bottom: 30px;
             font-size: 24px;
+        }
+        
+        .login-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .login-logo-img {
+            max-width: 120px;
+            max-height: 120px;
+            object-fit: contain;
+        }
+        
+        .login-icon {
+            font-size: 64px;
+            line-height: 1;
         }
         
         .form-group {
@@ -148,7 +171,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
     <div class="login-container">
-        <h1>🥋 Manajemen Perisai Diri</h1>
+        <div class="login-logo">
+            <?php if (!empty($logo_path)): ?>
+                <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="Logo" class="login-logo-img">
+            <?php else: ?>
+                <div class="login-icon">🥋</div>
+            <?php endif; ?>
+        </div>
+        <h1>Sistem Informasi & Manajemen Perisai Diri</h1>
         
         <?php if ($error): ?>
             <div class="error"><?php echo $error; ?></div>
@@ -167,12 +197,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             <button type="submit">Login</button>
         </form>
-        
-        <div class="info">
-            Untuk demo, gunakan:<br>
-            Username: <strong>admin</strong><br>
-            Password: <strong>admin123</strong>
-        </div>
     </div>
 </body>
 </html>

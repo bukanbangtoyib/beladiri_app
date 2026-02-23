@@ -41,14 +41,14 @@ $sql = "SELECT up.*,
                t1.nama_tingkat as tingkat_dari, 
                t2.nama_tingkat as tingkat_ke,
                r.nama_ranting,
-               p.nama_pengurus as nama_penyelenggara
+               p.nama as nama_penyelenggara
         FROM ukt_peserta up
         JOIN ukt u ON up.ukt_id = u.id
         JOIN anggota a ON up.anggota_id = a.id
         LEFT JOIN tingkatan t1 ON up.tingkat_dari_id = t1.id
         LEFT JOIN tingkatan t2 ON up.tingkat_ke_id = t2.id
         LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id
-        LEFT JOIN pengurus p ON u.penyelenggara_id = p.id
+        LEFT JOIN kota p ON u.penyelenggara_id = p.id
         WHERE up.id = $peserta_id AND up.ukt_id = $ukt_id";
 
 $result = $conn->query($sql);

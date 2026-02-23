@@ -9,8 +9,12 @@ if (!isset($_SESSION['user_id'])) {
 include 'config/database.php';
 include 'helpers/navbar.php';
 
-// Inisialisasi riwayat navigasi
-initNavigationHistory();
+// Load settings for logo
+$logo_path = '';
+if (file_exists('config/settings.php')) {
+    include 'config/settings.php';
+    $logo_path = $settings['logo'] ?? '';
+}
 
 // Hitung total anggota
 $total_anggota = $conn->query("SELECT COUNT(*) as count FROM anggota")->fetch_assoc()['count'];
@@ -18,11 +22,14 @@ $total_anggota = $conn->query("SELECT COUNT(*) as count FROM anggota")->fetch_as
 // Hitung total unit/ranting
 $total_ranting = $conn->query("SELECT COUNT(*) as count FROM ranting")->fetch_assoc()['count'];
 
-// Hitung total pengurus provinsi
-$total_prov = $conn->query("SELECT COUNT(*) as count FROM pengurus WHERE jenis_pengurus = 'provinsi'")->fetch_assoc()['count'];
+// Hitung total negara
+$total_negara = $conn->query("SELECT COUNT(*) as count FROM negara")->fetch_assoc()['count'];
 
-// Hitung total pengurus kota/kabupaten
-$total_kota = $conn->query("SELECT COUNT(*) as count FROM pengurus WHERE jenis_pengurus = 'kota'")->fetch_assoc()['count'];
+// Hitung total provinsi
+$total_prov = $conn->query("SELECT COUNT(*) as count FROM provinsi")->fetch_assoc()['count'];
+
+// Hitung total kota/kabupaten
+$total_kota = $conn->query("SELECT COUNT(*) as count FROM kota")->fetch_assoc()['count'];
 
 // Hitung total peserta kerohanian
 $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fetch_assoc()['count'];
@@ -33,7 +40,7 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Sistem Beladiri</title>
+    <title>Dashboard - Sistem Informasi & Manajemen Perisai Diri</title>
     <style>
         * {
             margin: 0;
@@ -54,6 +61,18 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+            margin-right: 15px;
         }
         
         .navbar h1 {
@@ -233,6 +252,15 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
                 font-size: 20px;
             }
             
+            .navbar-left {
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .navbar-logo {
+                height: 32px;
+            }
+            
             .navbar-right {
                 width: 100%;
                 justify-content: space-between;
@@ -255,7 +283,7 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
     </style>
 </head>
 <body>
-    <?php renderSimpleNavbar('🥋 Dashboard - Sistem Informasi & Manajemen Perisai Diri'); ?>
+    <?php renderSimpleNavbar('Dashboard - Sistem Informasi & Manajemen Perisai Diri'); ?>
     
     <div class="container">
         <div class="sidebar">
@@ -276,34 +304,27 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
         
         <div class="content">
             <h1>Dashboard</h1>
-            <p class="subtitle">Ringkasan data lembaga beladiri</p>
+            <p class="subtitle">Ringkasan Informasi Organisasi Perisai Diri</p>
             
             <div class="info-box">
                 <strong>ℹ️ Informasi:</strong> Data di bawah ini diperbarui secara real-time dari database.
             </div>
             
             <div class="dashboard-grid">
-                <!-- Anggota -->
+                <!-- Pengurus Negara -->
+                <a href="pages/admin/pengurus_list.php?jenis=pusat" style="text-decoration: none;">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-icon">👥</div>
-                        <div class="card-title">Total Anggota</div>
+                        <div class="card-icon">🌍</div>
+                        <div class="card-title">Pengurus Negara</div>
                     </div>
-                    <div class="card-number"><?php echo $total_anggota; ?></div>
-                    <div class="card-footer">Murid, Pelatih, Pelatih Unit</div>
+                    <div class="card-number"><?php echo $total_negara; ?></div>
+                    <div class="card-footer">Struktur aktif</div>
                 </div>
-                
-                <!-- Unit/Ranting -->
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-icon">🌳</div>
-                        <div class="card-title">Total Unit / Ranting</div>
-                    </div>
-                    <div class="card-number"><?php echo $total_ranting; ?></div>
-                    <div class="card-footer">UKM, Ranting, Unit</div>
-                </div>
+                </a>
                 
                 <!-- Pengurus Provinsi -->
+                <a href="pages/admin/pengurus_list.php?jenis=provinsi" style="text-decoration: none;">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">🏛️</div>
@@ -312,8 +333,10 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
                     <div class="card-number"><?php echo $total_prov; ?></div>
                     <div class="card-footer">Struktur aktif</div>
                 </div>
+                </a>
                 
                 <!-- Pengurus Kota/Kabupaten -->
+                <a href="pages/admin/pengurus_list.php?jenis=kota" style="text-decoration: none;">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">🏛️</div>
@@ -322,8 +345,31 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
                     <div class="card-number"><?php echo $total_kota; ?></div>
                     <div class="card-footer">Struktur aktif</div>
                 </div>
+                </a>
+                
+                <!-- Unit/Ranting -->
+                <a href="pages/admin/ranting.php" style="text-decoration: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🌳</div>
+                        <div class="card-title">Total Unit / Ranting</div>
+                    </div>
+                    <div class="card-number"><?php echo $total_ranting; ?></div>
+                    <div class="card-footer">UKM, Ranting, Unit</div>
+                </div>
+                <!-- Anggota -->
+                <a href="pages/admin/anggota.php" style="text-decoration: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">👥</div>
+                        <div class="card-title">Total Anggota</div>
+                    </div>
+                    <div class="card-number"><?php echo $total_anggota; ?></div>
+                    <div class="card-footer">Murid, Pelatih, Pelatih Unit</div>
+                </div>                
                 
                 <!-- Peserta Kerohanian Total -->
+                <a href="pages/admin/kerohanian.php" style="text-decoration: none;">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">🙏</div>

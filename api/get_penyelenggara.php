@@ -30,10 +30,18 @@ if (!in_array($jenis_pengurus, $allowed_types)) {
     exit();
 }
 
-// Query untuk mendapatkan daftar pengurus berdasarkan jenis
-$sql = "SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = ? ORDER BY nama_pengurus ASC";
+// Map jenis to table
+$table_map = [
+    'pusat' => 'negara',
+    'provinsi' => 'provinsi',
+    'kota' => 'kota'
+];
+
+$table_name = $table_map[$jenis_pengurus];
+
+// Query untuk mendapatkan daftar berdasarkan jenis
+$sql = "SELECT id, nama FROM $table_name ORDER BY nama ASC";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $jenis_pengurus);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -41,7 +49,7 @@ $data = [];
 while ($row = $result->fetch_assoc()) {
     $data[] = [
         'id' => (int)$row['id'],
-        'nama' => $row['nama_pengurus']
+        'nama' => $row['nama']
     ];
 }
 

@@ -27,10 +27,11 @@ if (!$permission_manager->can('anggota_read')) {
     die("❌ Akses ditolak!");
 }
 
-// Hitung jumlah tiap jenis pengurus
-$pusat = $conn->query("SELECT COUNT(*) as count FROM pengurus WHERE jenis_pengurus = 'pusat'")->fetch_assoc();
-$provinsi = $conn->query("SELECT COUNT(*) as count FROM pengurus WHERE jenis_pengurus = 'provinsi'")->fetch_assoc();
-$kota = $conn->query("SELECT COUNT(*) as count FROM pengurus WHERE jenis_pengurus = 'kota'")->fetch_assoc();
+// Hitung jumlah dari 4 tabel baru
+$pusat = $conn->query("SELECT COUNT(*) as count FROM negara")->fetch_assoc();
+$provinsi = $conn->query("SELECT COUNT(*) as count FROM provinsi")->fetch_assoc();
+$kota = $conn->query("SELECT COUNT(*) as count FROM kota")->fetch_assoc();
+$ranting = $conn->query("SELECT COUNT(*) as count FROM ranting")->fetch_assoc();
 ?>
 
 <!DOCTYPE html>
@@ -164,7 +165,7 @@ $kota = $conn->query("SELECT COUNT(*) as count FROM pengurus WHERE jenis_penguru
     
     <div class="container">
         <h1>Manajemen Struktur Kepengurusan</h1>
-        <p class="subtitle">Kelola data pengurus pusat, provinsi, dan kota/kabupaten</p>
+        <p class="subtitle">Kelola data pengurus negara, provinsi, dan kota/kabupaten</p>
         
         <div class="info-box">
             <strong>ℹ️ Informasi : </strong> Pilih salah satu jenis kepengurusan di bawah untuk mengelola data struktur organisasi.
@@ -172,12 +173,12 @@ $kota = $conn->query("SELECT COUNT(*) as count FROM pengurus WHERE jenis_penguru
         </div>
         
         <div class="cards-grid">
-            <!-- Card Pengurus Pusat -->
+            <!-- Card Pengurus Negara -->
             <a href="pengurus_list.php?jenis=pusat" class="card">
                 <div class="card-header pusat">
                     <div class="card-icon">🏛️</div>
-                    <div class="card-title">Pengurus Pusat</div>
-                    <div class="card-desc">Tingkat Nasional</div>
+                    <div class="card-title">Pengurus Negara</div>
+                    <div class="card-desc">Tingkat Negara</div>
                 </div>
                 <div class="card-body">
                     <div class="card-number"><?php echo $pusat['count']; ?></div>

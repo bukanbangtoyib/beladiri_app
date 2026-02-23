@@ -7,56 +7,26 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
 }
 
 include '../../config/database.php';
-include '../../auth/PermissionManager.php';
-
-// Initialize permission manager
-$permission_manager = new PermissionManager(
-    $conn,
-    $_SESSION['user_id'],
-    $_SESSION['role'],
-    $_SESSION['pengurus_id'] ?? null,
-    $_SESSION['ranting_id'] ?? null
-);
-
-// Store untuk global use
-$GLOBALS['permission_manager'] = $permission_manager;
-
-// Check permission untuk action ini
-if (!$permission_manager->can('anggota_read')) {
-    die("❌ Akses ditolak!");
-}
 
 $id = (int)$_GET['id'];
+$jenis = $_GET['jenis'] ?? 'pusat';
 
-// Cek pengurus ada
-$check = $conn->query("SELECT nama_pengurus, jenis_pengurus FROM pengurus WHERE id = $id");
-if ($check->num_rows == 0) {
-    die("Pengurus tidak ditemukan!");
+if (!in_array($jenis, ['pusat', 'provinsi', 'kota'])) {
+    $jenis = 'pusat';
 }
 
-$pengurus = $check->fetch_assoc();
+// Map jenis to table names
+$table_map = [
+    'pusat' => 'negara',
+    'provinsi' => 'provinsi',
+    'kota' => 'kota'
+];
 
-// Cek apakah ada pengurus anak
-$anak_check = $conn->query("SELECT COUNT(*) as count FROM pengurus WHERE pengurus_induk_id = $id");
-$anak_count = $anak_check->fetch_assoc();
+$table = $table_map[$jenis];
 
-if ($anak_count['count'] > 0) {
-    die("Tidak bisa menghapus! Masih ada " . $anak_count['count'] . " pengurus yang dinaungi oleh pengurus ini.");
-}
+// Delete from new tables
+$conn->query("DELETE FROM $table WHERE id = $id");
 
-// Jika pengurus kota, cek ranting
-if ($pengurus['jenis_pengurus'] == 'kota') {
-    $ranting_check = $conn->query("SELECT COUNT(*) as count FROM ranting WHERE pengurus_kota_id = $id");
-    $ranting_count = $ranting_check->fetch_assoc();
-    
-    if ($ranting_count['count'] > 0) {
-        die("Tidak bisa menghapus! Masih ada " . $ranting_count['count'] . " unit/ranting yang dinaungi.");
-    }
-}
-
-// Hapus pengurus
-$conn->query("DELETE FROM pengurus WHERE id = $id");
-
-header("Location: pengurus.php?msg=deleted");
+header("Location: pengurus_list.php?jenis=$jenis");
 exit();
 ?>

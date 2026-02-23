@@ -10,6 +10,7 @@ include '../../config/database.php';
 include '../../pages/admin/ukt_eligibility_helper.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../config/settings.php';
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -28,22 +29,83 @@ if (!$permission_manager->can('anggota_read')) {
     die("❌ Akses ditolak!");
 }
 
-// Initialize permission manager
-$permission_manager = new PermissionManager(
-    $conn,
-    $_SESSION['user_id'],
-    $_SESSION['role'],  
-    $_SESSION['pengurus_id'] ?? null,
-    $_SESSION['ranting_id'] ?? null
-);
-
-// Check permission
-if (!$permission_manager->can('anggota_read')) {
-    die("❌ Akses ditolak. Anda tidak memiliki permission untuk melihat data anggota.");
+// Helper function untuk format no_anggota sesuai pengaturan
+function formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) {
+    if (empty($no_anggota)) return $no_anggota;
+    
+    // Try to parse the format
+    if (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = $matches[1];
+        $ranting_kode = $matches[2];
+        $year_seq = $matches[3];
+    } elseif (preg_match('/^([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = '';
+        $ranting_kode = $matches[1];
+        $year_seq = $matches[2];
+    } elseif (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = $matches[1];
+        $ranting_kode = $matches[2];
+        $year_seq = '';
+    } else {
+        return $no_anggota;
+    }
+    
+    $negara_kode = '';
+    $provinsi_kode = '';
+    $kota_kode = '';
+    
+    if (strlen($kode_full) >= 2) {
+        $negara_kode = substr($kode_full, 0, 2);
+    }
+    if (strlen($kode_full) >= 5) {
+        $provinsi_kode = substr($kode_full, 2, 3);
+    }
+    if (strlen($kode_full) >= 8) {
+        $kota_kode = substr($kode_full, 5, 3);
+    }
+    
+    $tahun = '';
+    $urutan = '';
+    if (strlen($year_seq) >= 4) {
+        $tahun = substr($year_seq, 0, 4);
+        $urutan = substr($year_seq, 4);
+    }
+    
+    $kode_parts = [];
+    if ($pengaturan_nomor['kode_negara'] ?? true) {
+        $kode_parts[] = $negara_kode;
+    }
+    if ($pengaturan_nomor['kode_provinsi'] ?? true) {
+        $kode_parts[] = $provinsi_kode;
+    }
+    if ($pengaturan_nomor['kode_kota'] ?? true) {
+        $kode_parts[] = $kota_kode;
+    }
+    $kode_str = implode('', $kode_parts);
+    
+    $ranting_str = '';
+    if ($pengaturan_nomor['kode_ranting'] ?? true) {
+        if (!empty($kode_str)) {
+            $ranting_str = '.' . $ranting_kode;
+        } else {
+            $ranting_str = $ranting_kode;
+        }
+    }
+    
+    $year_seq_str = '';
+    $year_part = ($pengaturan_nomor['tahun_daftar'] ?? true) ? $tahun : '';
+    $seq_part = ($pengaturan_nomor['urutan_daftar'] ?? true) ? $urutan : '';
+    
+    if (!empty($year_part) || !empty($seq_part)) {
+        if (!empty($kode_str) || !empty($ranting_str)) {
+            $year_seq_str = '-' . $year_part . $seq_part;
+        } else {
+            $year_seq_str = $year_part . $seq_part;
+        }
+    }
+    
+    return $kode_str . $ranting_str . $year_seq_str;
 }
-
-// Store untuk global use
-$GLOBALS['permission_manager'] = $permission_manager;
 
 // Ambil data anggota
 $search = isset($_GET['search']) ? $_GET['search'] : '';
@@ -77,12 +139,12 @@ function singkatTingkat($nama_tingkat) {
 
 // Build query dengan JOIN ke pengurus
 $sql = "SELECT a.*, t.nama_tingkat, t.urutan, r.nama_ranting, 
-               pk.nama_pengurus as peng_kota, pp.nama_pengurus as peng_prov
+               pk.nama as peng_kota, pp.nama as peng_prov
         FROM anggota a 
         LEFT JOIN tingkatan t ON a.tingkat_id = t.id 
         LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id 
-        LEFT JOIN pengurus pk ON r.pengurus_kota_id = pk.id
-        LEFT JOIN pengurus pp ON pk.pengurus_induk_id = pp.id
+        LEFT JOIN kota pk ON r.kota_id = pk.id
+        LEFT JOIN provinsi pp ON pk.provinsi_id = pp.id
         WHERE 1=1";
 
 if ($search) {
@@ -142,8 +204,8 @@ $total_anggota = count($filtered_results);
 // Ambil data untuk dropdown filter
 $tingkatan_result = $conn->query("SELECT * FROM tingkatan ORDER BY urutan");
 $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY nama_ranting");
-$pengprov_result = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'provinsi' ORDER BY nama_pengurus");
-$pengkot_result = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'kota' ORDER BY nama_pengurus");
+$pengprov_result = $conn->query("SELECT id, nama FROM provinsi ORDER BY nama");
+$pengkot_result = $conn->query("SELECT id, nama FROM kota ORDER BY nama");
 
 $is_readonly = $_SESSION['role'] == 'user';
 
@@ -226,7 +288,7 @@ if ($print_mode) {
             ?>
             <tr>
                 <td><?php echo $no++; ?></td>
-                <td><?php echo $row['no_anggota']; ?></td>
+                <td><?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?></td>
                 <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
                 <td><?php echo $jk; ?></td>
                 <td><?php echo singkatTingkat($row['nama_tingkat'] ?? ''); ?></td>
@@ -587,11 +649,11 @@ if ($print_mode) {
                         <select name="filter_pengprov" id="filter_pengprov_anggota" onchange="updatePengKotAnggota()">
                             <option value="">-- Semua Pengurus Provinsi --</option>
                             <?php 
-                            $pengprov_all = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'provinsi' ORDER BY nama_pengurus");
+                            $pengprov_all = $conn->query("SELECT id, nama FROM provinsi ORDER BY nama");
                             while ($prov = $pengprov_all->fetch_assoc()): 
                             ?>
                                 <option value="<?php echo $prov['id']; ?>" <?php echo $filter_pengprov == $prov['id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($prov['nama_pengurus']); ?>
+                                    <?php echo htmlspecialchars($prov['nama']); ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
@@ -603,14 +665,14 @@ if ($print_mode) {
                             <option value="">-- Semua Pengurus Kota --</option>
                             <?php 
                             if ($filter_pengprov > 0) {
-                                $pengkot_filtered = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'kota' AND pengurus_induk_id = $filter_pengprov ORDER BY nama_pengurus");
+                                $pengkot_filtered = $conn->query("SELECT id, nama FROM kota WHERE provinsi_id = $filter_pengprov ORDER BY nama");
                             } else {
-                                $pengkot_filtered = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'kota' ORDER BY nama_pengurus");
+                                $pengkot_filtered = $conn->query("SELECT id, nama FROM kota ORDER BY nama");
                             }
                             while ($kota = $pengkot_filtered->fetch_assoc()): 
                             ?>
                                 <option value="<?php echo $kota['id']; ?>" <?php echo $filter_pengkot == $kota['id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($kota['nama_pengurus']); ?>
+                                    <?php echo htmlspecialchars($kota['nama']); ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
@@ -622,7 +684,7 @@ if ($print_mode) {
                             <option value="">-- Semua Unit / Ranting --</option>
                             <?php 
                             if ($filter_pengkot > 0) {
-                                $ranting_filtered = $conn->query("SELECT id, nama_ranting FROM ranting WHERE pengurus_kota_id = $filter_pengkot ORDER BY nama_ranting");
+                                $ranting_filtered = $conn->query("SELECT id, nama_ranting FROM ranting WHERE kota_id = $filter_pengkot ORDER BY nama_ranting");
                                 while ($rant = $ranting_filtered->fetch_assoc()): 
                                 ?>
                                     <option value="<?php echo $rant['id']; ?>" <?php echo $filter_ranting == $rant['id'] ? 'selected' : ''; ?>>
@@ -692,7 +754,7 @@ if ($print_mode) {
                 pengkotSelect.disabled = false;
                 
                 // Fetch pengkot yang ada di bawah pengprov ini
-                fetch('../../api/get_pengkot.php?pengprov_id=' + pengprovId)
+                fetch('../../api/get_kota.php?provinsi_id=' + pengprovId)
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -776,7 +838,7 @@ if ($print_mode) {
                     <tr>
                         <td>
                             <a href="anggota_detail.php?id=<?php echo $row['id']; ?>" class="data-link">
-                                <?php echo $row['no_anggota']; ?>
+                                <?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?>
                             </a>
                         </td>
                         <td>

@@ -89,18 +89,18 @@ class PermissionManager {
         // sama atau di bawah hierarchy user
         if ($target_ranting_id) {
             $ranting = $this->conn->query(
-                "SELECT pengurus_kota_id FROM ranting WHERE id = " . (int)$target_ranting_id
+                "SELECT kota_id FROM ranting WHERE id = " . (int)$target_ranting_id
             )->fetch_assoc();
             
             if (!$ranting) return false;
             
-            $target_pengurus_id = $ranting['pengurus_kota_id'];
+            $target_pengurus_id = $ranting['kota_id'];
         }
         
         // Check hierarchy berdasarkan role
         if ($this->role === 'pengprov') {
-            // PengProv bisa manage semua PengKot yang induknya dia
-            $sql = "SELECT id FROM pengurus WHERE pengurus_induk_id = ? AND jenis_pengurus = 'kota'";
+            // PengProv bisa manage semua kota yang id_provinsi-nya sama dengan province ini
+            $sql = "SELECT id FROM kota WHERE provinsi_id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $this->pengurus_id);
             $stmt->execute();
@@ -118,10 +118,10 @@ class PermissionManager {
             // PengKot hanya manage unit/ranting di bawahnya
             if ($target_ranting_id) {
                 $ranting = $this->conn->query(
-                    "SELECT pengurus_kota_id FROM ranting WHERE id = " . (int)$target_ranting_id
+                    "SELECT kota_id FROM ranting WHERE id = " . (int)$target_ranting_id
                 )->fetch_assoc();
                 
-                return $ranting && $ranting['pengurus_kota_id'] == $this->pengurus_id;
+                return $ranting && $ranting['kota_id'] == $this->pengurus_id;
             }
             return false;
         }

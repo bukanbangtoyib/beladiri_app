@@ -1,70 +1,9 @@
 <?php
-/**
- * Inisialisasi riwayat navigasi
- * Panggil fungsi ini di awal setiap halaman
- */
-function initNavigationHistory() {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    
-    $current_page = $_SERVER['REQUEST_URI'];
-    $current_page = parse_url($current_page, PHP_URL_PATH);
-    
-    // Inisialisasi riwayat jika belum ada
-    if (!isset($_SESSION['nav_history'])) {
-        $_SESSION['nav_history'] = [];
-    }
-    
-    // Hapus halaman saat ini dari riwayat jika sudah ada (untuk mencegah duplikat berurutan)
-    $history = $_SESSION['nav_history'];
-    if (!empty($history) && end($history) === $current_page) {
-        // Sudah di halaman ini, tidak perlu tambah lagi
-    } else {
-        // Tambah halaman ke riwayat
-        $_SESSION['nav_history'][] = $current_page;
-        
-        // Batasi riwayat maksimal 6 halaman (5 sebelumnya + saat ini)
-        if (count($_SESSION['nav_history']) > 6) {
-            array_shift($_SESSION['nav_history']);
-        }
-    }
-}
-
-/**
- * Function untuk auto-detect URL kembali berdasarkan nama file
- * @param string $current_file Nama file saat ini
- * @return string URL untuk kembali
- */
-function autoDetectBackUrl($current_file) {
-    // Hapus ekstensi .php
-    $filename = str_replace('.php', '', $current_file);
-    
-    // Pattern suffix yang menandakan halaman child
-    $suffixes = ['_detail', '_edit', '_tambah', '_buat', '_import', '_hapus', '_input', '_peserta'];
-    
-    foreach ($suffixes as $suffix) {
-        if (strpos($filename, $suffix) !== false) {
-            // Ambil bagian sebelum suffix (prefix)
-            $prefix = strtok($filename, '_');
-            
-            // Jika prefix adalah 2-3 huruf (seperti ukt, ppt, dkk), cari parent
-            if (preg_match('/^[a-z]+$/', $prefix)) {
-                // Prefix adalah kategori, parent adalah prefix + .php
-                return $prefix . '.php';
-            }
-            
-            // Untuk kasus seperti "ukt_detail_peserta", extract "ukt"
-            $parts = explode('_', $filename);
-            if (count($parts) >= 2) {
-                // Ambil kata pertama sebagai parent
-                return $parts[0] . '.php';
-            }
-        }
-    }
-    
-    // Default: kembali ke index.php
-    return '../../index.php';
+// Load settings for logo
+$logo_path = '';
+if (file_exists('../../config/settings.php')) {
+    include '../../config/settings.php';
+    $logo_path = $settings['logo'] ?? '';
 }
 
 /**
@@ -72,8 +11,11 @@ function autoDetectBackUrl($current_file) {
  * @param string $page_title Judul halaman saat ini
  */
 function renderNavbar($page_title) {
-    $current_file = basename($_SERVER['PHP_SELF']);
-    $back_url = autoDetectBackUrl($current_file);
+    global $logo_path;
+    
+    // Tentukan base path
+    $is_admin_page = strpos($_SERVER['PHP_SELF'], '/pages/admin/') !== false;
+    $base_path = $is_admin_page ? '../../' : './';
     
     $username = htmlspecialchars($_SESSION['nama'] ?? 'User');
     $role_label = isset($GLOBALS['permission_manager']) 
@@ -94,6 +36,9 @@ function renderNavbar($page_title) {
     ?>
     <div class="navbar">
         <div class="navbar-left">
+            <?php if (!empty($logo_path)): ?>
+                <img src="<?php echo $base_path . htmlspecialchars($logo_path); ?>" alt="Logo" class="navbar-logo">
+            <?php endif; ?>
             <h2><?php echo $page_title; ?></h2>
         </div>
         <div class="navbar-right">
@@ -102,14 +47,13 @@ function renderNavbar($page_title) {
                 <span class="user-role"><?php echo $role_display; ?></span>
             </div>
             <div class="navbar-buttons">                
-                <a href="../../index.php" class="btn-navbar" title="Home">
+                <a href="<?php echo $base_path; ?>index.php" class="btn-navbar" title="Home">
                     🏠 Home
                 </a>
-                <a href="<?php echo htmlspecialchars($back_url); ?>" 
-                   class="btn-navbar" title="Kembali ke halaman sebelumnya">
+                <a href="javascript:history.back()" class="btn-navbar" title="Kembali ke halaman sebelumnya">
                     ← Kembali
                 </a>
-                <a href="../../logout.php" class="btn-navbar btn-danger" title="Logout">
+                <a href="<?php echo $base_path; ?>logout.php" class="btn-navbar btn-danger" title="Logout">
                     🚪 Logout
                 </a>
             </div>
@@ -132,9 +76,21 @@ function renderNavbar($page_title) {
             z-index: 1000;
         }
         
+        .navbar-left {
+            display: flex;
+            align-items: center;
+        }
+        
         .navbar-left h2 {
             margin: 0;
             font-size: 22px;
+        }
+        
+        .navbar-logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+            margin-right: 12px;
         }
         
         .navbar-right {
@@ -198,6 +154,15 @@ function renderNavbar($page_title) {
             .navbar {
                 flex-direction: column;
                 padding: 15px 20px;
+            }
+            
+            .navbar-left {
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .navbar-logo {
+                height: 32px;
             }
             
             .navbar-left h2 {
@@ -223,6 +188,7 @@ function renderNavbar($page_title) {
  * @param string $page_title Judul halaman saat ini
  */
 function renderSimpleNavbar($page_title) {
+    global $logo_path;
     $username = htmlspecialchars($_SESSION['nama'] ?? 'User');
     $role_label = isset($GLOBALS['permission_manager']) 
         ? $GLOBALS['permission_manager']->getRoleName()
@@ -239,9 +205,16 @@ function renderSimpleNavbar($page_title) {
     
     $role_display = $role_map[$_SESSION['role'] ?? ''] ?? $role_label;
     
+    // Tentukan base path
+    $is_admin_page = strpos($_SERVER['PHP_SELF'], '/pages/admin/') !== false;
+    $base_path = $is_admin_page ? '../../' : './';
+    
     ?>
     <div class="navbar">
         <div class="navbar-left">
+            <?php if (!empty($logo_path)): ?>
+                <img src="<?php echo $base_path . htmlspecialchars($logo_path); ?>" alt="Logo" class="navbar-logo">
+            <?php endif; ?>
             <h2><?php echo $page_title; ?></h2>
         </div>
         <div class="navbar-right">
@@ -249,8 +222,11 @@ function renderSimpleNavbar($page_title) {
                 <span class="user-name"><?php echo $username; ?></span>
                 <span class="user-role"><?php echo $role_display; ?></span>
             </div>
-            <div class="navbar-buttons">                
-                <a href="../../logout.php" class="btn-navbar btn-danger" title="Logout">
+            <div class="navbar-buttons">
+                <a href="javascript:history.back()" class="btn-navbar" title="Kembali ke halaman sebelumnya">
+                    ← Kembali
+                </a>
+                <a href="<?php echo $base_path; ?>logout.php" class="btn-navbar btn-danger" title="Logout">
                     🚪 Logout
                 </a>
             </div>
@@ -273,9 +249,21 @@ function renderSimpleNavbar($page_title) {
             z-index: 1000;
         }
         
+        .navbar-left {
+            display: flex;
+            align-items: center;
+        }
+        
         .navbar-left h2 {
             margin: 0;
             font-size: 22px;
+        }
+        
+        .navbar-logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+            margin-right: 12px;
         }
         
         .navbar-right {
@@ -341,6 +329,15 @@ function renderSimpleNavbar($page_title) {
                 padding: 15px 20px;
             }
             
+            .navbar-left {
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .navbar-logo {
+                height: 32px;
+            }
+            
             .navbar-left h2 {
                 font-size: 18px;
             }
@@ -359,4 +356,3 @@ function renderSimpleNavbar($page_title) {
     <?php
 }
 ?>
-

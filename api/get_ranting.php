@@ -3,15 +3,19 @@ header('Content-Type: application/json');
 
 include '../config/database.php';
 
-$pengkot_id = isset($_GET['pengkot_id']) ? (int)$_GET['pengkot_id'] : 0;
+// Accept both pengkot_id (legacy) and kota_id
+$kota_id = isset($_GET['kota_id']) ? (int)$_GET['kota_id'] : 0;
+if ($kota_id === 0) {
+    $kota_id = isset($_GET['pengkot_id']) ? (int)$_GET['pengkot_id'] : 0;
+}
 
-if ($pengkot_id === 0) {
-    echo json_encode(['success' => false, 'message' => 'Invalid pengkot_id']);
+if ($kota_id === 0) {
+    echo json_encode(['success' => false, 'message' => 'Invalid kota_id']);
     exit();
 }
 
-// Query ranting yang berada di bawah pengkot yang dipilih
-$result = $conn->query("SELECT id, nama_ranting FROM ranting WHERE pengurus_kota_id = $pengkot_id ORDER BY nama_ranting");
+// Query ranting yang berada di bawah kota yang dipilih
+$result = $conn->query("SELECT id, nama_ranting, kode FROM ranting WHERE kota_id = $kota_id ORDER BY nama_ranting");
 
 $data = [];
 while ($row = $result->fetch_assoc()) {

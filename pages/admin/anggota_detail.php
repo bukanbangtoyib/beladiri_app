@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../config/settings.php';
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -27,12 +28,95 @@ if (!$permission_manager->can('anggota_read')) {
     die("❌ Akses ditolak!");
 }
 
+// Helper function untuk format no_anggota sesuai pengaturan
+function formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) {
+    if (empty($no_anggota)) return $no_anggota;
+    
+    // Try to parse the format
+    if (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = $matches[1];
+        $ranting_kode = $matches[2];
+        $year_seq = $matches[3];
+    } elseif (preg_match('/^([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = '';
+        $ranting_kode = $matches[1];
+        $year_seq = $matches[2];
+    } elseif (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = $matches[1];
+        $ranting_kode = $matches[2];
+        $year_seq = '';
+    } else {
+        return $no_anggota;
+    }
+    
+    $negara_kode = '';
+    $provinsi_kode = '';
+    $kota_kode = '';
+    
+    if (strlen($kode_full) >= 2) {
+        $negara_kode = substr($kode_full, 0, 2);
+    }
+    if (strlen($kode_full) >= 5) {
+        $provinsi_kode = substr($kode_full, 2, 3);
+    }
+    if (strlen($kode_full) >= 8) {
+        $kota_kode = substr($kode_full, 5, 3);
+    }
+    
+    $tahun = '';
+    $urutan = '';
+    if (strlen($year_seq) >= 4) {
+        $tahun = substr($year_seq, 0, 4);
+        $urutan = substr($year_seq, 4);
+    }
+    
+    $kode_parts = [];
+    if ($pengaturan_nomor['kode_negara'] ?? true) {
+        $kode_parts[] = $negara_kode;
+    }
+    if ($pengaturan_nomor['kode_provinsi'] ?? true) {
+        $kode_parts[] = $provinsi_kode;
+    }
+    if ($pengaturan_nomor['kode_kota'] ?? true) {
+        $kode_parts[] = $kota_kode;
+    }
+    $kode_str = implode('', $kode_parts);
+    
+    $ranting_str = '';
+    if ($pengaturan_nomor['kode_ranting'] ?? true) {
+        if (!empty($kode_str)) {
+            $ranting_str = '.' . $ranting_kode;
+        } else {
+            $ranting_str = $ranting_kode;
+        }
+    }
+    
+    $year_seq_str = '';
+    $year_part = ($pengaturan_nomor['tahun_daftar'] ?? true) ? $tahun : '';
+    $seq_part = ($pengaturan_nomor['urutan_daftar'] ?? true) ? $urutan : '';
+    
+    if (!empty($year_part) || !empty($seq_part)) {
+        if (!empty($kode_str) || !empty($ranting_str)) {
+            $year_seq_str = '-' . $year_part . $seq_part;
+        } else {
+            $year_seq_str = $year_part . $seq_part;
+        }
+    }
+    
+    return $kode_str . $ranting_str . $year_seq_str;
+}
+
 $id = (int)$_GET['id'];
 
-$sql = "SELECT a.*, t.nama_tingkat, t.urutan as urutan_tingkat, r.nama_ranting 
+$sql = "SELECT a.*, t.nama_tingkat, t.urutan as urutan_tingkat, r.nama_ranting, ra.nama_ranting as nama_ranting_awal,
+        n.nama as nama_negara, p.nama as nama_provinsi, k.nama as nama_kota
         FROM anggota a 
         LEFT JOIN tingkatan t ON a.tingkat_id = t.id 
         LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id 
+        LEFT JOIN ranting ra ON a.ranting_awal_id = ra.id 
+        LEFT JOIN kota k ON r.kota_id = k.id
+        LEFT JOIN provinsi p ON k.provinsi_id = p.id
+        LEFT JOIN negara n ON p.negara_id = n.id
         WHERE a.id = $id";
 
 $result = $conn->query($sql);
@@ -76,8 +160,36 @@ if ($ukt_terakhir_date === null && !empty($anggota['ukt_terakhir'])) {
     $ukt_terakhir_date = $anggota['ukt_terakhir'];
 }
 
-// Ambil data kerohanian [LAMA - TETAP SAMA]
-$kerohanian_sql = "SELECT * FROM kerohanian WHERE anggota_id = $id ORDER BY tanggal_pembukaan DESC";
+// Helper function untuk format tanggal yang aman
+function formatDateDisplay($date) {
+    if (empty($date) || $date === '0000-00-00' || $date === 'NULL') {
+        return null;
+    }
+    // Coba parse sebagai yyyy-mm-dd (MySQL format)
+    $timestamp = strtotime($date);
+    if ($timestamp !== false && $timestamp > 0) {
+        return date('d M Y', $timestamp);
+    }
+    // Coba parse sebagai dd/mm/yyyy
+    if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $date, $matches)) {
+        $timestamp = mktime(0, 0, 0, $matches[2], $matches[1], $matches[3]);
+        if ($timestamp !== false) {
+            return date('d M Y', $timestamp);
+        }
+    }
+    // Coba parse sebagai year saja
+    if (preg_match('/^(\d{4})$/', $date, $matches)) {
+        return $matches[1];
+    }
+    return null;
+}
+
+// Ambil data kerohanian
+$kerohanian_sql = "SELECT k.*, t_pembuka.nama_tingkat as tingkat_pembuka_nama 
+                    FROM kerohanian k 
+                    LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.id 
+                    WHERE k.anggota_id = $id 
+                    ORDER BY k.tanggal_pembukaan DESC";
 $kerohanian_result = $conn->query($kerohanian_sql);
 
 // Ambil data prestasi [BARU]
@@ -98,16 +210,29 @@ $birthDate = new DateTime($anggota['tanggal_lahir']);
 $today = new DateTime("today");
 $age = $birthDate->diff($today)->y;
 
-// Cari foto dengan berbagai kemungkinan nama file [LAMA - TETAP SAMA]
-function findPhotoFile($upload_dir, $no_anggota, $nama_lengkap) {
+// Cari foto dengan berbagai kemungkinan nama file [BARU - support format lama dan baru]
+function findPhotoFile($upload_dir, $no_anggota, $nama_lengkap, $ranting_saat_ini_id = null, $conn = null) {
     // Sanitasi nama lengkap
     $nama_clean = preg_replace("/[^a-z0-9 -]/i", "", $nama_lengkap);
     $nama_clean = str_replace(" ", "_", $nama_clean);
     
-    // Cari file dengan format NoAnggota_Nama.ext
-    $pattern = $upload_dir . preg_quote($no_anggota) . '_' . preg_quote($nama_clean) . '.*';
+    // Pertama, coba cari dengan format baru: ranting_nama_anggota.ext
+    if ($ranting_saat_ini_id && $conn) {
+        $ranting_id = (int)$ranting_saat_ini_id;
+        $rantingQuery = $conn->query("SELECT nama_ranting FROM ranting WHERE id = $ranting_id");
+        if ($ranting = $rantingQuery->fetch_assoc()) {
+            $ranting_clean = preg_replace("/[^a-z0-9 -]/i", "", $ranting['nama_ranting']);
+            $ranting_clean = str_replace(" ", "_", $ranting_clean);
+            $new_pattern = $upload_dir . preg_quote($ranting_clean) . '_' . preg_quote($nama_clean) . '.*';
+            $new_files = glob($new_pattern);
+            if (!empty($new_files)) {
+                return basename($new_files[0]); // Return nama file yang ditemukan
+            }
+        }
+    }
     
-    // Gunakan glob untuk cari file
+    // Kemudian, coba cari dengan format lama: NoAnggota_Nama.ext
+    $pattern = $upload_dir . preg_quote($no_anggota) . '_' . preg_quote($nama_clean) . '.*';
     $files = glob($pattern);
     
     if (!empty($files)) {
@@ -117,9 +242,9 @@ function findPhotoFile($upload_dir, $no_anggota, $nama_lengkap) {
     return null; // Tidak ada foto ditemukan
 }
 
-// Get foto path yang benar [LAMA - TETAP SAMA]
+// Get foto path yang benar [BARU - support format baru dan lama]
 $upload_dir = '../../uploads/foto_anggota/';
-$foto_filename = findPhotoFile($upload_dir, $anggota['no_anggota'], $anggota['nama_lengkap']);
+$foto_filename = findPhotoFile($upload_dir, $anggota['no_anggota'], $anggota['nama_lengkap'], $anggota['ranting_saat_ini_id'], $conn);
 $foto_path = null;
 
 if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
@@ -209,21 +334,6 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
             font-size: 12px;
             font-weight: 600;
             margin-top: 10px;
-        }
-        
-        .badge-murid {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .badge-pelatih {
-            background: #f3e5f5;
-            color: #7b1fa2;
-        }
-        
-        .badge-pelatih_unit {
-            background: #fff3e0;
-            color: #e65100;
         }
         
         .profile-info h2 {
@@ -439,15 +549,28 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
                 <?php else: ?>
                     <div class="no-photo">📷</div>
                 <?php endif; ?>
-                <div class="badge-status badge-<?php echo $anggota['jenis_anggota']; ?>">
-                    <?php echo strtoupper(str_replace('_', ' ', $anggota['jenis_anggota'])); ?>
+                <div class="badge-status" style="background:#0d6efd;color:#fff;font-weight:bold;">
+                    <?php 
+                    // Tampilkan nama jenis dari tabel jenis_anggota berdasarkan ID
+                    $jenis_id = isset($anggota['jenis_anggota']) ? (int)$anggota['jenis_anggota'] : 0;
+                    $jenis_check = $conn->query("SELECT nama_jenis FROM jenis_anggota WHERE id = " . $jenis_id);
+                    $jenis_nama = 'Tidak Diketahui';
+                    if ($jenis_check && $jenis_check->num_rows > 0) {
+                        $jenis_data = $jenis_check->fetch_assoc();
+                        $jenis_nama = $jenis_data['nama_jenis'];
+                    }
+                    echo htmlspecialchars(strtoupper(str_replace('_', ' ', $jenis_nama))); 
+                    ?>
                 </div>
             </div>
             
             <div class="profile-info">
                 <h2><?php echo htmlspecialchars($anggota['nama_lengkap']); ?></h2>
                 <div class="profile-subtitle">
-                    <strong>No Anggota:</strong> <?php echo $anggota['no_anggota']; ?>
+                    <strong>No Anggota  :</strong> <?php echo formatNoAnggotaDisplay($anggota['no_anggota'], $pengaturan_nomor); ?>
+                </div>
+                <div class="profile-subtitle" style="margin-top: 5px;">
+                    <strong>Regional    :</strong> <strong><?php echo htmlspecialchars(($anggota['nama_negara'] ?? '-') . ' / ' . ($anggota['nama_provinsi'] ?? '-') . ' / ' . ($anggota['nama_kota'] ?? '-')); ?></strong>
                 </div>
                 
                 <div class="info-section">
@@ -482,6 +605,20 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
                     </div>
                     
                     <div class="info-row">
+                        <div class="label">Unit/Ranting Awal</div>
+                        <div class="value">
+                            <?php if (!empty($anggota['nama_ranting_awal'])): ?>
+                                <a href="ranting_detail.php?id=<?php echo $anggota['ranting_awal_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                                    <?php echo htmlspecialchars($anggota['nama_ranting_awal']); ?> ↗
+                                </a>
+                            <?php elseif (!empty($anggota['ranting_awal_manual'])): ?>
+                                <?php echo htmlspecialchars($anggota['ranting_awal_manual']); ?>
+                            <?php else: echo '-';
+                            endif; ?>
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
                         <div class="label">Unit/Ranting Saat Ini</div>
                         <div class="value">
                             <?php if (!empty($anggota['nama_ranting'])): ?>
@@ -508,8 +645,9 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
                         <div class="label">UKT Terakhir</div>
                         <div class="value">
                             <?php 
-                            if ($ukt_terakhir_date) {
-                                echo date('d M Y', strtotime($ukt_terakhir_date));
+                            $ukt_display = formatDateDisplay($ukt_terakhir_date);
+                            if ($ukt_display) {
+                                echo htmlspecialchars($ukt_display);
                             } else {
                                 echo '-';
                             }
@@ -528,7 +666,7 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
                             ?>
                                 <span style="color: #27ae60; font-weight: 600; font-size: 15px;">✓ Aktif</span>
                             <?php else: ?>
-                                <span style="color: #e74c3c; font-weight: 600; font-size: 15px;">✗ Tidak Aktif</span>
+                                <span style="color: #e74c3c; font-weight: 600; font-size: 15px;">✗ Non Aktif</span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -555,7 +693,94 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
         </div>
         <?php endif; ?>
         
-        <!-- Sertifikat UKT [BARU - SERTIFIKAT] -->
+        <!-- Statistik UKT -->
+        <?php
+        $ukt_result->data_seek(0);
+        $total_ukt = $ukt_result->num_rows;
+        $lulus_count = 0;
+        $tidak_lulus_count = 0;
+        
+        $ukt_result->data_seek(0);
+        while ($row = $ukt_result->fetch_assoc()) {
+            if ($row['status'] == 'lulus') $lulus_count++;
+            if ($row['status'] == 'tidak_lulus') $tidak_lulus_count++;
+        }
+        ?>
+        
+        <!-- 1. Riwayat Ujian Kenaikan Tingkat (UKT) -->
+        <div class="section">
+            <h3>🏆 Riwayat Ujian Kenaikan Tingkat (UKT)</h3>
+            
+            <?php if ($total_ukt > 0): ?>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $total_ukt; ?></div>
+                    <div class="stat-label">Total UKT Diikuti</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #27ae60;"><?php echo $lulus_count; ?></div>
+                    <div class="stat-label">Lulus</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #e74c3c;"><?php echo $tidak_lulus_count; ?></div>
+                    <div class="stat-label">Tidak Lulus</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal Pelaksanaan</th>
+                        <th>Dari Tingkat</th>
+                        <th>Ke Tingkat</th>
+                        <th>Nilai</th>
+                        <th>Status</th>
+                        <th>Lokasi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $ukt_result->data_seek(0);
+                    while ($row = $ukt_result->fetch_assoc()): 
+                    ?>
+                    <tr>
+                        <td><strong><?php echo date('d M Y', strtotime($row['tanggal_pelaksanaan'])); ?></strong></td>
+                        <td><?php echo $row['tingkat_dari'] ?? '-'; ?></td>
+                        <td><?php echo $row['tingkat_ke'] ?? '-'; ?></td>
+                        <td>
+                            <?php if (!empty($row['id'])): ?>
+                                <a href="ukt_detail_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $row['ukt_id']; ?>" title="Lihat Detail Nilai">
+                                    <?php echo isset($row['rata_rata']) ? number_format($row['rata_rata'], 2) : '-'; ?>
+                                </a>
+                            <?php else: ?>
+                                <?php echo isset($row['rata_rata']) ? number_format($row['rata_rata'], 2) : '-'; ?>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php 
+                            if ($row['status'] == 'lulus') {
+                                echo '<span class="status-lulus">✓ LULUS</span>';
+                            } else if ($row['status'] == 'tidak_lulus') {
+                                echo '<span class="status-tidak_lulus">✗ TIDAK LULUS</span>';
+                            } else {
+                                echo '<span class="status-peserta">• PESERTA</span>';
+                            }
+                            ?>
+                        </td>
+                        <td><?php echo $row['lokasi'] ?? '-'; ?></td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+            <?php else: ?>
+            <div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <p>Belum ada riwayat UKT</p>
+            </div>
+            <?php endif; ?>
+        </div>
+        
+        <!-- 2. Sertifikat Kelulusan UKT -->
         <div class="section">
             <h3>📜 Sertifikat Kelulusan UKT</h3>
             
@@ -603,6 +828,7 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
             <?php endif; ?>
         </div>
         
+        <!-- 3. Prestasi yang Diraih -->
         <div class="section">
             <h3>🏆 Prestasi yang Diraih</h3>
             
@@ -637,86 +863,7 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
             <?php endif; ?>
         </div>
         
-        <!-- Statistik UKT [LAMA - TETAP SAMA] -->
-        <?php
-        $ukt_result->data_seek(0);
-        $total_ukt = $ukt_result->num_rows;
-        $lulus_count = 0;
-        $tidak_lulus_count = 0;
-        
-        $ukt_result->data_seek(0);
-        while ($row = $ukt_result->fetch_assoc()) {
-            if ($row['status'] == 'lulus') $lulus_count++;
-            if ($row['status'] == 'tidak_lulus') $tidak_lulus_count++;
-        }
-        ?>
-        
-        <!-- Riwayat UKT [LAMA - TETAP SAMA] -->
-        <div class="section">
-            <h3>🏆 Riwayat Ujian Kenaikan Tingkat (UKT)</h3>
-            
-            <?php if ($total_ukt > 0): ?>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo $total_ukt; ?></div>
-                    <div class="stat-label">Total UKT Diikuti</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" style="color: #27ae60;"><?php echo $lulus_count; ?></div>
-                    <div class="stat-label">Lulus</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" style="color: #e74c3c;"><?php echo $tidak_lulus_count; ?></div>
-                    <div class="stat-label">Tidak Lulus</div>
-                </div>
-            </div>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal Pelaksanaan</th>
-                        <th>Dari Tingkat</th>
-                        <th>Ke Tingkat</th>
-                        <th>Nilai</th>
-                        <th>Status</th>
-                        <th>Lokasi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $ukt_result->data_seek(0);
-                    while ($row = $ukt_result->fetch_assoc()): 
-                    ?>
-                    <tr>
-                        <td><strong><?php echo date('d M Y', strtotime($row['tanggal_pelaksanaan'])); ?></strong></td>
-                        <td><?php echo $row['tingkat_dari'] ?? '-'; ?></td>
-                        <td><?php echo $row['tingkat_ke'] ?? '-'; ?></td>
-                        <td><?php echo $row['nilai'] ?? '-'; ?></td>
-                        <td>
-                            <?php 
-                            if ($row['status'] == 'lulus') {
-                                echo '<span class="status-lulus">✓ LULUS</span>';
-                            } else if ($row['status'] == 'tidak_lulus') {
-                                echo '<span class="status-tidak_lulus">✗ TIDAK LULUS</span>';
-                            } else {
-                                echo '<span class="status-peserta">• PESERTA</span>';
-                            }
-                            ?>
-                        </td>
-                        <td><?php echo $row['lokasi'] ?? '-'; ?></td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="empty-state">
-                <div class="empty-state-icon">📝</div>
-                <p>Belum ada riwayat UKT</p>
-            </div>
-            <?php endif; ?>
-        </div>
-        
-        <!-- Data Kerohanian [LAMA - TETAP SAMA] -->
+        <!-- 4. Riwayat Pembukaan Kerohanian -->
         <div class="section">
             <h3>🙏 Riwayat Pembukaan Kerohanian</h3>
             
@@ -727,25 +874,16 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
                         <th>Tanggal Pembukaan</th>
                         <th>Lokasi</th>
                         <th>Pembuka</th>
-                        <th>Unit/Ranting</th>
+                        <th>Tingkat Pembuka</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($row = $kerohanian_result->fetch_assoc()): 
-                        $ranting_name = '';
-                        if ($row['ranting_id']) {
-                            $r_result = $conn->query("SELECT nama_ranting FROM ranting WHERE id = " . $row['ranting_id']);
-                            if ($r_result->num_rows > 0) {
-                                $r_data = $r_result->fetch_assoc();
-                                $ranting_name = $r_data['nama_ranting'];
-                            }
-                        }
-                    ?>
+                    <?php while ($row = $kerohanian_result->fetch_assoc()): ?>
                     <tr>
-                        <td><strong><?php echo date('d M Y', strtotime($row['tanggal_pembukaan'])); ?></strong></td>
+                        <td><strong><a href="kerohanian.php" title="Lihat Semua Kerohanian"><?php echo date('d M Y', strtotime($row['tanggal_pembukaan'])); ?></a></strong></td>
                         <td><?php echo htmlspecialchars($row['lokasi']); ?></td>
                         <td><?php echo htmlspecialchars($row['pembuka_nama']); ?></td>
-                        <td><?php echo $ranting_name; ?></td>
+                        <td><?php echo htmlspecialchars($row['tingkat_pembuka_nama'] ?? '-'); ?></td>
                     </tr>
                     <?php endwhile; ?>
                 </tbody>

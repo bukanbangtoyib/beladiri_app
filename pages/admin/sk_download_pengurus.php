@@ -16,10 +16,16 @@ if (!isset($_GET['file']) || !isset($_GET['id'])) {
 $filename = basename($_GET['file']); // Security: remove any path traversal
 $pengurus_id = (int)$_GET['id'];
 
-// Verify pengurus exists
-$check = $conn->query("SELECT id FROM pengurus WHERE id = $pengurus_id");
+// Verify exists in negara/provinsi/kota
+$check = $conn->query("SELECT id FROM kota WHERE id = $pengurus_id");
 if ($check->num_rows == 0) {
-    die("Pengurus tidak ditemukan!");
+    $check = $conn->query("SELECT id FROM provinsi WHERE id = $pengurus_id");
+}
+if ($check->num_rows == 0) {
+    $check = $conn->query("SELECT id FROM negara WHERE id = $pengurus_id");
+}
+if ($check->num_rows == 0) {
+    die("Data tidak ditemukan!");
 }
 
 $upload_dir = '../../uploads/sk_pengurus/';

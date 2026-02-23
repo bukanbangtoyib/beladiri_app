@@ -13,6 +13,7 @@ if ($_SESSION['role'] != 'admin') {
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../config/settings.php';
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -41,6 +42,105 @@ function sanitize_name($name) {
     return $name;
 }
 
+// Helper function untuk format no_anggota sesuai pengaturan
+function formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) {
+    // Parse no_anggota format: NNPPPKKK.RRR-YYYYXXX or variations
+    // We need to extract components and rebuild based on settings
+    
+    // Default: return as-is if can't parse
+    if (empty($no_anggota)) return $no_anggota;
+    
+    // Try to parse the format
+    // Pattern: alphanumeric.alphanumeric-alphanumeric or variations
+    $parts = [];
+    
+    // Check if it contains dot and dash (full format)
+    // Allow alphanumeric characters for kode (e.g., "ID" for Indonesia)
+    if (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        // Format: NNNNNNNN.RRR-YYYYXXX
+        $kode_full = $matches[1]; // NNPPPKKK or similar
+        $ranting_kode = $matches[2]; // RRR
+        $year_seq = $matches[3]; // YYYYXXX
+    } elseif (preg_match('/^([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        // Format: RRR-YYYYXXX (no leading kode)
+        $kode_full = '';
+        $ranting_kode = $matches[1];
+        $year_seq = $matches[2];
+    } elseif (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        // Format: NNNNNNNN.RRR (no year/seq)
+        $kode_full = $matches[1];
+        $ranting_kode = $matches[2];
+        $year_seq = '';
+    } else {
+        // Just return as-is for other formats
+        return $no_anggota;
+    }
+    
+    // Extract kode components (assume 2+3+3 = 8 chars max)
+    $negara_kode = '';
+    $provinsi_kode = '';
+    $kota_kode = '';
+    
+    if (strlen($kode_full) >= 2) {
+        $negara_kode = substr($kode_full, 0, 2);
+    }
+    if (strlen($kode_full) >= 5) {
+        $provinsi_kode = substr($kode_full, 2, 3);
+    }
+    if (strlen($kode_full) >= 8) {
+        $kota_kode = substr($kode_full, 5, 3);
+    }
+    
+    // Extract year and sequence
+    $tahun = '';
+    $urutan = '';
+    if (strlen($year_seq) >= 4) {
+        $tahun = substr($year_seq, 0, 4);
+        $urutan = substr($year_seq, 4);
+    }
+    
+    // Rebuild based on settings
+    $result_parts = [];
+    
+    // Kode parts (negara, provinsi, kota) - combined without separator
+    $kode_parts = [];
+    if ($pengaturan_nomor['kode_negara'] ?? true) {
+        $kode_parts[] = $negara_kode;
+    }
+    if ($pengaturan_nomor['kode_provinsi'] ?? true) {
+        $kode_parts[] = $provinsi_kode;
+    }
+    if ($pengaturan_nomor['kode_kota'] ?? true) {
+        $kode_parts[] = $kota_kode;
+    }
+    $kode_str = implode('', $kode_parts);
+    
+    // Ranting
+    $ranting_str = '';
+    if ($pengaturan_nomor['kode_ranting'] ?? true) {
+        if (!empty($kode_str)) {
+            $ranting_str = '.' . $ranting_kode;
+        } else {
+            $ranting_str = $ranting_kode;
+        }
+    }
+    
+    // Year and sequence
+    $year_seq_str = '';
+    $year_part = ($pengaturan_nomor['tahun_daftar'] ?? true) ? $tahun : '';
+    $seq_part = ($pengaturan_nomor['urutan_daftar'] ?? true) ? $urutan : '';
+    
+    if (!empty($year_part) || !empty($seq_part)) {
+        if (!empty($kode_str) || !empty($ranting_str)) {
+            $year_seq_str = '-' . $year_part . $seq_part;
+        } else {
+            $year_seq_str = $year_part . $seq_part;
+        }
+    }
+    
+    return $kode_str . $ranting_str . $year_seq_str;
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $no_anggota = $conn->real_escape_string($_POST['no_anggota']);
     $nama_lengkap = $conn->real_escape_string($_POST['nama_lengkap']);
@@ -48,14 +148,55 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $tanggal_lahir = $_POST['tanggal_lahir'];
     $jenis_kelamin = $_POST['jenis_kelamin'];
     $ranting_awal_id = !empty($_POST['ranting_awal_id']) ? (int)$_POST['ranting_awal_id'] : NULL;
+    $ranting_awal_manual = $conn->real_escape_string($_POST['ranting_awal_manual'] ?? '');
     $ranting_saat_ini_id = !empty($_POST['ranting_saat_ini_id']) ? (int)$_POST['ranting_saat_ini_id'] : NULL;
     $tingkat_id = !empty($_POST['tingkat_id']) ? (int)$_POST['tingkat_id'] : NULL;
     $jenis_anggota = $_POST['jenis_anggota'];
     $tahun_bergabung = !empty($_POST['tahun_bergabung']) ? (int)$_POST['tahun_bergabung'] : NULL;
     $no_handphone = $conn->real_escape_string($_POST['no_handphone'] ?? '');
-    $ukt_terakhir = $_POST['ukt_terakhir'] ?? '';
     
-    // Handle foto upload - SIMPAN KE FOLDER DENGAN FORMAT NoAnggota_Nama.ext
+    // Convert dd/mm/yyyy to yyyy-mm-dd for MySQL
+    $ukt_terakhir = $_POST['ukt_terakhir'] ?? '';
+    if (!empty($ukt_terakhir)) {
+        $ukt_terakhir = trim($ukt_terakhir);
+        // If only year (4 digits), convert to 02/07/YYYY
+        if (preg_match('/^\d{4}$/', $ukt_terakhir)) {
+            $ukt_terakhir = '02/07/' . $ukt_terakhir;
+        }
+        // Convert dd/mm/yyyy to yyyy-mm-dd for MySQL
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $ukt_terakhir, $matches)) {
+            $ukt_terakhir = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
+        }
+    } else {
+        $ukt_terakhir = NULL;
+    }
+    
+    // Generate no_anggota server-side
+    if (empty($no_anggota) && !empty($ranting_awal_id) && !empty($tahun_bergabung)) {
+        // Get ranting info to find kota, provinsi, negara
+        $rantingQuery = $conn->query("SELECT r.kode as ranting_kode, k.kode as kota_kode, k.provinsi_id, p.kode as prov_kode, p.negara_id, n.kode as negara_kode 
+            FROM ranting r 
+            JOIN kota k ON r.kota_id = k.id 
+            JOIN provinsi p ON k.provinsi_id = p.id 
+            JOIN negara n ON p.negara_id = n.id 
+            WHERE r.id = $ranting_awal_id");
+        if ($ranting = $rantingQuery->fetch_assoc()) {
+            $negara_kode = str_pad($ranting['negara_kode'] ?? '0', 2, '0', STR_PAD_LEFT);
+            $prov_kode = str_pad($ranting['prov_kode'] ?? '0', 3, '0', STR_PAD_LEFT);
+            $kota_kode = str_pad($ranting['kota_kode'] ?? '0', 3, '0', STR_PAD_LEFT);
+            $ranting_kode = str_pad($ranting['ranting_kode'] ?? '0', 3, '0', STR_PAD_LEFT);
+            
+            // Get next sequence for the year
+            $seqQuery = $conn->query("SELECT MAX(CAST(RIGHT(no_anggota, 3) AS UNSIGNED)) as max_urut FROM anggota WHERE no_anggota LIKE '%-" . $tahun_bergabung . "%'");
+            $max_urut = ($seq = $seqQuery->fetch_assoc()) ? (int)($seq['max_urut'] ?? 0) : 0;
+            $next_urut = $max_urut + 1;
+            $urut_kode = str_pad($next_urut, 3, '0', STR_PAD_LEFT);
+            
+            $no_anggota = $negara_kode . $prov_kode . $kota_kode . '.' . $ranting_kode . '-' . $tahun_bergabung . $urut_kode;
+        }
+    }
+    
+    // Handle foto upload - SIMPAN KE FOLDER DENGAN FORMAT ranting_nama_anggota.ext
     $foto_path = NULL;
     
     if (isset($_FILES['foto']) && $_FILES['foto']['size'] > 0) {
@@ -74,10 +215,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 mkdir($upload_dir, 0755, true);
             }
             
-            // Format nama file: NoAnggota_NamaLengkap.ext
-            // Contoh: AGT-2024-001_Budi_Santoso.jpg
+            // Dapatkan nama ranting
+            $ranting_name = '';
+            $ranting_id_for_photo = !empty($ranting_saat_ini_id) ? $ranting_saat_ini_id : $ranting_awal_id;
+            if (!empty($ranting_id_for_photo)) {
+                $rantingQuery = $conn->query("SELECT nama_ranting FROM ranting WHERE id = " . (int)$ranting_id_for_photo);
+                if ($ranting = $rantingQuery->fetch_assoc()) {
+                    $ranting_name = sanitize_name($ranting['nama_ranting']) . '_';
+                }
+            }
+            
+            // Format nama file: ranting_nama_anggota.ext
+            // Contoh: Tenggilis_Budi_Santoso.jpg
             $nama_clean = sanitize_name($nama_lengkap);
-            $file_name = $no_anggota . '_' . $nama_clean . '.' . $file_ext;
+            $file_name = $ranting_name . $nama_clean . '.' . $file_ext;
             $file_path = $upload_dir . $file_name;
             
             if (move_uploaded_file($file['tmp_name'], $file_path)) {
@@ -89,34 +240,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     if (!$error) {
-        // Cek no anggota sudah ada
-        $check = $conn->query("SELECT id FROM anggota WHERE no_anggota = '$no_anggota'");
-        if ($check->num_rows > 0) {
-            $error = "No Anggota sudah terdaftar!";
-        } else {
+        // Cek no anggota sudah ada (hanya jika tidak kosong)
+        if (!empty($no_anggota)) {
+            $check = $conn->query("SELECT id FROM anggota WHERE no_anggota = '$no_anggota'");
+            if ($check->num_rows > 0) {
+                $error = "No Anggota sudah terdaftar!";
+            }
+        }
+        
+        // Lanjutkan ke INSERT jika tidak ada error
+        if (!$error) {
             $sql = "INSERT INTO anggota (
                 no_anggota, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin,
-                ranting_awal_id, ranting_saat_ini_id, tingkat_id, jenis_anggota,
+                ranting_awal_id, ranting_awal_manual, ranting_saat_ini_id, tingkat_id, jenis_anggota,
                 tahun_bergabung, no_handphone, ukt_terakhir, nama_foto
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $conn->prepare($sql);
             
             if ($stmt) {
-                // Total 13 parameter
-                $stmt->bind_param("sssssiiiisiss", 
+                // Total 14 parameter
+                $stmt->bind_param("ssssssssssssss", 
                     $no_anggota,           // s
                     $nama_lengkap,         // s
                     $tempat_lahir,         // s
                     $tanggal_lahir,        // s
                     $jenis_kelamin,        // s
-                    $ranting_awal_id,      // i
-                    $ranting_saat_ini_id,  // i
-                    $tingkat_id,           // i
+                    $ranting_awal_id,      // s
+                    $ranting_awal_manual,  // s
+                    $ranting_saat_ini_id,  // s
+                    $tingkat_id,           // s
                     $jenis_anggota,        // s
-                    $tahun_bergabung,      // i [BARU]
-                    $no_handphone,         // s [BARU]
-                    $ukt_terakhir,         // s [LAMA]
+                    $tahun_bergabung,      // s
+                    $no_handphone,         // s
+                    $ukt_terakhir,         // s
                     $foto_path             // s
                 );
                 
@@ -153,10 +310,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-$ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY nama_ranting");
+$ranting_result = $conn->query("SELECT id, nama_ranting, kode FROM ranting ORDER BY nama_ranting");
 $tingkatan_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY urutan");
-?>
 
+// Get data for cascade filter
+$negara_result = $conn->query("SELECT id, nama, kode FROM negara ORDER BY nama");
+$provinsi_result = $conn->query("SELECT id, nama, kode, negara_id FROM provinsi ORDER BY nama");
+$kota_result = $conn->query("SELECT id, nama, kode, provinsi_id FROM kota ORDER BY nama");
+$jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY id");
+
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -460,14 +623,161 @@ $tingkatan_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER B
             <?php endif; ?>
             
             <form method="POST" enctype="multipart/form-data">
-                <!-- Bagian 1: Data Pribadi -->
+                <!-- Bagian 1: Data Organisasi -->
+                <h3>🏢 Data Organisasi</h3>
+                
+                <!-- Cascade Filter: Negara -> Provinsi -> Kota -> Ranting -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Negara</label>
+                        <select name="filter_negara" id="filter_negara" onchange="updateProvinsiForm()">
+                            <option value="">-- Pilih Negara --</option>
+                            <?php 
+                            $negara_result->data_seek(0);
+                            while ($row = $negara_result->fetch_assoc()): 
+                            ?>
+                                <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama']); ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Kode Negara</label>
+                        <input type="text" id="kode_negara_display" readonly placeholder="-">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Provinsi</label>
+                        <select name="filter_provinsi" id="filter_provinsi" onchange="updateKotaForm()" disabled>
+                            <option value="">-- Pilih Provinsi --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Kode Provinsi</label>
+                        <input type="text" id="kode_provinsi_display" readonly placeholder="-">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Kota/Kabupaten</label>
+                        <select name="filter_kota" id="filter_kota" onchange="updateRantingForm()" disabled>
+                            <option value="">-- Pilih Kota --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Kode Kota</label>
+                        <input type="text" id="kode_kota_display" readonly placeholder="-">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Unit/Ranting Saat Ini <span class="required">*</span></label>
+                        <select name="ranting_saat_ini_id" id="ranting_saat_ini_id" required onchange="updateRantingKode()">
+                            <option value="">-- Pilih Ranting --</option>
+                            <?php 
+                            $ranting_result->data_seek(0);
+                            while ($row = $ranting_result->fetch_assoc()): 
+                            ?>
+                                <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama_ranting']); ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Kode Ranting</label>
+                        <input type="text" id="kode_ranting_display" readonly placeholder="-">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Unit/Ranting Awal Masuk <span class="required">*</span></label>
+                    
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="ranting_database" name="ranting_awal_pilihan" value="database" checked onchange="toggleRantingAwal()">
+                            <label for="ranting_database">Pilih dari Database</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="ranting_manual" name="ranting_awal_pilihan" value="manual" onchange="toggleRantingAwal()">
+                            <label for="ranting_manual">Input Manual</label>
+                        </div>
+                    </div>
+                    
+                    <div id="ranting_awal_select" class="form-group">
+                        <select name="ranting_awal_id">
+                            <option value="">-- Pilih Unit/Ranting --</option>
+                            <?php 
+                            $ranting_result->data_seek(0);
+                            while ($row = $ranting_result->fetch_assoc()): 
+                            ?>
+                                <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama_ranting']); ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                        <div class="form-hint">Pilih Unit/Ranting yang tersedia di database</div>
+                    </div>
+                    
+                    <div id="ranting_awal_manual" class="conditional-field">
+                        <input type="text" name="ranting_awal_manual" placeholder="Masukkan nama Unit/Ranting">
+                        <div class="form-hint">Masukkan nama Unit/Ranting secara manual</div>
+                    </div>
+                </div>
+                
+                <div class="form-row">                                       
+                    <div class="form-group">
+                        <label>Tingkat <span class="required">*</span></label>
+                        <select name="tingkat_id" required>
+                            <option value="">-- Pilih Tingkat --</option>
+                            <?php while ($row = $tingkatan_result->fetch_assoc()): ?>
+                                <option value="<?php echo $row['id']; ?>">
+                                    <?php echo htmlspecialchars($row['nama_tingkat']); ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                        <div class="form-hint">Pilih dari 13 tingkatan resmi</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Jenis Anggota <span class="required">*</span></label>
+                        <select name="jenis_anggota" required>
+                            <option value="">-- Pilih Jenis Anggota --</option>
+                            <?php
+                            if ($jenis_result && $jenis_result->num_rows > 0) {
+                                $jenis_result->data_seek(0);
+                                while ($row = $jenis_result->fetch_assoc()) {
+                                    echo '<option value="' . htmlspecialchars($row['id']) . '">' . htmlspecialchars($row['nama_jenis']) . '</option>';
+                                }
+                            }
+                            ?>
+                        </select>
+                        <div class="form-hint">Tentukan status anggota</div>
+                    </div>                    
+                </div>
+                
+                <div class="form-row">                    
+                    <div class="form-group">
+                        <label>Tahun Bergabung <span class="required">*</span></label>
+                        <input type="number" name="tahun_bergabung" min="1900" max="2100" required placeholder="Contoh: 2024">
+                        <div class="form-hint">Tahun anggota bergabung</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>UKT Terakhir</label>
+                        <input type="text" name="ukt_terakhir" placeholder="Format: dd/mm/yyyy atau yyyy">
+                        <div class="form-hint">Format: 15/07/2024 atau 2024</div>
+                    </div>
+                </div>                
+                
+                <hr>
+                
+                <!-- Bagian 2: Data Pribadi -->
                 <h3>📋 Data Pribadi</h3>
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label>No Anggota <span class="required">*</span></label>
-                        <input type="text" name="no_anggota" required placeholder="Contoh: AGT-2024-001">
-                        <div class="form-hint">Format unik untuk setiap anggota</div>
+                        <input type="text" id="no_anggota_display" readonly style="background-color: #e0e0e0;" placeholder="Otomatis生成">
+                        <input type="hidden" name="no_anggota" id="no_anggota">
+                        <div class="form-hint">No Anggota akan otomatis dibuat setelah memilih Unit/Ranting dan Tahun Bergabung. Format mengikuti pengaturan sistem.</div>
                     </div>
                     
                     <div class="form-group">
@@ -500,7 +810,7 @@ $tingkatan_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER B
 
                     <div class="form-group">
                         <label>No. Handphone</label>
-                        <input type="tel" name="no_handphone" placeholder="Contoh: 08xxxxxxxxxx">
+                        <input type="tel" name="no_handphone" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Contoh: 08xxxxxxxxxx">
                         <div class="form-hint">Nomor telepon yang dapat dihubungi</div>
                     </div>
                 </div>
@@ -515,99 +825,6 @@ $tingkatan_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER B
                 
                 <hr>
                 
-                <!-- Bagian 2: Data Organisasi -->
-                <h3>🏢 Data Organisasi</h3>
-                
-                <div class="form-group">
-                    <label>Unit/Ranting Awal Masuk <span class="required">*</span></label>
-                    
-                    <div class="radio-group">
-                        <div class="radio-option">
-                            <input type="radio" id="ranting_database" name="ranting_awal_pilihan" value="database" checked onchange="toggleRantingAwal()">
-                            <label for="ranting_database">Pilih dari Database</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="ranting_manual" name="ranting_awal_pilihan" value="manual" onchange="toggleRantingAwal()">
-                            <label for="ranting_manual">Input Manual</label>
-                        </div>
-                    </div>
-                    
-                    <div id="ranting_awal_select" class="form-group">
-                        <select name="ranting_awal_id">
-                            <option value="">-- Pilih Unit/Ranting --</option>
-                            <?php 
-                            $ranting_result->data_seek(0);
-                            while ($row = $ranting_result->fetch_assoc()): 
-                            ?>
-                                <option value="<?php echo $row['id']; ?>"><?php echo htmlspecialchars($row['nama_ranting']); ?></option>
-                            <?php endwhile; ?>
-                        </select>
-                        <div class="form-hint">Pilih Unit/Ranting yang tersedia di database</div>
-                    </div>
-                    
-                    <div id="ranting_awal_manual" class="conditional-field">
-                        <input type="text" name="ranting_awal_manual" placeholder="Masukkan nama Unit/Ranting">
-                        <div class="form-hint">Masukkan nama Unit/Ranting secara manual</div>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Unit/Ranting Saat Ini <span class="required">*</span></label>
-                        <select name="ranting_saat_ini_id" required>
-                            <option value="">-- Pilih Unit/Ranting Saat Ini --</option>
-                            <?php 
-                            $ranting_result->data_seek(0);
-                            while ($row = $ranting_result->fetch_assoc()): 
-                            ?>
-                                <option value="<?php echo $row['id']; ?>"><?php echo htmlspecialchars($row['nama_ranting']); ?></option>
-                            <?php endwhile; ?>
-                        </select>
-                        <div class="form-hint">Unit/Ranting dimana anggota saat ini berlatih</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Tingkat <span class="required">*</span></label>
-                        <select name="tingkat_id" required>
-                            <option value="">-- Pilih Tingkat --</option>
-                            <?php while ($row = $tingkatan_result->fetch_assoc()): ?>
-                                <option value="<?php echo $row['id']; ?>">
-                                    <?php echo htmlspecialchars($row['nama_tingkat']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                        <div class="form-hint">Pilih dari 13 tingkatan resmi</div>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Jenis Anggota <span class="required">*</span></label>
-                        <select name="jenis_anggota" required>
-                            <option value="">-- Pilih Jenis Anggota --</option>
-                            <option value="murid">Murid</option>
-                            <option value="pelatih">Pelatih</option>
-                            <option value="pelatih_unit">Pelatih Unit/Ranting</option>
-                        </select>
-                        <div class="form-hint">Tentukan status anggota</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Tahun Bergabung</label>
-                        <input type="number" name="tahun_bergabung" min="1900" max="2100" placeholder="Contoh: 2024">
-                        <div class="form-hint">Tahun anggota bergabung</div>
-                    </div>
-                </div>
-                
-                <div class="form-row">                                   
-                    <div class="form-group">
-                        <label>UKT Terakhir</label>
-                        <input type="text" name="ukt_terakhir" placeholder="Format: dd/mm/yyyy atau yyyy">
-                        <div class="form-hint">Format: 15/07/2024 atau 2024</div>
-                    </div>
-                </div>
-                
-                <hr>
                 
                 <!-- Bagian 3: Prestasi yang Diraih [BARU] -->
                 <h3>🏆 Prestasi yang Diraih (Opsional)</h3>
@@ -664,6 +881,278 @@ $tingkatan_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER B
     </div>
     
     <script>
+        // Cascade functions for Negara -> Provinsi -> Kota -> Ranting
+        function updateProvinsiForm() {
+            const negaraSelect = document.getElementById('filter_negara');
+            const provinsiSelect = document.getElementById('filter_provinsi');
+            const kotaSelect = document.getElementById('filter_kota');
+            const rantingSelect = document.getElementById('ranting_awal_select').querySelector('select');
+            const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id');
+            
+            const negaraId = negaraSelect.value;
+            
+            // Reset dropdowns
+            provinsiSelect.innerHTML = '<option value="">-- Pilih Provinsi --</option>';
+            kotaSelect.innerHTML = '<option value="">-- Pilih Kota --</option>';
+            
+            // Reset kode displays
+            document.getElementById('kode_negara_display').value = '';
+            document.getElementById('kode_provinsi_display').value = '';
+            document.getElementById('kode_kota_display').value = '';
+            document.getElementById('kode_ranting_display').value = '';
+            
+            // Reset ranting dropdowns
+            if (rantingSelect) rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
+            if (rantingSaatIniSelect) rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
+            
+            if (negaraId === '') {
+                provinsiSelect.disabled = true;
+                kotaSelect.disabled = true;
+                return;
+            }
+            
+            // Show negara kode
+            const negaraOption = negaraSelect.options[negaraSelect.selectedIndex];
+            const negaraKode = negaraOption.getAttribute('data-kode') || '';
+            document.getElementById('kode_negara_display').value = negaraKode;
+            
+            provinsiSelect.disabled = false;
+            
+            // Fetch provinces by negara
+            fetch('../../api/manage_provinsi.php?action=get_by_negara&id_negara=' + negaraId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        data.data.forEach(prov => {
+                            const option = document.createElement('option');
+                            option.value = prov.id;
+                            option.textContent = (prov.kode || '000') + ' - ' + prov.nama;
+                            option.setAttribute('data-kode', prov.kode || '000');
+                            provinsiSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        
+        function updateKotaForm() {
+            const provinsiSelect = document.getElementById('filter_provinsi');
+            const kotaSelect = document.getElementById('filter_kota');
+            const rantingSelect = document.getElementById('ranting_awal_select').querySelector('select');
+            const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id');
+            
+            const provinsiId = provinsiSelect.value;
+            
+            // Reset dropdown
+            kotaSelect.innerHTML = '<option value="">-- Pilih Kota --</option>';
+            
+            // Reset kode displays
+            document.getElementById('kode_provinsi_display').value = '';
+            document.getElementById('kode_kota_display').value = '';
+            document.getElementById('kode_ranting_display').value = '';
+            
+            // Reset ranting dropdowns
+            if (rantingSelect) rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
+            if (rantingSaatIniSelect) rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
+            
+            if (provinsiId === '') {
+                kotaSelect.disabled = true;
+                return;
+            }
+            
+            // Show province kode
+            const provOption = provinsiSelect.options[provinsiSelect.selectedIndex];
+            const provKode = provOption.getAttribute('data-kode') || '';
+            document.getElementById('kode_provinsi_display').value = provKode;
+            
+            kotaSelect.disabled = false;
+            
+            // Fetch cities by province
+            fetch('../../api/manage_kota.php?action=get_by_provinsi&provinsi_id=' + provinsiId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        data.data.forEach(kota => {
+                            const option = document.createElement('option');
+                            option.value = kota.id;
+                            option.textContent = (kota.kode || '000') + ' - ' + kota.nama;
+                            option.setAttribute('data-kode', kota.kode || '000');
+                            kotaSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        
+        function updateRantingForm() {
+            const kotaSelect = document.getElementById('filter_kota');
+            const rantingSelect = document.getElementById('ranting_awal_select').querySelector('select');
+            const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id');
+            
+            const kotaId = kotaSelect.value;
+            
+            // Reset ranting dropdowns
+            rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
+            if (rantingSaatIniSelect) {
+                rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
+            }
+            
+            // Reset kode displays
+            document.getElementById('kode_kota_display').value = '';
+            document.getElementById('kode_ranting_display').value = '';
+            
+            // Reset no anggota when kota changes
+            document.getElementById('no_anggota').value = '';
+            
+            if (kotaId === '') {
+                return;
+            }
+            
+            // Show kota kode
+            const kotaOption = kotaSelect.options[kotaSelect.selectedIndex];
+            const kotaKode = kotaOption.getAttribute('data-kode') || '';
+            document.getElementById('kode_kota_display').value = kotaKode;
+            
+            // Fetch ranting by kota
+            fetch('../../api/get_ranting.php?kota_id=' + kotaId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        data.data.forEach(ranting => {
+                            const rantingKode = ranting.kode || '001';
+                            const rantingText = rantingKode + ' - ' + ranting.nama_ranting;
+                            
+                            const option1 = document.createElement('option');
+                            option1.value = ranting.id;
+                            option1.textContent = rantingText;
+                            option1.setAttribute('data-kode', rantingKode);
+                            rantingSelect.appendChild(option1);
+                            
+                            if (rantingSaatIniSelect) {
+                                const option2 = document.createElement('option');
+                                option2.value = ranting.id;
+                                option2.textContent = rantingText;
+                                option2.setAttribute('data-kode', rantingKode);
+                                rantingSaatIniSelect.appendChild(option2);
+                            }
+                        });
+                        
+                        // Trigger generate no anggota after options are populated
+                        if (typeof generateNoAnggota === 'function') {
+                            generateNoAnggota();
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        
+        // Function to update ranting kode display
+        function updateRantingKode() {
+            const rantingSelect = document.getElementById('ranting_saat_ini_id');
+            const rantingId = rantingSelect.value;
+            
+            if (rantingId === '') {
+                document.getElementById('kode_ranting_display').value = '';
+                return;
+            }
+            
+            const rantingOption = rantingSelect.options[rantingSelect.selectedIndex];
+            const rantingKode = rantingOption.getAttribute('data-kode') || '';
+            document.getElementById('kode_ranting_display').value = rantingKode;
+            
+            // Trigger generate no anggota
+            if (typeof generateNoAnggota === 'function') {
+                generateNoAnggota();
+            }
+        }
+        
+        // Function to generate No Anggota
+        function generateNoAnggota() {
+            const negaraSelect = document.getElementById('filter_negara');
+            const provinsiSelect = document.getElementById('filter_provinsi');
+            const kotaSelect = document.getElementById('filter_kota');
+            const rantingSelect = document.getElementById('ranting_awal_select').querySelector('select');
+            const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id');
+            const tahunInput = document.querySelector('input[name="tahun_bergabung"]');
+            const noAnggotaInput = document.getElementById('no_anggota');
+            
+            const negaraId = negaraSelect ? negaraSelect.value : '';
+            const provinsiId = provinsiSelect ? provinsiSelect.value : '';
+            const kotaId = kotaSelect ? kotaSelect.value : '';
+            
+            // Use ranting_awal_id if selected, otherwise use ranting_saat_ini_id
+            let rantingId = rantingSelect ? rantingSelect.value : '';
+            if (!rantingId && rantingSaatIniSelect) {
+                rantingId = rantingSaatIniSelect.value;
+            }
+            
+            const tahun = tahunInput ? tahunInput.value : new Date().getFullYear();
+            
+            // Debug log
+            console.log('Generating no anggota:', { negaraId, provinsiId, kotaId, rantingId, tahun });
+            
+            // Need all required fields to generate no anggota
+            if (!negaraId || !provinsiId || !kotaId || !rantingId || !tahun) {
+                console.log('Missing required fields for no anggota');
+                return;
+            }
+            
+            // Call API to generate no anggota
+            fetch('../../api/generate_no_anggota.php?negara_id=' + negaraId 
+                + '&provinsi_id=' + provinsiId 
+                + '&kota_id=' + kotaId 
+                + '&ranting_id=' + rantingId 
+                + '&tahun=' + tahun)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('API Response:', data);
+                    if (data.success) {
+                        // Use display format for showing, full format for hidden field
+                        document.getElementById('no_anggota_display').value = data.no_anggota_display || data.no_anggota;
+                        document.getElementById('no_anggota').value = data.no_anggota;
+                    } else {
+                        console.error('Error:', data.message);
+                    }
+                })
+                .catch(error => console.error('Error generating no anggota:', error));
+        }
+        
+        // Add event listener to ranting dropdown after it's loaded
+        function setupRantingListener() {
+            const rantingSelect = document.getElementById('ranting_awal_select').querySelector('select');
+            const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id');
+            const tahunInput = document.querySelector('input[name="tahun_bergabung"]');
+            
+            if (rantingSelect) {
+                rantingSelect.addEventListener('change', generateNoAnggota);
+            }
+            
+            if (rantingSaatIniSelect) {
+                rantingSaatIniSelect.addEventListener('change', generateNoAnggota);
+            }
+            
+            if (tahunInput) {
+                tahunInput.addEventListener('change', generateNoAnggota);
+                tahunInput.addEventListener('input', function() {
+                    // Also generate when user types 4 digits (complete year)
+                    if (this.value.length === 4) {
+                        generateNoAnggota();
+                    }
+                });
+            }
+            
+            // Also trigger on radio button change
+            const radioButtons = document.querySelectorAll('input[name="ranting_awal_pilihan"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', generateNoAnggota);
+            });
+        }
+        
+        // Setup listeners on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(setupRantingListener, 500);
+        });
+        
         function toggleRantingAwal() {
             const databaseOption = document.getElementById('ranting_database');
             const selectField = document.getElementById('ranting_awal_select');

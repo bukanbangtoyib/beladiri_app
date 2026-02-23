@@ -28,61 +28,117 @@ if (!$permission_manager->can('anggota_read')) {
 }
 
 $id = (int)$_GET['id'];
+$jenis = isset($_GET['jenis']) ? $_GET['jenis'] : 'pusat';
+if (!in_array($jenis, ['pusat', 'provinsi', 'kota'])) {
+    $jenis = 'pusat';
+}
+
 $error = '';
 $success = '';
 
-$result = $conn->query("SELECT * FROM pengurus WHERE id = $id");
+// Map jenis to table
+$table_map = [
+    'pusat' => ['table' => 'negara', 'label' => 'Negara', 'id_col' => 'id'],
+    'provinsi' => ['table' => 'provinsi', 'label' => 'Provinsi', 'id_col' => 'id'],
+    'kota' => ['table' => 'kota', 'label' => 'Kota/Kabupaten', 'id_col' => 'id']
+];
+
+$table_info = $table_map[$jenis];
+$table_name = $table_info['table'];
+$label_jenis = $table_info['label'];
+
+// Get data from appropriate table based on jenis
+$result = $conn->query("SELECT * FROM $table_name WHERE id = $id");
 if ($result->num_rows == 0) {
-    die("Pengurus tidak ditemukan!");
+    die("$label_jenis tidak ditemukan!");
 }
 
 $pengurus = $result->fetch_assoc();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $nama_pengurus = $conn->real_escape_string($_POST['nama_pengurus']);
+    $nama = $conn->real_escape_string($_POST['nama']);
+    $kode = $conn->real_escape_string($_POST['kode']);
     $ketua_nama = $conn->real_escape_string($_POST['ketua_nama']);
     $sk_kepengurusan = $conn->real_escape_string($_POST['sk_kepengurusan']);
     $periode_mulai = $_POST['periode_mulai'];
     $periode_akhir = $_POST['periode_akhir'];
     $alamat = $conn->real_escape_string($_POST['alamat']);
-    $pengurus_induk_id = $_POST['pengurus_induk_id'] ?: NULL;
     
-    $sql = "UPDATE pengurus SET 
-            nama_pengurus = ?, ketua_nama = ?, sk_kepengurusan = ?,
-            periode_mulai = ?, periode_akhir = ?, alamat_sekretariat = ?,
-            pengurus_induk_id = ?
-            WHERE id = ?";
+    // Handle id_negara for provinces and id_provinsi for kota
+    $id_negara = NULL;
+    $id_provinsi = NULL;
     
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssssssii", $nama_pengurus, $ketua_nama, $sk_kepengurusan,
-                     $periode_mulai, $periode_akhir, $alamat, $pengurus_induk_id, $id);
+    if ($jenis == 'provinsi' && isset($_POST['id_negara'])) {
+        $id_negara = (int)$_POST['id_negara'];
+    } elseif ($jenis == 'kota') {
+        $id_provinsi = (int)$_POST['id_provinsi'];
+        if (isset($_POST['id_negara'])) {
+            $id_negara = (int)$_POST['id_negara'];
+        }
+    }
+    
+    // Build UPDATE query based on jenis
+    if ($jenis == 'pusat') {
+        $sql = "UPDATE $table_name SET 
+                nama = ?, kode = ?, sk_kepengurusan = ?,
+                periode_mulai = ?, periode_akhir = ?, alamat_sekretariat = ?
+                WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssssssi", $nama, $kode, $sk_kepengurusan,
+                         $periode_mulai, $periode_akhir, $alamat, $id);
+    } elseif ($jenis == 'provinsi') {
+        $sql = "UPDATE $table_name SET 
+                nama = ?, kode = ?, id_negara = ?, sk_kepengurusan = ?,
+                periode_mulai = ?, periode_akhir = ?, alamat_sekretariat = ?
+                WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssisssi", $nama, $kode, $id_negara, $sk_kepengurusan,
+                         $periode_mulai, $periode_akhir, $alamat, $id);
+    } else { // kota
+        $sql = "UPDATE $table_name SET 
+                nama = ?, kode = ?, id_negara = ?, id_provinsi = ?, sk_kepengurusan = ?,
+                periode_mulai = ?, periode_akhir = ?, alamat_sekretariat = ?
+                WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssiiisssi", $nama, $kode, $id_negara, $id_provinsi, $sk_kepengurusan,
+                         $periode_mulai, $periode_akhir, $alamat, $id);
+    }
     
     if ($stmt->execute()) {
         $success = "Data berhasil diupdate!";
-        header("refresh:2;url=pengurus_detail.php?id=$id");
+        header("refresh:2;url=pengurus_list.php?jenis=$jenis");
     } else {
         $error = "Error: " . $stmt->error;
     }
 }
 
-// Ambil pengurus induk
-$pengurus_induk = [];
-if ($pengurus['jenis_pengurus'] == 'provinsi') {
-    $result = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'pusat' ORDER BY nama_pengurus");
+// Ambil daftar untuk dropdown
+$negara_list = [];
+$negara_result = $conn->query("SELECT id, kode, nama FROM negara ORDER BY nama");
+while ($row = $negara_result->fetch_assoc()) {
+    $negara_list[] = $row;
+}
+
+// Ambil daftar provinsi (untuk dropdown)
+$provinsi_list = [];
+$provinsi_result = $conn->query("SELECT id, negara_id, nama, kode FROM provinsi ORDER BY nama");
+while ($row = $provinsi_result->fetch_assoc()) {
+    $provinsi_list[] = $row;
+}
+
+// Ambil provinsi induk (untuk dropdown pada kota)
+$provinsi_induk = [];
+if ($jenis == 'kota') {
+    $result = $conn->query("SELECT id, nama FROM provinsi ORDER BY nama");
     while ($row = $result->fetch_assoc()) {
-        $pengurus_induk[] = $row;
-    }
-} elseif ($pengurus['jenis_pengurus'] == 'kota') {
-    $result = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'provinsi' ORDER BY nama_pengurus");
-    while ($row = $result->fetch_assoc()) {
-        $pengurus_induk[] = $row;
+        $provinsi_induk[] = $row;
     }
 }
 
-$label_jenis = [
-    'pusat' => 'Pengurus Pusat',
-    'provinsi' => 'Pengurus Provinsi',
-    'kota' => 'Pengurus Kota'
+$label_jenis_text = [
+    'pusat' => 'Negara',
+    'provinsi' => 'Provinsi',
+    'kota' => 'Kota/Kabupaten'
 ];
 ?>
 
@@ -91,7 +147,7 @@ $label_jenis = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit <?php echo $label_jenis[$pengurus['jenis_pengurus']]; ?> - Sistem Beladiri</title>
+    <title>Edit <?php echo $label_jenis_text[$jenis]; ?> - Sistem Beladiri</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; }
@@ -174,11 +230,11 @@ $label_jenis = [
     </style>
 </head>
 <body>
-    <?php renderNavbar('📋 Detail ' . $label_jenis[$pengurus['jenis_pengurus']]); ?>    
+    <?php renderNavbar('📋 Edit ' . $label_jenis_text[$jenis]); ?>    
     
     <div class="container">
         <div class="form-container">
-            <h1>Edit Data <?php echo $label_jenis[$pengurus['jenis_pengurus']]; ?></h1>
+            <h1>Edit Data <?php echo $label_jenis_text[$jenis]; ?></h1>
             
             <?php if ($error): ?>
                 <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
@@ -189,23 +245,126 @@ $label_jenis = [
             <?php endif; ?>
             
             <form method="POST">
-                <div class="form-group">
-                    <label>Nama <?php echo $label_jenis[$pengurus['jenis_pengurus']]; ?> <span class="required">*</span></label>
-                    <input type="text" name="nama_pengurus" value="<?php echo htmlspecialchars($pengurus['nama_pengurus']); ?>" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nama <?php echo $label_jenis_text[$jenis]; ?> <span class="required">*</span></label>
+                        <input type="text" name="nama" value="<?php echo htmlspecialchars($pengurus['nama']); ?>" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Kode <span class="required">*</span></label>
+                        <input type="text" name="kode" value="<?php echo htmlspecialchars($pengurus['kode']); ?>" required>
+                    </div>
                 </div>
                 
-                <?php if (count($pengurus_induk) > 0): ?>
-                <div class="form-group">
-                    <label><?php echo $pengurus['jenis_pengurus'] == 'provinsi' ? 'Pengurus Pusat yang Menaungi' : 'Pengurus Provinsi yang Menaungi'; ?> <span class="required">*</span></label>
-                    <select name="pengurus_induk_id" required>
-                        <option value="">-- Pilih --</option>
-                        <?php foreach ($pengurus_induk as $p): ?>
-                            <option value="<?php echo $p['id']; ?>" <?php echo $pengurus['pengurus_induk_id'] == $p['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($p['nama_pengurus']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                <?php if (count($negara_list) > 0 && $jenis == 'provinsi'): ?>
+                <div class="form-row">
+                    <div class="form-group" style="flex:2;">
+                        <label>Negara <span class="required">*</span></label>
+                        <select name="id_negara" id="negara_select" onchange="updateNegaraKode()" required>
+                            <option value="">-- Pilih Negara --</option>
+                            <?php foreach ($negara_list as $n): ?>
+                                <option value="<?php echo $n['id']; ?>" data-kode="<?php echo $n['kode']; ?>" <?php echo ($pengurus['negara_id'] ?? 0) == $n['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($n['nama']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Kode Negara</label>
+                        <input type="text" id="kode_negara" value="<?php echo htmlspecialchars(($pengurus['negara_id'] ?? 0) ? $negara_list[array_search($pengurus['negara_id'], array_column($negara_list, 'id'))]['kode'] ?? '' : ''); ?>" readonly>
+                    </div>
                 </div>
+                <?php endif; ?>
+                
+                <script>
+                function updateNegaraKode() {
+                    const select = document.getElementById('negara_select');
+                    const option = select.options[select.selectedIndex];
+                    const kodeInput = document.getElementById('kode_negara');
+                    kodeInput.value = option.dataset.kode || '';
+                }
+                // Initialize on page load
+                document.addEventListener('DOMContentLoaded', updateNegaraKode);
+                </script>
+                
+                <?php if (count($provinsi_induk) > 0 && $jenis == 'kota'): ?>
+                <div class="form-row">
+                    <div class="form-group" style="flex:2;">
+                        <label>Negara <span class="required">*</span></label>
+                        <select name="id_negara" id="negara_select_kota" onchange="updateProvinsiForKota()" required>
+                            <option value="">-- Pilih Negara --</option>
+                            <?php foreach ($negara_list as $n): ?>
+                                <option value="<?php echo $n['id']; ?>" data-kode="<?php echo $n['kode']; ?>" <?php echo ($pengurus['negara_id'] ?? 0) == $n['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($n['nama']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Kode Negara</label>
+                        <input type="text" id="kode_negara_kota" value="<?php echo htmlspecialchars(($pengurus['negara_id'] ?? 0) ? $negara_list[array_search($pengurus['negara_id'], array_column($negara_list, 'id'))]['kode'] ?? '' : ''); ?>" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="flex:2;">
+                        <label>Provinsi <span class="required">*</span></label>
+                        <select name="id_provinsi" id="provinsi_select_kota" required>
+                            <option value="">-- Pilih Provinsi --</option>
+                            <?php foreach ($provinsi_list as $p): ?>
+                                <option value="<?php echo $p['id']; ?>" data-id_negara="<?php echo $p['negara_id']; ?>" data-kode="<?php echo $p['kode']; ?>" <?php echo ($pengurus['provinsi_id'] ?? 0) == $p['id'] ? 'selected' : ''; ?> style="<?php echo ($p['negara_id'] ?? 0) != ($pengurus['negara_id'] ?? 0) ? 'display:none;' : ''; ?>">
+                                    <?php echo htmlspecialchars($p['nama']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Kode</label>
+                        <input type="text" id="kode_provinsi_kota" value="<?php echo htmlspecialchars(($pengurus['provinsi_id'] ?? 0) ? $provinsi_list[array_search($pengurus['provinsi_id'], array_column($provinsi_list, 'id'))]['kode'] ?? '' : ''); ?>" readonly>
+                    </div>
+                </div>
+                
+                <script>
+                function updateProvinsiForKota() {
+                    const negaraSelect = document.getElementById('negara_select_kota');
+                    const provinsiSelect = document.getElementById('provinsi_select_kota');
+                    const kodeNegaraInput = document.getElementById('kode_negara_kota');
+                    
+                    const negaraId = negaraSelect.value;
+                    const negaraOption = negaraSelect.options[negaraSelect.selectedIndex];
+                    
+                    // Update kode negara
+                    kodeNegaraInput.value = negaraOption.dataset.kode || '';
+                    
+                    // Show/hide provinces based on selected negara
+                    Array.from(provinsiSelect.options).forEach(option => {
+                        if (option.value === '') {
+                            option.style.display = 'block';
+                        } else if (option.dataset.id_negara === negaraId) {
+                            option.style.display = 'block';
+                        } else {
+                            option.style.display = 'none';
+                        }
+                    });
+                    
+                    // Reset province selection if not matching
+                    const selectedProvinsi = provinsiSelect.options[provinsiSelect.selectedIndex];
+                    if (selectedProvinsi && selectedProvinsi.value !== '' && selectedProvinsi.dataset.id_negara !== negaraId) {
+                        provinsiSelect.value = '';
+                        document.getElementById('kode_provinsi_kota').value = '';
+                    }
+                }
+                
+                // Province change handler
+                document.getElementById('provinsi_select_kota').addEventListener('change', function() {
+                    const option = this.options[this.selectedIndex];
+                    document.getElementById('kode_provinsi_kota').value = option.dataset.kode || '';
+                });
+                
+                // Initialize on page load
+                document.addEventListener('DOMContentLoaded', updateProvinsiForKota);
+                </script>
                 <?php endif; ?>
                 
                 <div class="form-row">
@@ -223,12 +382,12 @@ $label_jenis = [
                 <div class="form-row">
                     <div class="form-group">
                         <label>Periode Mulai <span class="required">*</span></label>
-                        <input type="date" name="periode_mulai" value="<?php echo $pengurus['periode_mulai']; ?>" required>
+                        <input type="date" name="periode_mulai" value="<?php echo $pengurus['periode_mulai'] ?? ''; ?>" required>
                     </div>
                     
                     <div class="form-group">
                         <label>Periode Akhir <span class="required">*</span></label>
-                        <input type="date" name="periode_akhir" value="<?php echo $pengurus['periode_akhir']; ?>" required>
+                        <input type="date" name="periode_akhir" value="<?php echo $pengurus['periode_akhir'] ?? ''; ?>" required>
                     </div>
                 </div>
                 
@@ -241,7 +400,7 @@ $label_jenis = [
                 
                 <div class="button-group">
                     <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
-                    <a href="pengurus_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Batal</a>
+                    <a href="pengurus_list.php?jenis=<?php echo $jenis; ?>" class="btn btn-secondary">Batal</a>
                 </div>
             </form>
         </div>

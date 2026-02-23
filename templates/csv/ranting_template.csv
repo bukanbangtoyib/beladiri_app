@@ -1,0 +1,5 @@
+negara_kode,provinsi_kode,kota_kode,nama_ranting,jenis,tanggal_sk,no_sk,alamat,ketua_nama,pj_teknik,no_kontak
+ID,001,001,SMP 1,unit,01/01/2024,001/SK/2024,"Jl. Contoh No. 1, Surabaya",Widodo,Gatot,081234567890
+ID,001,001,Gubeng,ranting,15/06/2015,002/SK/2015,"Jl. Gubeng No. 10, Surabaya",Firman,Firman,089654789632
+ID,002,001,Jakarta Pusat,unit,20/05/2020,003/SK/2020,"Jl. Jakarta Pusat No. 5",H. Budi,H. Budi,081234567891
+MY,001,001,Kuala Lumpur,ranting,10/03/2018,004/SK/2018,"Jl. KL No. 25",Ahmad,Ahmad,60123456789

@@ -30,9 +30,9 @@ if (!$permission_manager->can('anggota_read')) {
 $id = (int)$_GET['id'];
 
 // Ambil data UKT
-$ukt_result = $conn->query("SELECT u.*, p.nama_pengurus as nama_penyelenggara 
+$ukt_result = $conn->query("SELECT u.*, p.nama as nama_penyelenggara 
                             FROM ukt u 
-                            LEFT JOIN pengurus p ON u.penyelenggara_id = p.id 
+                            LEFT JOIN kota p ON u.penyelenggara_id = p.id 
                             WHERE u.id = $id");
 if ($ukt_result->num_rows == 0) {
     die("UKT tidak ditemukan!");

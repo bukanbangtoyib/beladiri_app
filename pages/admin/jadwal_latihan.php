@@ -29,8 +29,10 @@ if (!$permission_manager->can('anggota_read')) {
 
 // Ambil filter dari GET
 $ranting_id = isset($_GET['ranting_id']) ? (int)$_GET['ranting_id'] : 0;
-$filter_pengprov = isset($_GET['filter_pengprov']) ? (int)$_GET['filter_pengprov'] : 0;
-$filter_pengkot = isset($_GET['filter_pengkot']) ? (int)$_GET['filter_pengkot'] : 0;
+$filter_negara = isset($_GET['filter_negara']) ? (int)$_GET['filter_negara'] : 0;
+$filter_provinsi = isset($_GET['filter_provinsi']) ? (int)$_GET['filter_provinsi'] : 0;
+$filter_kota = isset($_GET['filter_kota']) ? (int)$_GET['filter_kota'] : 0;
+$filter_hari = isset($_GET['filter_hari']) ? $_GET['filter_hari'] : '';
 $error = '';
 $success = '';
 
@@ -63,37 +65,77 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Ambil daftar pengurus provinsi
-$pengprov_result = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'provinsi' ORDER BY nama_pengurus");
+// Ambil daftar negara
+$negara_result = $conn->query("SELECT id, nama FROM negara ORDER BY nama");
 
-// Ambil daftar pengurus kota berdasarkan filter pengprov
-$pengkot_result = null;
-$ranting_result = null;
-
-if ($filter_pengprov > 0) {
-    // Query pengkot yang berada di bawah pengprov yang dipilih
-    $pengkot_result = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'kota' AND pengurus_induk_id = $filter_pengprov ORDER BY nama_pengurus");
-    
-    // Query ranting berdasarkan filter pengkot
-    if ($filter_pengkot > 0) {
-        $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting WHERE pengurus_kota_id = $filter_pengkot ORDER BY nama_ranting");
-    }
+// Ambil daftar provinsi berdasarkan negara
+$provinsi_result = null;
+if ($filter_negara > 0) {
+    $provinsi_result = $conn->query("SELECT id, nama, negara_id FROM provinsi WHERE negara_id = $filter_negara ORDER BY nama");
 } else {
-    // Jika tidak ada pengprov yang dipilih, tampilkan semua pengkot
-    $pengkot_result = $conn->query("SELECT id, nama_pengurus FROM pengurus WHERE jenis_pengurus = 'kota' ORDER BY nama_pengurus");
+    $provinsi_result = $conn->query("SELECT id, nama, negara_id FROM provinsi ORDER BY nama");
 }
 
-// Jika tidak ada ranting result, buat query kosong
-if (!$ranting_result) {
-    $ranting_result = new stdClass();
-    $ranting_result->num_rows = 0;
+// Ambil daftar kota berdasarkan provinsi
+$kota_result = null;
+if ($filter_provinsi > 0) {
+    $kota_result = $conn->query("SELECT id, nama, provinsi_id FROM kota WHERE provinsi_id = $filter_provinsi ORDER BY nama");
+} elseif ($filter_negara > 0) {
+    // Get cities from all provinces in the selected country
+    $kota_result = $conn->query("SELECT k.id, k.nama, k.provinsi_id FROM kota k 
+        LEFT JOIN provinsi p ON k.provinsi_id = p.id 
+        WHERE p.negara_id = $filter_negara ORDER BY k.nama");
+} else {
+    $kota_result = $conn->query("SELECT id, nama, provinsi_id FROM kota ORDER BY nama");
 }
 
-// Ambil jadwal untuk ranting yang dipilih
+// Ambil daftar ranting berdasarkan kota
+$ranting_result = null;
+if ($filter_kota > 0) {
+    $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting WHERE kota_id = $filter_kota ORDER BY nama_ranting");
+} elseif ($filter_provinsi > 0) {
+    // Get ranting from all cities in the selected province
+    $ranting_result = $conn->query("SELECT r.id, r.nama_ranting FROM ranting r
+        LEFT JOIN kota k ON r.kota_id = k.id
+        WHERE k.provinsi_id = $filter_provinsi ORDER BY r.nama_ranting");
+} elseif ($filter_negara > 0) {
+    // Get ranting from all cities in the selected country
+    $ranting_result = $conn->query("SELECT r.id, r.nama_ranting FROM ranting r
+        LEFT JOIN kota k ON r.kota_id = k.id
+        LEFT JOIN provinsi p ON k.provinsi_id = p.id
+        WHERE p.negara_id = $filter_negara ORDER BY r.nama_ranting");
+} else {
+    $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY nama_ranting");
+}
+
+// Ambil jadwal dengan filter
 $jadwal_result = null;
+$jadwal_where = [];
+
+// Join dengan ranting, kota, provinsi, dan negara untuk filter cascade
+$join_clause = "FROM jadwal_latihan j 
+    LEFT JOIN ranting r ON j.ranting_id = r.id 
+    LEFT JOIN kota k ON r.kota_id = k.id 
+    LEFT JOIN provinsi prov ON k.provinsi_id = prov.id";
+
 if ($ranting_id > 0) {
-    $jadwal_result = $conn->query("SELECT * FROM jadwal_latihan WHERE ranting_id = $ranting_id ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu')");
+    $jadwal_where[] = "j.ranting_id = $ranting_id";
 }
+if ($filter_kota > 0) {
+    $jadwal_where[] = "r.kota_id = $filter_kota";
+}
+if ($filter_provinsi > 0) {
+    $jadwal_where[] = "k.provinsi_id = $filter_provinsi";
+}
+if ($filter_negara > 0) {
+    $jadwal_where[] = "prov.negara_id = $filter_negara";
+}
+if ($filter_hari) {
+    $jadwal_where[] = "j.hari = '" . $conn->real_escape_string($filter_hari) . "'";
+}
+
+$where_clause = count($jadwal_where) > 0 ? "WHERE " . implode(" AND ", $jadwal_where) : "";
+$jadwal_result = $conn->query("SELECT j.*, r.nama_ranting $join_clause $where_clause ORDER BY FIELD(j.hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), j.jam_mulai");
 
 $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 $is_readonly = $_SESSION['role'] == 'tamu';
@@ -237,43 +279,43 @@ $is_readonly = $_SESSION['role'] == 'tamu';
         
         <!-- Filter Section -->
         <div class="card">
-            <h3>🔍 Filter Unit/Ranting (Cascade)</h3>
+            <h3>🔍 Filter Jadwal Latihan (Cascade)</h3>
             
             <div class="info-text">
-                <strong>ℹ️ Cara Menggunakan:</strong> Pilih Pengurus Provinsi terlebih dahulu, lalu Pengurus Kota/Kabupaten akan menampilkan list yang ada di bawahnya, kemudian pilih Unit/Ranting.
+                <strong>ℹ️ Cara Menggunakan:</strong> Pilih Negara terlebih dahulu, lalu Provinsi akan menampilkan list yang ada di bawahnya, kemudian Kota, dan terakhir Unit/Ranting.
             </div>
             
             <form method="GET" style="margin-bottom: 20px;">
                 <div class="filter-section">
                     <div class="filter-row">
-                        <!-- Filter 1: Pengurus Provinsi -->
+                        <!-- Filter 1: Negara -->
                         <div class="form-group">
-                            <label for="filter_pengprov">📍 Pengurus Provinsi</label>
-                            <select name="filter_pengprov" id="filter_pengprov" onchange="updatePengKot()">
-                                <option value="">-- Pilih Pengurus Provinsi --</option>
+                            <label for="filter_negara">🌍 Negara</label>
+                            <select name="filter_negara" id="filter_negara" onchange="updateProvinsi()">
+                                <option value="">-- Pilih Negara --</option>
                                 <?php 
-                                $pengprov_result->data_seek(0);
-                                while ($row = $pengprov_result->fetch_assoc()): 
+                                $negara_result->data_seek(0);
+                                while ($row = $negara_result->fetch_assoc()): 
                                 ?>
-                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_pengprov == $row['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($row['nama_pengurus']); ?>
+                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_negara == $row['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($row['nama']); ?>
                                     </option>
                                 <?php endwhile; ?>
                             </select>
                         </div>
 
-                        <!-- Filter 2: Pengurus Kota -->
+                        <!-- Filter 2: Provinsi -->
                         <div class="form-group">
-                            <label for="filter_pengkot">🏛️ Pengurus Kota / Kabupaten</label>
-                            <select name="filter_pengkot" id="filter_pengkot" onchange="updateRanting()" <?php echo $filter_pengprov == 0 ? 'disabled' : ''; ?>>
-                                <option value="">-- Pilih Pengurus Kota --</option>
+                            <label for="filter_provinsi">📍 Provinsi</label>
+                            <select name="filter_provinsi" id="filter_provinsi" onchange="updateKota()" <?php echo $filter_negara == 0 ? 'disabled' : ''; ?>>
+                                <option value="">-- Pilih Provinsi --</option>
                                 <?php 
-                                if ($pengkot_result) {
-                                    $pengkot_result->data_seek(0);
-                                    while ($row = $pengkot_result->fetch_assoc()): 
+                                if ($provinsi_result) {
+                                    $provinsi_result->data_seek(0);
+                                    while ($row = $provinsi_result->fetch_assoc()): 
                                     ?>
-                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_pengkot == $row['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($row['nama_pengurus']); ?>
+                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_provinsi == $row['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($row['nama']); ?>
                                         </option>
                                     <?php endwhile;
                                 }
@@ -281,11 +323,30 @@ $is_readonly = $_SESSION['role'] == 'tamu';
                             </select>
                         </div>
 
-                        <!-- Filter 3: Unit/Ranting -->
+                        <!-- Filter 3: Kota -->
+                        <div class="form-group">
+                            <label for="filter_kota">🏛️ Kota / Kabupaten</label>
+                            <select name="filter_kota" id="filter_kota" onchange="updateRanting()" <?php echo $filter_provinsi == 0 ? 'disabled' : ''; ?>>
+                                <option value="">-- Pilih Kota --</option>
+                                <?php 
+                                if ($kota_result) {
+                                    $kota_result->data_seek(0);
+                                    while ($row = $kota_result->fetch_assoc()): 
+                                    ?>
+                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_kota == $row['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($row['nama']); ?>
+                                        </option>
+                                    <?php endwhile;
+                                }
+                                ?>
+                            </select>
+                        </div>
+
+                        <!-- Filter 4: Ranting -->
                         <div class="form-group">
                             <label for="ranting_id">🢂 Unit/Ranting</label>
-                            <select name="ranting_id" id="ranting_id" onchange="this.form.submit()" <?php echo $filter_pengkot == 0 ? 'disabled' : ''; ?>>
-                                <option value="">-- Pilih Unit/Ranting --</option>
+                            <select name="ranting_id" id="ranting_id" onchange="this.form.submit()" <?php echo $filter_kota == 0 ? 'disabled' : ''; ?>>
+                                <option value="">-- Pilih Ranting --</option>
                                 <?php 
                                 if ($ranting_result && $ranting_result->num_rows > 0) {
                                     $ranting_result->data_seek(0);
@@ -300,15 +361,36 @@ $is_readonly = $_SESSION['role'] == 'tamu';
                             </select>
                         </div>
                     </div>
-                    <div style="margin-top: 15px;">
-                        <a href="jadwal_latihan.php" class="btn btn-reset">🔄 Reset Filter</a>
+                    
+                    <div class="filter-row" style="margin-top: 15px;">
+                        <!-- Filter 5: Hari -->
+                        <div class="form-group">
+                            <label for="filter_hari">📅 Hari</label>
+                            <select name="filter_hari" id="filter_hari" onchange="this.form.submit()">
+                                <option value="">-- Semua Hari --</option>
+                                <?php 
+                                $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+                                foreach ($hari_options as $hari): 
+                                ?>
+                                    <option value="<?php echo $hari; ?>" <?php echo $filter_hari == $hari ? 'selected' : ''; ?>>
+                                        <?php echo $hari; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
+                            <button type="submit" class="btn btn-primary">🔍 Filter</button>
+                            <a href="jadwal_latihan.php" class="btn btn-reset">🔄 Reset</a>
+                        </div>
                     </div>
                 </div>
             </form>
         </div>
                 
         <!-- Daftar Jadwal -->
-        <?php if ($ranting_id > 0): ?>
+        <?php $show_jadwal = ($ranting_id > 0 || $filter_hari || $filter_kota || $filter_provinsi || $filter_negara); ?>
+        <?php if ($show_jadwal): ?>
         <div class="card">
             <h3>📋 Jadwal Latihan</h3>
             
@@ -316,6 +398,7 @@ $is_readonly = $_SESSION['role'] == 'tamu';
             <table>
                 <thead>
                     <tr>
+                        <th>Unit/Ranting</th>
                         <th>Hari</th>
                         <th>Jam Mulai</th>
                         <th>Jam Selesai</th>
@@ -330,6 +413,7 @@ $is_readonly = $_SESSION['role'] == 'tamu';
                         $durasi = round(($selesai - $mulai) / 3600);
                     ?>
                     <tr>
+                        <td><strong><?php echo htmlspecialchars($row['nama_ranting'] ?? '-'); ?></strong></td>
                         <td><strong><?php echo $row['hari']; ?></strong></td>
                         <td><?php echo date('H:i', $mulai); ?></td>
                         <td><?php echo date('H:i', $selesai); ?></td>
@@ -349,7 +433,7 @@ $is_readonly = $_SESSION['role'] == 'tamu';
             </table>
             <?php else: ?>
             <div class="no-data">
-                <p>🔭 Belum ada jadwal latihan untuk unit/ranting yang dipilih</p>
+                <p>🔭 Belum ada jadwal latihan untuk filter yang dipilih</p>
             </div>
             <?php endif; ?>
         </div>
@@ -392,38 +476,82 @@ $is_readonly = $_SESSION['role'] == 'tamu';
     </div>
 
     <script>
-        // Function untuk update dropdown PengKot via AJAX
-        function updatePengKot() {
-            const pengprovSelect = document.getElementById('filter_pengprov');
-            const pengkotSelect = document.getElementById('filter_pengkot');
+        // Function untuk update dropdown Provinsi via AJAX
+        function updateProvinsi() {
+            const negaraSelect = document.getElementById('filter_negara');
+            const provinsiSelect = document.getElementById('filter_provinsi');
+            const kotaSelect = document.getElementById('filter_kota');
             const rantingSelect = document.getElementById('ranting_id');
             
-            const pengprovId = pengprovSelect.value;
+            const negaraId = negaraSelect.value;
             
-            if (pengprovId === '') {
-                // Jika tidak ada pengprov yang dipilih, disable pengkot dan ranting
-                pengkotSelect.disabled = true;
+            if (negaraId === '') {
+                // Jika tidak ada negara yang dipilih, disable semua dropdown
+                provinsiSelect.disabled = true;
+                kotaSelect.disabled = true;
                 rantingSelect.disabled = true;
-                pengkotSelect.innerHTML = '<option value="">-- Pilih Pengurus Kota --</option>';
-                rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
+                
+                provinsiSelect.innerHTML = '<option value="">-- Pilih Provinsi --</option>';
+                kotaSelect.innerHTML = '<option value="">-- Pilih Kota --</option>';
+                rantingSelect.innerHTML = '<option value="">-- Pilih Ranting --</option>';
                 return;
             }
             
-            pengkotSelect.disabled = false;
+            provinsiSelect.disabled = false;
             
-            // Fetch pengkot yang ada di bawah pengprov ini
-            fetch('../../api/get_pengkot.php?pengprov_id=' + pengprovId)
+            // Fetch provinsi yang ada di bawah negara ini
+            fetch('../../api/manage_provinsi.php?action=get_by_negara&id_negara=' + negaraId)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        let html = '<option value="">-- Pilih Pengurus Kota --</option>';
-                        data.data.forEach(pengkot => {
-                            html += '<option value="' + pengkot.id + '">' + pengkot.nama_pengurus + '</option>';
+                        let html = '<option value="">-- Pilih Provinsi --</option>';
+                        data.data.forEach(provinsi => {
+                            html += '<option value="' + provinsi.id + '">' + provinsi.nama + '</option>';
                         });
-                        pengkotSelect.innerHTML = html;
+                        provinsiSelect.innerHTML = html;
+                        
+                        // Reset kota dan ranting dropdown
+                        kotaSelect.innerHTML = '<option value="">-- Pilih Kota --</option>';
+                        kotaSelect.disabled = true;
+                        rantingSelect.innerHTML = '<option value="">-- Pilih Ranting --</option>';
+                        rantingSelect.disabled = true;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        
+        // Function untuk update dropdown Kota via AJAX
+        function updateKota() {
+            const provinsiSelect = document.getElementById('filter_provinsi');
+            const kotaSelect = document.getElementById('filter_kota');
+            const rantingSelect = document.getElementById('ranting_id');
+            
+            const provinsiId = provinsiSelect.value;
+            
+            if (provinsiId === '') {
+                // Jika tidak ada provinsi yang dipilih, disable kota dan ranting
+                kotaSelect.disabled = true;
+                rantingSelect.disabled = true;
+                kotaSelect.innerHTML = '<option value="">-- Pilih Kota --</option>';
+                rantingSelect.innerHTML = '<option value="">-- Pilih Ranting --</option>';
+                return;
+            }
+            
+            kotaSelect.disabled = false;
+            
+            // Fetch kota yang ada di bawah provinsi ini
+            fetch('../../api/manage_kota.php?action=get_by_provinsi&provinsi_id=' + provinsiId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        let html = '<option value="">-- Pilih Kota --</option>';
+                        data.data.forEach(kota => {
+                            html += '<option value="' + kota.id + '">' + kota.nama + '</option>';
+                        });
+                        kotaSelect.innerHTML = html;
                         
                         // Reset ranting dropdown
-                        rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
+                        rantingSelect.innerHTML = '<option value="">-- Pilih Ranting --</option>';
                         rantingSelect.disabled = true;
                     }
                 })
@@ -432,26 +560,26 @@ $is_readonly = $_SESSION['role'] == 'tamu';
         
         // Function untuk update dropdown Ranting via AJAX
         function updateRanting() {
-            const pengkotSelect = document.getElementById('filter_pengkot');
+            const kotaSelect = document.getElementById('filter_kota');
             const rantingSelect = document.getElementById('ranting_id');
             
-            const pengkotId = pengkotSelect.value;
+            const kotaId = kotaSelect.value;
             
-            if (pengkotId === '') {
-                // Jika tidak ada pengkot yang dipilih, disable ranting
+            if (kotaId === '') {
+                // Jika tidak ada kota yang dipilih, disable ranting
                 rantingSelect.disabled = true;
-                rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
+                rantingSelect.innerHTML = '<option value="">-- Pilih Ranting --</option>';
                 return;
             }
             
             rantingSelect.disabled = false;
             
-            // Fetch ranting yang ada di bawah pengkot ini
-            fetch('../../api/get_ranting.php?pengkot_id=' + pengkotId)
+            // Fetch ranting yang ada di bawah kota ini
+            fetch('../../api/get_ranting.php?pengkot_id=' + kotaId)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        let html = '<option value="">-- Pilih Unit/Ranting --</option>';
+                        let html = '<option value="">-- Pilih Ranting --</option>';
                         data.data.forEach(ranting => {
                             html += '<option value="' + ranting.id + '">' + ranting.nama_ranting + '</option>';
                         });

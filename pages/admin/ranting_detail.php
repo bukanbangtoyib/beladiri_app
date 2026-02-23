@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../config/settings.php';
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -27,10 +28,97 @@ if (!$permission_manager->can('anggota_read')) {
     die("❌ Akses ditolak!");
 }
 
+// Helper function untuk format no_anggota sesuai pengaturan
+function formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) {
+    if (empty($no_anggota)) return $no_anggota;
+    
+    // Try to parse the format
+    if (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = $matches[1];
+        $ranting_kode = $matches[2];
+        $year_seq = $matches[3];
+    } elseif (preg_match('/^([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = '';
+        $ranting_kode = $matches[1];
+        $year_seq = $matches[2];
+    } elseif (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = $matches[1];
+        $ranting_kode = $matches[2];
+        $year_seq = '';
+    } else {
+        return $no_anggota;
+    }
+    
+    $negara_kode = '';
+    $provinsi_kode = '';
+    $kota_kode = '';
+    
+    if (strlen($kode_full) >= 2) {
+        $negara_kode = substr($kode_full, 0, 2);
+    }
+    if (strlen($kode_full) >= 5) {
+        $provinsi_kode = substr($kode_full, 2, 3);
+    }
+    if (strlen($kode_full) >= 8) {
+        $kota_kode = substr($kode_full, 5, 3);
+    }
+    
+    $tahun = '';
+    $urutan = '';
+    if (strlen($year_seq) >= 4) {
+        $tahun = substr($year_seq, 0, 4);
+        $urutan = substr($year_seq, 4);
+    }
+    
+    $kode_parts = [];
+    if ($pengaturan_nomor['kode_negara'] ?? true) {
+        $kode_parts[] = $negara_kode;
+    }
+    if ($pengaturan_nomor['kode_provinsi'] ?? true) {
+        $kode_parts[] = $provinsi_kode;
+    }
+    if ($pengaturan_nomor['kode_kota'] ?? true) {
+        $kode_parts[] = $kota_kode;
+    }
+    $kode_str = implode('', $kode_parts);
+    
+    $ranting_str = '';
+    if ($pengaturan_nomor['kode_ranting'] ?? true) {
+        if (!empty($kode_str)) {
+            $ranting_str = '.' . $ranting_kode;
+        } else {
+            $ranting_str = $ranting_kode;
+        }
+    }
+    
+    $year_seq_str = '';
+    $year_part = ($pengaturan_nomor['tahun_daftar'] ?? true) ? $tahun : '';
+    $seq_part = ($pengaturan_nomor['urutan_daftar'] ?? true) ? $urutan : '';
+    
+    if (!empty($year_part) || !empty($seq_part)) {
+        if (!empty($kode_str) || !empty($ranting_str)) {
+            $year_seq_str = '-' . $year_part . $seq_part;
+        } else {
+            $year_seq_str = $year_part . $seq_part;
+        }
+    }
+    
+    return $kode_str . $ranting_str . $year_seq_str;
+}
+
 $id = (int)$_GET['id'];
 
-$sql = "SELECT r.*, p.nama_pengurus FROM ranting r 
-        LEFT JOIN pengurus p ON r.pengurus_kota_id = p.id
+$sql = "SELECT r.*, 
+        k.nama as nama_kota,
+        k.kode as kode_kota,
+        prov.nama as nama_provinsi,
+        prov.kode as kode_provinsi,
+        n.nama as nama_negara,
+        n.kode as kode_negara
+        FROM ranting r 
+        LEFT JOIN kota k ON r.kota_id = k.id
+        LEFT JOIN provinsi prov ON k.provinsi_id = prov.id
+        LEFT JOIN negara n ON prov.negara_id = n.id
         WHERE r.id = $id";
 
 $result = $conn->query($sql);
@@ -57,7 +145,7 @@ $sk_files = [];
 if (is_dir($upload_dir)) {
     $files = scandir($upload_dir);
     foreach ($files as $file) {
-        // Cari file yang cocok dengan pattern SK-ranting-pengurus-XX.pdf
+        // Cari file yang cocok dengan pattern SK-ranting-kota-XX.pdf
         if (strpos($file, 'SK-') === 0) {
             $sk_files[] = $file;
         }
@@ -73,7 +161,7 @@ if (count($sk_files) > 0) {
 }
 
 function get_revision_number($filename) {
-    // Extract nomor revisi dari format: SK-name-pengurus-XX.ext
+    // Extract nomor revisi dari format: SK-name-kota-XX.ext
     if (preg_match('/-(\d{2})\.[^.]+$/', $filename, $matches)) {
         return (int)$matches[1];
     }
@@ -244,6 +332,45 @@ function get_revision_number($filename) {
             </div>
             
             <div class="info-row">
+                <div class="label">Alamat</div>
+                <div class="value"><?php echo nl2br(htmlspecialchars($ranting['alamat'])); ?></div>
+            </div>
+            
+            <div class="info-row">
+                <div class="label">No Kontak</div>
+                <div class="value"><?php echo htmlspecialchars($ranting['no_kontak'] ?? '-'); ?></div>
+            </div>
+            
+            <div class="info-row">
+                <div class="label">Negara</div>
+                <div class="value"><?php echo htmlspecialchars($ranting['nama_negara'] ?? '-'); ?> (<?php echo htmlspecialchars($ranting['kode_negara'] ?? '-'); ?>)</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="label">Provinsi</div>
+                <div class="value"><?php echo htmlspecialchars($ranting['nama_provinsi'] ?? '-'); ?> (<?php echo htmlspecialchars($ranting['kode_provinsi'] ?? '-'); ?>)</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="label">Kota</div>
+                <div class="value"><?php echo htmlspecialchars($ranting['nama_kota'] ?? '-'); ?> (<?php echo htmlspecialchars($ranting['kode_kota'] ?? '-'); ?>)</div>
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <h3>👤 Struktur Organisasi</h3>
+            
+            <div class="info-row">
+                <div class="label">Ketua</div>
+                <div class="value"><?php echo htmlspecialchars($ranting['ketua_nama'] ?? '-'); ?></div>
+            </div>
+            
+            <div class="info-row">
+                <div class="label">Penanggung Jawab Teknik</div>
+                <div class="value"><?php echo htmlspecialchars($ranting['penanggung_jawab_teknik'] ?? '-'); ?></div>
+            </div>
+            
+            <div class="info-row">
                 <div class="label">Tanggal SK</div>
                 <div class="value"><?php echo date('d M Y', strtotime($ranting['tanggal_sk_pembentukan'])); ?></div>
             </div>
@@ -251,16 +378,6 @@ function get_revision_number($filename) {
             <div class="info-row">
                 <div class="label">No SK Pembentukan</div>
                 <div class="value"><?php echo htmlspecialchars($ranting['no_sk_pembentukan'] ?? '-'); ?></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Alamat</div>
-                <div class="value"><?php echo nl2br(htmlspecialchars($ranting['alamat'])); ?></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Pengurus Kota</div>
-                <div class="value"><?php echo htmlspecialchars($ranting['nama_pengurus'] ?? '-'); ?></div>
             </div>
         </div>
 
@@ -298,25 +415,6 @@ function get_revision_number($filename) {
                         <p>📭 Belum ada SK pembentukan yang diupload</p>
                     </div>
                 <?php endif; ?>
-            </div>
-        </div>
-        
-        <div class="info-card">
-            <h3>👤 Struktur Organisasi</h3>
-            
-            <div class="info-row">
-                <div class="label">Ketua</div>
-                <div class="value"><?php echo htmlspecialchars($ranting['ketua_nama'] ?? '-'); ?></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Penanggung Jawab Teknik</div>
-                <div class="value"><?php echo htmlspecialchars($ranting['penanggung_jawab_teknik'] ?? '-'); ?></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">No Kontak</div>
-                <div class="value"><?php echo htmlspecialchars($ranting['no_kontak'] ?? '-'); ?></div>
             </div>
         </div>
         
@@ -412,9 +510,9 @@ function get_revision_number($filename) {
                     <thead>
                         <tr>
                             <th style="width: 50px; text-align: center;">No</th>
-                            <th style="width: 120px;">No Anggota</th>
+                            <th style="width: 200px;">No Anggota</th>
                             <th>Nama Anggota</th>
-                            <th style="width: 150px;">Tingkat</th>
+                            <th style="width: 125px;">Tingkat</th>
                             <th style="width: 200px; text-align: center;">Status</th>
                             <th style="width: 80px; text-align: center;">Aksi</th>
                         </tr>
@@ -463,7 +561,7 @@ function get_revision_number($filename) {
                 content: "";
                 height: 12px;
                 width: 12px;
-                left: -2px;
+                left: -4px;
                 bottom: 4px;
                 background-color: white;
                 transition: .4s;
@@ -546,16 +644,23 @@ function get_revision_number($filename) {
         <script>
             // Data anggota dari server
             const membersData = <?php 
+                // Check if is_active column exists
+                $check_column = $conn->query("SHOW COLUMNS FROM anggota LIKE 'is_active'");
+                $has_is_active = $check_column->num_rows > 0;
+                
                 $members_sql = "SELECT a.id, a.no_anggota, a.nama_lengkap, a.tingkat_id, 
-                                    t.nama_tingkat, a.is_active 
+                                    t.nama_tingkat" . ($has_is_active ? ", a.is_active" : ", 1 as is_active") . "
                                 FROM anggota a
                                 LEFT JOIN tingkatan t ON a.tingkat_id = t.id
                                 WHERE a.ranting_saat_ini_id = $id
                                 ORDER BY a.nama_lengkap";
                 $members_result = $conn->query($members_sql);
                 $members = [];
-                while ($row = $members_result->fetch_assoc()) {
-                    $members[] = $row;
+                if ($members_result) {
+                    while ($row = $members_result->fetch_assoc()) {
+                        $row['no_anggota_display'] = formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor);
+                        $members[] = $row;
+                    }
                 }
                 echo json_encode($members);
             ?>;
@@ -583,7 +688,7 @@ function get_revision_number($filename) {
                     
                     row.innerHTML = `
                         <td style="text-align: center; color: #999; font-weight: 600;">${index + 1}</td>
-                        <td><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">${htmlEscape(member.no_anggota)}</code></td>
+                        <td><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">${htmlEscape(member.no_anggota_display)}</code></td>
                         <td>${htmlEscape(member.nama_lengkap)}</td>
                         <td><span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 4px; font-weight: 600;">${htmlEscape(member.nama_tingkat || '-')}</span></td>
                         <td style="text-align: center;">
@@ -596,7 +701,7 @@ function get_revision_number($filename) {
                                 <span class="toggle-slider"></span>
                             </label>
                             <span class="status-${isActive ? 'aktif' : 'tidak'}" id="status-${member.id}">
-                                ${isActive ? '✓ Aktif' : '✗ Tidak'}
+                                ${isActive ? '✓ Aktif' : '✗ Non Aktif'}
                             </span>
                             <span class="saving-status" id="saving-${member.id}"></span>
                         </td>
@@ -665,7 +770,7 @@ function get_revision_number($filename) {
                     if (data.success) {
                         // Update status badge
                         statusEl.className = isActive ? 'status-aktif' : 'status-tidak';
-                        statusEl.innerHTML = isActive ? '✓ Aktif' : '✗ Tidak';
+                        statusEl.innerHTML = isActive ? '✓ Aktif' : '✗ Non Aktif';
                         savingEl.innerHTML = '✓ Tersimpan';
                         savingEl.style.color = '#28a745';
                         
@@ -784,11 +889,21 @@ function get_revision_number($filename) {
             document.getElementById('memberFilter').addEventListener('keyup', filterMembers);
             document.getElementById('tingkatFilter').addEventListener('change', filterMembers);
             
-            // Initialize
-            window.addEventListener('load', function() {
+            // Initialize - run when DOM is ready
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('DOM Content Loaded - Initializing member table...');
+                console.log('Members data count:', membersData.length);
                 renderTable();
                 enhanceTableWithData();
             });
+            
+            // Also run immediately in case DOMContentLoaded already fired
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                console.log('Document already ready - Initializing member table...');
+                console.log('Members data count:', membersData.length);
+                renderTable();
+                enhanceTableWithData();
+            }
         </script>
         
         <?php if ($_SESSION['role'] == 'admin'): ?>
