@@ -329,11 +329,14 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
         
         .badge-status {
             display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-top: 10px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
         
         .profile-info h2 {
@@ -549,7 +552,7 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
                 <?php else: ?>
                     <div class="no-photo">📷</div>
                 <?php endif; ?>
-                <div class="badge-status" style="background:#0d6efd;color:#fff;font-weight:bold;">
+                <div class="badge-status" style="background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%); color: #ffffff; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">
                     <?php 
                     // Tampilkan nama jenis dari tabel jenis_anggota berdasarkan ID
                     $jenis_id = isset($anggota['jenis_anggota']) ? (int)$anggota['jenis_anggota'] : 0;

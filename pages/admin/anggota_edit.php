@@ -1,7 +1,16 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../../login.php");
+    exit();
+}
+
+$user_role = $_SESSION['role'] ?? '';
+$user_ranting_id = $_SESSION['ranting_id'] ?? 0;
+
+// Allow admin, ranting, and unit roles
+if (!in_array($user_role, ['admin', 'ranting', 'unit'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -168,6 +177,14 @@ if ($result->num_rows == 0) {
 }
 $anggota = $result->fetch_assoc();
 
+// Check ownership for ranting and unit roles
+if ($user_role === 'ranting' || $user_role === 'unit') {
+    $member_ranting_id = $anggota['ranting_saat_ini_id'] ?? 0;
+    if ($member_ranting_id != $user_ranting_id) {
+        die("❌ Anda hanya bisa mengedit anggota dari ranting Anda sendiri!");
+    }
+}
+
 // Helper function untuk sanitasi nama [LAMA - TETAP SAMA]
 function sanitize_name($name) {
     $name = preg_replace("/[^a-z0-9 -]/i", "", $name);
@@ -283,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($stmt) {
             // Total 15 parameter: no_anggota, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, ranting_awal_id, ranting_awal_manual, ranting_saat_ini_id, tingkat_id, jenis_anggota, tahun_bergabung, no_handphone, ukt_terakhir, nama_foto, id
             $stmt->bind_param(
-                "sssssissiiisiss",
+                "sssssisiiiisssi",
                 $no_anggota,
                 $nama_lengkap, 
                 $tempat_lahir, 
@@ -689,6 +706,30 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
             opacity: 0.5;
             background: #fff5f5;
         }
+        
+        .suggestions-box {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: 100%;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .suggestions-box.show { display: block; }
+        
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .suggestion-item:hover { background: #f5f5f5; }
+        .suggestion-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -812,15 +853,23 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                         <label>Unit/Ranting Saat Ini <span class="required">*</span></label>
                         <select name="ranting_saat_ini_id" id="ranting_saat_ini_id_edit" required onchange="updateRantingKodeEdit()">
                             <option value="">-- Pilih Ranting --</option>
-                            <?php 
-                            $ranting_result->data_seek(0);
-                            while ($row = $ranting_result->fetch_assoc()): 
+                            <?php
+                            // Filter ranting berdasarkan kota yang sama dengan ranting saat ini
+                            if (!empty($anggota['kota_id'])) {
+                                $kota_id_filter = (int)$anggota['kota_id'];
+                                $ranting_filtered = $conn->query("SELECT id, nama_ranting, kode FROM ranting WHERE kota_id = $kota_id_filter ORDER BY nama_ranting");
+                            } else {
+                                // Fallback: tampilkan semua jika kota tidak diketahui
+                                $ranting_filtered = $conn->query("SELECT id, nama_ranting, kode FROM ranting ORDER BY nama_ranting");
+                            }
+                            while ($row = $ranting_filtered->fetch_assoc()):
                             ?>
                                 <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>" <?php echo $anggota['ranting_saat_ini_id'] == $row['id'] ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama_ranting']); ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
+                        <div class="form-hint">Hanya menampilkan ranting di kota yang sama. Pilih Kota berbeda di filter atas untuk melihat ranting kota lain.</div>
                     </div>
                     
                     <div class="form-group">
@@ -843,19 +892,24 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                         </div>
                     </div>
                     
-                    <div id="ranting_awal_select_edit" class="form-group" <?php echo !empty($anggota['ranting_awal_manual']) ? 'style="display:none;"' : ''; ?>>
-                        <select name="ranting_awal_id_edit">
-                            <option value="">-- Pilih Unit/Ranting --</option>
-                            <?php 
-                            $ranting_result->data_seek(0);
-                            while ($row = $ranting_result->fetch_assoc()): 
-                            ?>
-                                <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>" <?php echo ($anggota['ranting_awal_id'] == $row['id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama_ranting']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                        <div class="form-hint">Pilih Unit/Ranting yang tersedia di database</div>
+                    <div id="ranting_awal_select_edit" class="form-group" style="position: relative; <?php echo !empty($anggota['ranting_awal_manual']) ? 'display:none;' : ''; ?>">
+                        <?php 
+                        // Get current ranting awal info
+                        $current_ranting_awal = '';
+                        $current_ranting_awal_kode = '';
+                        if (!empty($anggota['ranting_awal_id'])) {
+                            $ranting_awal_query = $conn->query("SELECT id, kode, nama_ranting FROM ranting WHERE id = " . (int)$anggota['ranting_awal_id']);
+                            if ($ranting_awal_query && $ranting_awal_query->num_rows > 0) {
+                                $ranting_awal_data = $ranting_awal_query->fetch_assoc();
+                                $current_ranting_awal = $ranting_awal_data['kode'] . ' - ' . $ranting_awal_data['nama_ranting'];
+                                $current_ranting_awal_kode = $ranting_awal_data['kode'];
+                            }
+                        }
+                        ?>
+                        <input type="text" id="ranting_awal_search_edit" placeholder="Ketik kode atau nama ranting..." autocomplete="off" value="<?php echo htmlspecialchars($current_ranting_awal); ?>">
+                        <input type="hidden" id="ranting_awal_id_edit" name="ranting_awal_id_edit" value="<?php echo $anggota['ranting_awal_id'] ?? ''; ?>">
+                        <div id="ranting_awal_suggestions_edit" class="suggestions-box"></div>
+                        <div class="form-hint">Ketik untuk mencari Unit/Ranting yang tersedia di database</div>
                     </div>
                     
                     <div id="ranting_awal_manual_edit" class="conditional-field" style="<?php echo !empty($anggota['ranting_awal_manual']) ? 'display:block;' : 'display:none;'; ?>">
@@ -1077,7 +1131,6 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
             const negaraSelect = document.getElementById('filter_negara_edit');
             const provinsiSelect = document.getElementById('filter_provinsi_edit');
             const kotaSelect = document.getElementById('filter_kota_edit');
-            const rantingSelect = document.getElementById('ranting_awal_select_edit').querySelector('select');
             const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id_edit');
             
             const negaraId = negaraSelect.value;
@@ -1092,8 +1145,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
             document.getElementById('kode_kota_display_edit').value = '';
             document.getElementById('kode_ranting_display_edit').value = '';
             
-            // Reset ranting dropdowns
-            if (rantingSelect) rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
+            // Reset ranting saat ini dropdown
             if (rantingSaatIniSelect) rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
             
             if (negaraId === '') {
@@ -1129,7 +1181,6 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
         function updateKotaFormEdit() {
             const provinsiSelect = document.getElementById('filter_provinsi_edit');
             const kotaSelect = document.getElementById('filter_kota_edit');
-            const rantingSelect = document.getElementById('ranting_awal_select_edit').querySelector('select');
             const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id_edit');
             
             const provinsiId = provinsiSelect.value;
@@ -1142,8 +1193,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
             document.getElementById('kode_kota_display_edit').value = '';
             document.getElementById('kode_ranting_display_edit').value = '';
             
-            // Reset ranting dropdowns
-            if (rantingSelect) rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
+            // Reset ranting saat ini dropdown
             if (rantingSaatIniSelect) rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
             
             if (provinsiId === '') {
@@ -1177,13 +1227,14 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
         
         function updateRantingFormEdit() {
             const kotaSelect = document.getElementById('filter_kota_edit');
-            const rantingSelect = document.getElementById('ranting_awal_select_edit').querySelector('select');
             const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id_edit');
             
             const kotaId = kotaSelect.value;
             
-            // Reset ranting dropdowns
-            if (rantingSelect) rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
+            // Save current selected value before resetting
+            const savedRantingSaatIniValue = rantingSaatIniSelect ? rantingSaatIniSelect.value : '';
+            
+            // Reset ranting saat ini dropdown
             if (rantingSaatIniSelect) rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
             
             // Reset kode displays
@@ -1208,20 +1259,21 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                             const rantingKode = ranting.kode || '001';
                             const rantingText = rantingKode + ' - ' + ranting.nama_ranting;
                             
-                            const option1 = document.createElement('option');
-                            option1.value = ranting.id;
-                            option1.textContent = rantingText;
-                            option1.setAttribute('data-kode', rantingKode);
-                            rantingSelect.appendChild(option1);
-                            
                             if (rantingSaatIniSelect) {
-                                const option2 = document.createElement('option');
-                                option2.value = ranting.id;
-                                option2.textContent = rantingText;
-                                option2.setAttribute('data-kode', rantingKode);
-                                rantingSaatIniSelect.appendChild(option2);
+                                const option = document.createElement('option');
+                                option.value = ranting.id;
+                                option.textContent = rantingText;
+                                option.setAttribute('data-kode', rantingKode);
+                                rantingSaatIniSelect.appendChild(option);
                             }
                         });
+                        
+                        // Restore saved value if it exists in the new options
+                        if (savedRantingSaatIniValue && rantingSaatIniSelect.querySelector(`option[value="${savedRantingSaatIniValue}"]`)) {
+                            rantingSaatIniSelect.value = savedRantingSaatIniValue;
+                            // Update the kode display
+                            updateRantingKodeEdit();
+                        }
                     }
                 })
                 .catch(error => console.error('Error:', error));
@@ -1256,7 +1308,8 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                 selectField.style.display = 'none';
                 manualField.classList.add('show');
                 manualField.style.display = 'block';
-                document.querySelector('select[name="ranting_awal_id_edit"]').value = '';
+                document.getElementById('ranting_awal_id_edit').value = '';
+                document.getElementById('ranting_awal_search_edit').value = '';
             }
         }
         
@@ -1331,6 +1384,58 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                 });
             });
         });
+        
+        // Ranting Awal Search functionality for Edit
+        const rantingAwalSearchEdit = document.getElementById('ranting_awal_search_edit');
+        const rantingAwalIdEdit = document.getElementById('ranting_awal_id_edit');
+        const rantingAwalSuggestionsEdit = document.getElementById('ranting_awal_suggestions_edit');
+        let rantingAwalTimeoutEdit = null;
+        
+        if (rantingAwalSearchEdit) {
+            rantingAwalSearchEdit.addEventListener('input', function() {
+                clearTimeout(rantingAwalTimeoutEdit);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    rantingAwalSuggestionsEdit.classList.remove('show');
+                    rantingAwalSuggestionsEdit.innerHTML = '';
+                    rantingAwalIdEdit.value = '';
+                    return;
+                }
+                
+                rantingAwalTimeoutEdit = setTimeout(() => {
+                    fetch('../../api/get_ranting.php?q=' + encodeURIComponent(query))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.data.length > 0) {
+                                rantingAwalSuggestionsEdit.innerHTML = data.data.map(item => 
+                                    '<div class="suggestion-item" data-id="' + item.id + '" data-kode="' + item.kode + '" data-nama="' + item.nama_ranting + '">' + 
+                                    item.display + '</div>'
+                                ).join('');
+                                rantingAwalSuggestionsEdit.classList.add('show');
+                            } else {
+                                rantingAwalSuggestionsEdit.innerHTML = '<div class="suggestion-item">Tidak ada hasil</div>';
+                                rantingAwalSuggestionsEdit.classList.add('show');
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                }, 300);
+            });
+            
+            rantingAwalSuggestionsEdit.addEventListener('click', function(e) {
+                if (e.target.classList.contains('suggestion-item') && e.target.dataset.id) {
+                    rantingAwalSearchEdit.value = e.target.dataset.kode + ' - ' + e.target.dataset.nama;
+                    rantingAwalIdEdit.value = e.target.dataset.id;
+                    rantingAwalSuggestionsEdit.classList.remove('show');
+                }
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (!rantingAwalSearchEdit.contains(e.target) && !rantingAwalSuggestionsEdit.contains(e.target)) {
+                    rantingAwalSuggestionsEdit.classList.remove('show');
+                }
+            });
+        }
     </script>
 </body>
 </html>

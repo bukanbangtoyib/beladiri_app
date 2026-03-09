@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -21,8 +21,44 @@ $permission_manager = new PermissionManager(
 
 $GLOBALS['permission_manager'] = $permission_manager;
 
-if (!$permission_manager->can('anggota_read')) {
-    die("❌ Akses ditolak!");
+// Check if admin
+$is_admin = ($_SESSION['role'] === 'admin');
+
+// Get user's organization info for non-admin
+// The session's pengurus_id IS the organization ID (negara_id, provinsi_id, or kota_id)
+$user_jenis_peny = '';
+$user_peny_id = 0;
+$peny_nama = '';
+
+if (!$is_admin && isset($_SESSION['pengurus_id'])) {
+    $user_peny_id = (int)$_SESSION['pengurus_id'];
+    $user_role = $_SESSION['role'];
+    
+    // Determine user's level based on role
+    if ($user_role === 'negara') {
+        $user_jenis_peny = 'pusat';
+        // Get nama negara
+        $result = $conn->query("SELECT nama FROM negara WHERE id = $user_peny_id");
+        $row = $result->fetch_assoc();
+        $peny_nama = $row['nama'] ?? 'Pusat';
+    } elseif ($user_role === 'pengprov') {
+        $user_jenis_peny = 'provinsi';
+        // Get nama provinsi
+        $result = $conn->query("SELECT nama FROM provinsi WHERE id = $user_peny_id");
+        $row = $result->fetch_assoc();
+        $peny_nama = $row['nama'] ?? 'Provinsi';
+    } elseif ($user_role === 'pengkot') {
+        $user_jenis_peny = 'kota';
+        // Get nama kota
+        $result = $conn->query("SELECT nama FROM kota WHERE id = $user_peny_id");
+        $row = $result->fetch_assoc();
+        $peny_nama = $row['nama'] ?? 'Kota';
+    }
+}
+
+// Check if user can update own level UKT
+if (!$permission_manager->canUpdateOwnUKT()) {
+    die("❌ Akses ditolak! Anda tidak memiliki izin untuk mengedit UKT.");
 }
 
 $id = (int)$_GET['id'];
@@ -36,6 +72,11 @@ if ($ukt_result->num_rows == 0) {
 
 $ukt = $ukt_result->fetch_assoc();
 
+// Check hierarchical access to the existing UKT
+if (!$permission_manager->canManageUKT('ukt_update', $ukt['jenis_penyelenggara'], $ukt['penyelenggara_id'])) {
+    die("❌ Akses ditolak! Anda tidak memiliki izin untuk mengedit UKT ini.");
+}
+
 $error = '';
 $success = '';
 
@@ -43,20 +84,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $tanggal_pelaksanaan = $_POST['tanggal_pelaksanaan'];
     $lokasi = $conn->real_escape_string($_POST['lokasi']);
     $penyelenggara_id = !empty($_POST['penyelenggara_id']) ? (int)$_POST['penyelenggara_id'] : null;
+    $jenis_penyelenggara = !empty($_POST['jenis_penyelenggara']) ? $conn->real_escape_string($_POST['jenis_penyelenggara']) : null;
     $catatan = $conn->real_escape_string($_POST['catatan'] ?? '');
     
     if (empty($tanggal_pelaksanaan) || empty($lokasi)) {
         $error = "Tanggal dan lokasi harus diisi!";
+    } elseif (!$permission_manager->canManageUKT('ukt_update', $jenis_penyelenggara, $penyelenggara_id)) {
+        $error = "Anda tidak memiliki izin untuk mengubah UKT ke tingkat " . ucfirst($jenis_penyelenggara) . " untuk penyelenggara ini.";
     } else {
         $sql = "UPDATE ukt SET 
                 tanggal_pelaksanaan = ?, 
                 lokasi = ?, 
                 penyelenggara_id = ?, 
+                jenis_penyelenggara = ?,
                 catatan = ?
                 WHERE id = ?";
         
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssisi", $tanggal_pelaksanaan, $lokasi, $penyelenggara_id, $catatan, $id);
+        $stmt->bind_param("ssissi", $tanggal_pelaksanaan, $lokasi, $penyelenggara_id, $jenis_penyelenggara, $catatan, $id);
         
         if ($stmt->execute()) {
             $success = "UKT berhasil diperbarui!";
@@ -77,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit UKT - Sistem Beladiri</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; }
@@ -218,6 +264,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             color: #999;
             margin-top: 6px;
         }
+
+        /* Select2 alignment */
+        .select2-container--default .select2-selection--single {
+            height: 41px;
+            padding: 6px 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 28px;
+            padding-left: 0;
+            font-size: 14px;
+            color: #333;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 38px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #999;
+        }
     </style>
 </head>
 <body>
@@ -256,6 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 
                 <h3>🏛️ Penyelenggara</h3>
                 
+                <?php if ($is_admin): ?>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Jenis Penyelenggara</label>
@@ -277,6 +344,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="loading" id="loadingPenyelenggara">Memuat data...</div>
                     </div>
                 </div>
+                <?php else: ?>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Jenis Penyelenggara</label>
+                        <input type="text" value="<?php 
+                            echo match($user_jenis_peny) {
+                                'pusat' => 'Pusat (PP)',
+                                'provinsi' => 'Provinsi (PengProv)',
+                                'kota' => 'Kota / Kabupaten (PengKot)',
+                                default => '-'
+                            }; 
+                        ?>" readonly>
+                        <input type="hidden" name="jenis_penyelenggara" value="<?php echo $user_jenis_peny; ?>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Nama Penyelenggara</label>
+                        <input type="text" value="<?php echo htmlspecialchars($peny_nama); ?>" readonly>
+                        <input type="hidden" name="penyelenggara_id" value="<?php echo $user_peny_id; ?>">
+                    </div>
+                </div>
+                <?php endif; ?>
                 
                 <div class="form-row full">
                     <div class="form-group">
@@ -309,8 +398,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
     </div>
     
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-        function handleJenisPenyelenggaraChange() {
+        $(document).ready(function() {
+            // Only initialize Select2 for admin users
+            const isAdmin = <?php echo $is_admin ? 'true' : 'false'; ?>;
+            
+            if (isAdmin) {
+                $('#namaPenyelenggara').select2({
+                    placeholder: "-- Pilih Penyelenggara --",
+                    allowClear: true,
+                    width: '100%'
+                }).on('select2:open', function(e) {
+                    // Focus the search field
+                    const searchField = document.querySelector('.select2-search__field');
+                    if (searchField) searchField.focus();
+                });
+            }
+        });
+
+        function handleJenisPenyelenggaraChange(selectedId = null) {
             const jenisPenyelenggara = document.getElementById('jenisPenyelenggara').value;
             const namaPenyelenggaraSelect = document.getElementById('namaPenyelenggara');
             const loadingDiv = document.getElementById('loadingPenyelenggara');
@@ -333,30 +441,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             const option = document.createElement('option');
                             option.value = item.id;
                             option.textContent = item.nama;
-                            <?php if ($ukt['penyelenggara_id']): ?>
-                                if (item.id == <?php echo $ukt['penyelenggara_id']; ?>) option.selected = true;
-                            <?php endif; ?>
+                            if (selectedId && item.id == selectedId) option.selected = true;
                             namaPenyelenggaraSelect.appendChild(option);
                         });
                         namaPenyelenggaraSelect.disabled = false;
                     } else {
                         namaPenyelenggaraSelect.innerHTML = '<option value="">-- Tidak ada data --</option>';
                     }
+                    // Trigger Select2 update
+                    $('#namaPenyelenggara').trigger('change');
                 })
                 .catch(error => { loadingDiv.style.display = 'none'; console.error('Error:', error); });
         }
         
         document.addEventListener('DOMContentLoaded', function() {
-            <?php if ($ukt['penyelenggara_id']): ?>
-                // Fetch jenis penyelenggara dari database
-                fetch('../../api/get_penyelenggara.php?id=<?php echo $ukt['penyelenggara_id']; ?>')
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.jenis) {
-                            document.getElementById('jenisPenyelenggara').value = data.jenis;
-                            handleJenisPenyelenggaraChange();
-                        }
-                    });
+            <?php if ($ukt['penyelenggara_id'] && $ukt['jenis_penyelenggara']): ?>
+                document.getElementById('jenisPenyelenggara').value = '<?php echo $ukt['jenis_penyelenggara']; ?>';
+                handleJenisPenyelenggaraChange(<?php echo $ukt['penyelenggara_id']; ?>);
             <?php endif; ?>
         });
     </script>

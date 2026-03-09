@@ -22,12 +22,14 @@ $permission_manager = new PermissionManager(
 // Store untuk global use
 $GLOBALS['permission_manager'] = $permission_manager;
 
-// Check permission untuk action ini
-if (!$permission_manager->can('anggota_read')) {
+// Check permission untuk action ini - allow all roles including tamu
+$user_role = $_SESSION['role'] ?? '';
+$allowed_roles = ['admin', 'negara', 'pengprov', 'pengkot', 'unit', 'tamu'];
+if (!in_array($user_role, $allowed_roles)) {
     die("❌ Akses ditolak!");
 }
 
-$jenis = isset($_GET['jenis']) ? $_GET['jenis'] : 'pusat';
+$jenis = isset($_GET['jenis']) ? $_GET['jenis'] : 'negara';
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 
 // Filter parameters
@@ -35,13 +37,13 @@ $filter_negara = isset($_GET['filter_negara']) ? (int)$_GET['filter_negara'] : 0
 $filter_provinsi = isset($_GET['filter_provinsi']) ? (int)$_GET['filter_provinsi'] : 0;
 
 // Validasi jenis - map old types to new table names
-if (!in_array($jenis, ['pusat', 'provinsi', 'kota'])) {
-    $jenis = 'pusat';
+if (!in_array($jenis, ['negara', 'provinsi', 'kota'])) {
+    $jenis = 'negara';
 }
 
 // Map jenis to table and column names
 $table_map = [
-    'pusat' => ['table' => 'negara', 'label' => 'Negara'],
+    'negara' => ['table' => 'negara', 'label' => 'Negara'],
     'provinsi' => ['table' => 'provinsi', 'label' => 'Provinsi'],
     'kota' => ['table' => 'kota', 'label' => 'Kota/Kabupaten']
 ];
@@ -57,16 +59,20 @@ if ($jenis == 'kota') {
     $sql = "SELECT * FROM $table WHERE 1=1";
 }
 
-// Apply filters based on jenis
-if ($jenis == 'provinsi' && $filter_negara > 0) {
-    $sql .= " AND negara_id = " . $filter_negara;
-}
-if ($jenis == 'kota') {
-    if ($filter_provinsi > 0) {
-        $sql .= " AND k.provinsi_id = " . $filter_provinsi;
-    } elseif ($filter_negara > 0) {
-        $sql .= " AND p.negara_id = " . $filter_negara;
-    }
+// Apply filters based on user role
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+
+// Apply role-based filtering
+if ($user_role === 'negara') {
+    // Negara can see ALL data, but can only edit/delete their own
+    // No additional SQL filtering needed - all data is visible
+} elseif ($user_role === 'pengprov') {
+    // Pengprov can see ALL data, but can only edit/delete their own
+    // No additional SQL filtering needed - all data is visible
+} elseif ($user_role === 'pengkot') {
+    // Pengkot can see ALL data, but can only edit/delete their own kota
+    // No additional SQL filtering needed - all data is visible for view
 }
 
 if ($search) {
@@ -95,7 +101,63 @@ if ($jenis == 'provinsi' || $jenis == 'kota') {
     }
 }
 
-$is_readonly = $_SESSION['role'] == 'user';
+$is_readonly = true;
+$can_add = false;
+$can_edit = false;
+$can_delete = false;
+
+// Determine permissions based on role and jenis
+if ($user_role === 'admin') {
+    $is_readonly = false;
+    $can_add = true;
+    $can_edit = true;
+    $can_delete = true;
+} elseif ($user_role === 'negara') {
+    // Negara can see all data, but limited edit/delete/add
+    $is_readonly = false;
+    if ($jenis === 'negara') {
+        // Can see all negara, but only edit their own, no add, no delete
+        $can_add = false;
+        $can_edit = true; // Can edit their own
+        $can_delete = false; // Cannot delete
+    } elseif ($jenis === 'provinsi') {
+        // Can see all provinces, can add, edit/delete only their own
+        $can_add = true;
+        $can_edit = true;
+        $can_delete = true;
+    } elseif ($jenis === 'kota') {
+        // Can see all cities, can add, edit/delete only their own
+        $can_add = true;
+        $can_edit = true;
+        $can_delete = true;
+    }
+} elseif ($user_role === 'pengprov') {
+    // Pengprov can manage their own province and cities below
+    if ($jenis === 'negara') {
+        $is_readonly = true;
+        $can_add = false;
+        $can_edit = false;
+        $can_delete = false;
+    } else {
+        $is_readonly = false;
+        $can_add = ($jenis === 'kota'); // Can add kota, not province
+        $can_edit = true;
+        $can_delete = true;
+    }
+} elseif ($user_role === 'pengkot') {
+    // Pengkot can only manage their own city
+    if ($jenis === 'kota') {
+        $is_readonly = false;
+        $can_edit = true;
+        $can_delete = true;
+        $can_add = false; // Cannot add more kota
+    } else {
+        $is_readonly = true;
+        $can_add = false;
+        $can_edit = false;
+        $can_delete = false;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -104,6 +166,7 @@ $is_readonly = $_SESSION['role'] == 'user';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $label_jenis; ?> - Sistem Beladiri</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; }
@@ -133,7 +196,7 @@ $is_readonly = $_SESSION['role'] == 'user';
             display: inline-block;
             font-size: 14px;
         }
-        
+
         .btn-primary { background: #667eea; color: white; }
         .btn-info { background: #17a2b8; color: white; }
         .btn-warning { background: #ffc107; color: black; }
@@ -191,6 +254,12 @@ $is_readonly = $_SESSION['role'] == 'user';
             font-weight: 600;
             border-bottom: 2px solid #ddd;
         }
+
+        th:nth-child(4), td:nth-child(4),
+        th:nth-child(5), td:nth-child(5), 
+        th:nth-child(6), td:nth-child(6) {
+            text-align: center;
+        }
         td { padding: 12px 15px; border-bottom: 1px solid #eee; }
         tr:hover { background: #f9f9f9; }
         
@@ -207,6 +276,32 @@ $is_readonly = $_SESSION['role'] == 'user';
         .no-data { text-align: center; padding: 40px; color: #999; }
         .status-aktif { color: #27ae60; }
         .status-tidak { color: #e74c3c; }
+        
+        /* Icon buttons */
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 12px;
+            transition: all 0.3s;
+            color: white;
+            margin: 0 2px;
+        }
+        
+        .icon-view { background: #3498db; }
+        .icon-view:hover { background: #2980b9; }
+        
+        .icon-edit { background: #f39c12; }
+        .icon-edit:hover { background: #d68910; }
+        
+        .icon-delete { background: #e74c3c; }
+        .icon-delete:hover { background: #c0392b; }
     </style>
 </head>
 <body>
@@ -222,7 +317,7 @@ $is_readonly = $_SESSION['role'] == 'user';
                 <h1><?php echo $label_jenis; ?></h1>
                 <p style="color: #666;">Total: <strong><?php echo $total; ?></strong></p>
             </div>
-            <?php if (!$is_readonly): ?>
+            <?php if ($can_add): ?>
             <a href="pengurus_tambah.php?jenis=<?php echo $jenis; ?>" class="btn btn-primary">+ Tambah <?php echo $label_jenis; ?></a>
             <?php endif; ?>
         </div>
@@ -232,7 +327,7 @@ $is_readonly = $_SESSION['role'] == 'user';
                 <input type="hidden" name="jenis" value="<?php echo $jenis; ?>">
                 
                 <?php if ($jenis == 'provinsi' || $jenis == 'kota'): ?>
-                <select name="filter_negara" id="filter_negara">
+                <select name="filter_negara" id="filter_negara" onchange="updateProvinsi()">
                     <option value="">-- Semua Negara --</option>
                     <?php foreach ($negara_list as $n): ?>
                         <option value="<?php echo $n['id']; ?>" <?php echo $filter_negara == $n['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($n['nama']); ?></option>
@@ -241,17 +336,21 @@ $is_readonly = $_SESSION['role'] == 'user';
                 <?php endif; ?>
                 
                 <?php if ($jenis == 'kota'): ?>
-                <select name="filter_provinsi" id="filter_provinsi">
+                <select name="filter_provinsi" id="filter_provinsi" <?php
+                    // Disable provinsi dropdown until negara is selected
+                    echo $filter_negara > 0 ? '' : 'disabled';
+                ?>>
                     <option value="">-- Semua Provinsi --</option>
-                    <?php foreach ($provinsi_list as $p): ?>
+                    <?php
+                    // Show provinces based on selected negara
+                    foreach ($provinsi_list as $p): ?>
                         <option value="<?php echo $p['id']; ?>" <?php echo $filter_provinsi == $p['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($p['nama']); ?></option>
                     <?php endforeach; ?>
                 </select>
                 <?php endif; ?>
                 
                 <input type="text" name="search" placeholder="Cari nama..." value="<?php echo htmlspecialchars($search); ?>">
-                <button type="submit" class="btn btn-primary">🔍 Cari</button>
-                <a href="pengurus_list.php?jenis=<?php echo $jenis; ?>" class="btn" style="background: #6c757d; color: white;">Reset</a>
+                <a href="pengurus_list.php?jenis=<?php echo $jenis; ?>" class="btn" style="background: #6c757d; color: white;">🔄 Reset</a>
             </form>
         </div>
         
@@ -287,10 +386,55 @@ $is_readonly = $_SESSION['role'] == 'user';
                         <td><?php echo date('Y', strtotime($row['periode_mulai'] ?? '2000-01-01')); ?> - <?php echo date('Y', strtotime($row['periode_akhir'] ?? '2000-01-01')); ?></td>
                         <td><span class="<?php echo $status_class; ?>"><?php echo $status; ?></span></td>
                         <td>
-                            <a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="btn btn-info btn-small">Lihat</a>
-                            <?php if (!$is_readonly): ?>
-                            <a href="pengurus_edit.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="btn btn-warning btn-small">Edit</a>
-                            <a href="pengurus_hapus.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="btn btn-danger btn-small" onclick="return confirm('Yakin?')">Hapus</a>
+                            <a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="icon-btn icon-view" title="Lihat"><i class="fas fa-eye"></i></a>
+                            <?php 
+                            // Determine if we should show edit/delete buttons based on ownership
+                            $show_actions = false;
+                            $show_delete = false;
+                            $row_id = $row['id'];
+                            $row_negara_id = $row['negara_id'] ?? 0;
+                            $row_provinsi_id = $row['provinsi_id'] ?? 0;
+                            
+                            if ($user_role === 'admin') {
+                                // Admin can do everything
+                                $show_actions = true;
+                                $show_delete = true;
+                            } elseif ($user_role === 'negara') {
+                                if ($jenis === 'negara') {
+                                    // Can only edit their own negara, cannot delete
+                                    $show_actions = ($row_id == $user_pengurus_id);
+                                    $show_delete = false;
+                                } elseif ($jenis === 'provinsi') {
+                                    // Can edit/delete provinces in their negara
+                                    $show_actions = ($row_negara_id == $user_pengurus_id);
+                                    $show_delete = ($row_negara_id == $user_pengurus_id);
+                                } elseif ($jenis === 'kota') {
+                                    // Can edit/delete cities in their negara
+                                    $show_actions = ($row_negara_id == $user_pengurus_id);
+                                    $show_delete = ($row_negara_id == $user_pengurus_id);
+                                }
+                            } elseif ($user_role === 'pengprov') {
+                                if ($jenis === 'provinsi') {
+                                    // Can edit their own provinsi, cannot delete
+                                    $show_actions = ($row_id == $user_pengurus_id);
+                                    $show_delete = false;
+                                } elseif ($jenis === 'kota') {
+                                    $show_actions = ($row_provinsi_id == $user_pengurus_id);
+                                    $show_delete = ($row_provinsi_id == $user_pengurus_id);
+                                }
+                            } elseif ($user_role === 'pengkot') {
+                                if ($jenis === 'kota') {
+                                    // Can edit their own kota, but cannot delete
+                                    $show_actions = ($row_id == $user_pengurus_id);
+                                    $show_delete = false;
+                                }
+                            }
+                            
+                            if ($show_actions): ?>
+                            <a href="pengurus_edit.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="icon-btn icon-edit" title="Edit"><i class="fas fa-edit"></i></a>
+                            <?php if ($show_delete): ?>
+                            <a href="pengurus_hapus.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin?')"><i class="fas fa-trash"></i></a>
+                            <?php endif; ?>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -368,10 +512,44 @@ $is_readonly = $_SESSION['role'] == 'user';
         // Update provinces dropdown based on selected negara
         function updateProvinsi() {
             const negaraId = negaraSelect ? negaraSelect.value : '';
+            const userRole = '<?php echo $user_role; ?>';
+            const userPengurusId = '<?php echo $user_pengurus_id; ?>';
             
             // Reset province dropdown to default
             if (provinsiSelect) {
                 provinsiSelect.innerHTML = '<option value="">-- Semua Provinsi --</option>';
+                
+                // Enable/disable provinsi based on negara selection for all roles
+                if (!negaraId) {
+                    provinsiSelect.disabled = true;
+                    filterTable();
+                    return;
+                } else {
+                    provinsiSelect.disabled = false;
+                }
+                
+                // For all roles: fetch provinces based on selected negara
+                const targetNegaraId = negaraId || userPengurusId;
+                if (targetNegaraId) {
+                    fetch('../../api/manage_provinsi.php?action=get_by_negara&id_negara=' + targetNegaraId)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.data.length > 0) {
+                                data.data.forEach(prov => {
+                                    const option = document.createElement('option');
+                                    option.value = prov.id;
+                                    option.textContent = prov.nama;
+                                    provinsiSelect.appendChild(option);
+                                });
+                            }
+                            filterTable();
+                        })
+                        .catch(error => {
+                            console.error('Error fetching provinces:', error);
+                            filterTable();
+                        });
+                    return;
+                }
             }
             
             // Reset search input when negara changes
@@ -379,29 +557,8 @@ $is_readonly = $_SESSION['role'] == 'user';
                 searchInput.value = '';
             }
             
-            if (!negaraId || !provinsiSelect) {
-                filterTable();
-                return;
-            }
-            
-            // Fetch provinces by negara
-            fetch('../../api/manage_provinsi.php?action=get_by_negara&id_negara=' + negaraId)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.data.length > 0) {
-                        data.data.forEach(prov => {
-                            const option = document.createElement('option');
-                            option.value = prov.id;
-                            option.textContent = prov.nama;
-                            provinsiSelect.appendChild(option);
-                        });
-                    }
-                    filterTable();
-                })
-                .catch(error => {
-                    console.error('Error fetching provinces:', error);
-                    filterTable();
-                });
+            // Cascade filtering completed
+            filterTable();
         }
         
         // Auto-filter when negara changes
@@ -418,6 +575,12 @@ $is_readonly = $_SESSION['role'] == 'user';
             });
         }
         
+        // Auto-load provinces for negara, pengprov, and pengkot roles on page load
+        const userRole = '<?php echo $user_role; ?>';
+        if ((userRole === 'negara' || userRole === 'pengprov' || userRole === 'pengkot') && provinsiSelect) {
+            updateProvinsi();
+        }
+        
         // Auto-filter when provinsi changes
         if (provinsiSelect) {
             provinsiSelect.addEventListener('change', filterTable);
@@ -430,6 +593,13 @@ $is_readonly = $_SESSION['role'] == 'user';
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(filterTable, 300);
             });
+        }
+        
+        // Initialize: disable provinsi if no negara selected on page load
+        if (provinsiSelect && negaraSelect) {
+            if (!negaraSelect.value) {
+                provinsiSelect.disabled = true;
+            }
         }
     });
     </script>

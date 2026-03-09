@@ -151,4 +151,87 @@ function getDaysUntilEligible($ukt_terakhir, $months_interval = 12) {
     }
 }
 
-?>
+
+/**
+ * Helper function untuk format no_anggota sesuai pengaturan
+ * 
+ * @param string $no_anggota Nomor anggota mentah
+ * @param array $pengaturan_nomor Konfigurasi dari settings.php
+ * @return string Nomor anggota terformat
+ */
+function formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) {
+    if (empty($no_anggota)) return $no_anggota;
+    
+    // Try to parse the format
+    if (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = $matches[1];
+        $ranting_kode = $matches[2];
+        $year_seq = $matches[3];
+    } elseif (preg_match('/^([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = '';
+        $ranting_kode = $matches[1];
+        $year_seq = $matches[2];
+    } elseif (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)$/', $no_anggota, $matches)) {
+        $kode_full = $matches[1];
+        $ranting_kode = $matches[2];
+        $year_seq = '';
+    } else {
+        return $no_anggota;
+    }
+    
+    $negara_kode = '';
+    $provinsi_kode = '';
+    $kota_kode = '';
+    
+    if (strlen($kode_full) >= 2) {
+        $negara_kode = substr($kode_full, 0, 2);
+    }
+    if (strlen($kode_full) >= 5) {
+        $provinsi_kode = substr($kode_full, 2, 3);
+    }
+    if (strlen($kode_full) >= 8) {
+        $kota_kode = substr($kode_full, 5, 3);
+    }
+    
+    $tahun = '';
+    $urutan = '';
+    if (strlen($year_seq) >= 4) {
+        $tahun = substr($year_seq, 0, 4);
+        $urutan = substr($year_seq, 4);
+    }
+    
+    $kode_parts = [];
+    if ($pengaturan_nomor['kode_negara'] ?? true) {
+        $kode_parts[] = $negara_kode;
+    }
+    if ($pengaturan_nomor['kode_provinsi'] ?? true) {
+        $kode_parts[] = $provinsi_kode;
+    }
+    if ($pengaturan_nomor['kode_kota'] ?? true) {
+        $kode_parts[] = $kota_kode;
+    }
+    $kode_str = implode('', $kode_parts);
+    
+    $ranting_str = '';
+    if ($pengaturan_nomor['kode_ranting'] ?? true) {
+        if (!empty($kode_str)) {
+            $ranting_str = '.' . $ranting_kode;
+        } else {
+            $ranting_str = $ranting_kode;
+        }
+    }
+    
+    $year_seq_str = '';
+    $year_part = ($pengaturan_nomor['tahun_daftar'] ?? true) ? $tahun : '';
+    $seq_part = ($pengaturan_nomor['urutan_daftar'] ?? true) ? $urutan : '';
+    
+    if (!empty($year_part) || !empty($seq_part)) {
+        if (!empty($kode_str) || !empty($ranting_str)) {
+            $year_seq_str = '-' . $year_part . $seq_part;
+        } else {
+            $year_seq_str = $year_part . $seq_part;
+        }
+    }
+    
+    return $kode_str . $ranting_str . $year_seq_str;
+}

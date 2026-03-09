@@ -7,8 +7,12 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 include '../../config/database.php';
+include 'ukt_helper.php';
+
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../config/settings.php';
+
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -23,22 +27,93 @@ $permission_manager = new PermissionManager(
 $GLOBALS['permission_manager'] = $permission_manager;
 
 // Check permission untuk action ini
-if (!$permission_manager->can('anggota_read')) {
-    die("❌ Akses ditolak!");
+// Use simpler permission check for now - just check if logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../../login.php");
+    exit();
 }
 
+// Get UKT ID first
 $id = (int)$_GET['id'];
 
-// Ambil data UKT
-$ukt_result = $conn->query("SELECT u.*, p.nama as nama_penyelenggara 
-                            FROM ukt u 
-                            LEFT JOIN kota p ON u.penyelenggara_id = p.id 
-                            WHERE u.id = $id");
+// Additional check - verify user can read this specific UKT
+$ukt_filter = $permission_manager->getUKTFilterSQL();
+$where_clause = $ukt_filter['where'];
+$filter_params = $ukt_filter['params'];
+
+// For pengkot role, we need special handling - they can only see their own city
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+
+if ($user_role === 'pengkot') {
+    // Pengkot can only see UKT at their city level
+    $check = $conn->query("SELECT id FROM ukt WHERE id = $id AND jenis_penyelenggara = 'kota' AND penyelenggara_id = " . (int)$user_pengurus_id);
+    if (!$check || $check->num_rows === 0) {
+        die("❌ Akses ditolak! Anda tidak memiliki izin untuk melihat UKT ini.");
+    }
+} elseif ($where_clause !== '1=1' && $where_clause !== '1=0') {
+    // Other roles with filter
+    $check_sql = "SELECT id FROM ukt u WHERE u.id = ? AND ($where_clause)";
+    $check_stmt = $conn->prepare($check_sql);
+    $all_params = array_merge([$id], $filter_params);
+    if ($all_params) {
+        $types = str_repeat('i', count($all_params));
+        $check_stmt->bind_param($types, ...$all_params);
+    }
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    
+    if ($check_result->num_rows === 0) {
+        die("❌ Akses ditolak! Anda tidak memiliki izin untuk melihat UKT ini.");
+    }
+}
+
+
+include '../../config/settings.php';
+
+// Ambil data UKT - need to handle different types
+$ukt_result = $conn->query("SELECT u.*, 
+    CASE 
+        WHEN u.jenis_penyelenggara = 'pusat' THEN n.nama
+        WHEN u.jenis_penyelenggara = 'provinsi' THEN pr.nama
+        ELSE k.nama
+    END as nama_penyelenggara
+    FROM ukt u 
+    LEFT JOIN negara n ON u.jenis_penyelenggara = 'pusat' AND u.penyelenggara_id = n.id
+    LEFT JOIN provinsi pr ON u.jenis_penyelenggara = 'provinsi' AND u.penyelenggara_id = pr.id
+    LEFT JOIN kota k ON u.jenis_penyelenggara = 'kota' AND u.penyelenggara_id = k.id
+    WHERE u.id = $id");
 if ($ukt_result->num_rows == 0) {
     die("UKT tidak ditemukan!");
 }
 
 $ukt = $ukt_result->fetch_assoc();
+
+// DEBUG: Log values for debugging
+error_log("DEBUG ukt_detail: role=" . $_SESSION['role'] . ", pengurus_id=" . $_SESSION['pengurus_id'] . ", jenis_penyelenggara=" . $ukt['jenis_penyelenggara'] . ", penyelenggara_id=" . $ukt['penyelenggara_id']);
+
+// Check if user can manage this UKT (is owner)
+// For pengkot, they can only manage their own city UKT
+$can_manage_ukt = false;
+
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+
+if ($user_role === 'pengkot') {
+    // Pengkot can manage their own city UKT
+    $can_manage_ukt = ($ukt['jenis_penyelenggara'] === 'kota' && (int)$ukt['penyelenggara_id'] === (int)$user_pengurus_id);
+} elseif ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov') {
+    // Admin, negara, pengprov use the standard check
+    try {
+        $can_manage_ukt = $permission_manager->canManageUKT('ukt_update', $ukt['jenis_penyelenggara'], $ukt['penyelenggara_id']);
+    } catch (Exception $e) {
+        error_log("canManageUKT exception: " . $e->getMessage());
+        $can_manage_ukt = false;
+    }
+}
+
+// User can only add/edit/delete participants and nilai if they own this UKT
+$is_readonly = !$can_manage_ukt;
 
 // Ambil data peserta UKT
 $peserta_sql = "SELECT up.*, a.nama_lengkap, a.no_anggota, t1.nama_tingkat as tingkat_dari, t2.nama_tingkat as tingkat_ke
@@ -55,8 +130,6 @@ $total_peserta = $peserta_result->num_rows;
 // Hitung statistik
 $stat_lulus = $conn->query("SELECT COUNT(*) as count FROM ukt_peserta WHERE ukt_id = $id AND status = 'lulus'")->fetch_assoc();
 $stat_tidak = $conn->query("SELECT COUNT(*) as count FROM ukt_peserta WHERE ukt_id = $id AND status = 'tidak_lulus'")->fetch_assoc();
-
-$is_readonly = $_SESSION['role'] == 'user';
 
 // Handle print mode with proper validation and error handling
 $print_mode = filter_input(INPUT_GET, 'print', FILTER_VALIDATE_BOOLEAN);
@@ -176,7 +249,7 @@ if ($print_mode) {
             ?>
             <tr>
                 <td><?php echo $no++; ?></td>
-                <td><?php echo htmlspecialchars($row['no_anggota']); ?></td>
+                <td><a href="anggota_detail.php?id=<?php echo $row['anggota_id']; ?>" style="color: inherit; text-decoration: none; font-weight: bold;"><?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?></a></td>
                 <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
                 <td><?php echo htmlspecialchars($row['tingkat_dari'] ?? '-'); ?></td>
                 <td><?php echo htmlspecialchars($row['tingkat_ke'] ?? '-'); ?></td>
@@ -232,6 +305,7 @@ if ($print_mode) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail UKT - Sistem Beladiri</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; }
@@ -385,7 +459,7 @@ if ($print_mode) {
             flex-wrap: wrap;
         }
         
-        .ukt-info-box {
+        .info-box {
             background: #f0f7ff;
             border-left: 4px solid #667eea;
             padding: 15px;
@@ -394,8 +468,46 @@ if ($print_mode) {
             font-size: 13px;
         }
 
-        .ukt-info-box strong {
+        .info-box strong {
             color: #667eea;
+        }
+
+        /* Icon Button Styles */
+        .action-icons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 12px;
+            transition: all 0.3s;
+            color: white;
+        }
+        
+        .icon-view { background: #3498db; }
+        .icon-view:hover { background: #2980b9; }
+        .icon-cert { background: #667eea; }
+        .icon-cert:hover { background: #5568d3; }
+        .icon-delete { background: #e74c3c; }
+        .icon-delete:hover { background: #c0392b; }
+        
+        .icon-btn.btn-disabled {
+            background: #d0d0d0 !important;
+            color: #888 !important;
+            cursor: not-allowed !important;
+            opacity: 0.6;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -430,7 +542,7 @@ if ($print_mode) {
         </div>
         
         <div class="section">
-            <div class="ukt-info-box">
+            <div class="info-box">
                 <strong>ℹ️ Catatan:</strong> <?php echo htmlspecialchars($ukt['catatan'] ?? '-'); ?>
             </div>
         </div>
@@ -480,7 +592,7 @@ if ($print_mode) {
                 <tbody>
                     <?php while ($row = $peserta_result->fetch_assoc()): ?>
                     <tr>
-                        <td><?php echo $row['no_anggota']; ?></td>
+                        <td><a href="anggota_detail.php?id=<?php echo $row['anggota_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 600;"><?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?></a></td>
                         <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
                         <td><?php echo $row['tingkat_dari'] ?? '-'; ?></td>
                         <td><?php echo $row['tingkat_ke'] ?? '-'; ?></td>
@@ -507,22 +619,28 @@ if ($print_mode) {
                             ?>
                         </td>
                         <td>
-                            <a href="ukt_detail_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
-                               class="btn btn-lihat">👁️ Lihat</a>
-                            
-                            <?php if ($row['status'] == 'lulus'): ?>
-                                <a href="ukt_input_sertifikat.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
-                                class="btn btn-primary" style="padding: 8px 12px; font-size: 12px;">
-                                    📜 Sertifikat
+                            <div class="action-icons">
+                                <a href="ukt_detail_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
+                                   class="icon-btn icon-view" title="Lihat">
+                                    <i class="fas fa-eye"></i>
                                 </a>
-                            <?php else: ?>
-                                <button class="btn btn-primary btn-disabled" style="padding: 8px 12px; font-size: 12px;" disabled title="Hanya peserta yang lulus dapat upload sertifikat">
-                                    📜 Sertifikat
-                                </button>
-                            <?php endif; ?>
-                            
-                            <a href="ukt_hapus_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
-                               class="btn btn-primary" onclick="return confirm('Hapus peserta?')" style="padding: 8px 12px; font-size: 12px;">Hapus</a>
+                                
+                                <?php if ($row['status'] == 'lulus'): ?>
+                                    <a href="ukt_input_sertifikat.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
+                                       class="icon-btn icon-cert" title="Upload Sertifikat">
+                                        <i class="fas fa-certificate"></i>
+                                    </a>
+                                <?php else: ?>
+                                    <button class="icon-btn icon-cert btn-disabled" disabled title="Hanya peserta yang lulus dapat upload sertifikat">
+                                        <i class="fas fa-certificate"></i>
+                                    </button>
+                                <?php endif; ?>
+                                
+                                <a href="ukt_hapus_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
+                                   class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Hapus peserta?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
                         </td>
                         <?php endif; ?>
                     </tr>

@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../config/settings.php';
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -37,7 +38,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                    a.nama_lengkap, a.no_anggota, t.nama_tingkat, t_pembuka.nama_tingkat as tingkat_pembuka_nama
             FROM kerohanian k
             JOIN anggota a ON k.anggota_id = a.id
-            LEFT JOIN tingkatan t ON a.tingkat_id = t.id
+            LEFT JOIN tingkatan t ON k.tingkat_id = t.id
             LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.id
             WHERE 1=1";
     
@@ -62,7 +63,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
         $rows[] = [
             'id' => (int)$row['id'],
             'tanggal' => date('d-m-Y', strtotime($row['tanggal_pembukaan'])),
-            'no_anggota' => htmlspecialchars($row['no_anggota']),
+            'no_anggota' => htmlspecialchars(formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor)),
             'nama_anggota' => htmlspecialchars($row['nama_lengkap']),
             'tingkat' => htmlspecialchars($row['nama_tingkat'] ?? '-'),
             'lokasi' => htmlspecialchars($row['lokasi'] ?? '-'),
@@ -79,7 +80,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 $sql = "SELECT k.*, a.nama_lengkap, a.no_anggota, a.tingkat_id, t.nama_tingkat, r.nama_ranting, t_pembuka.nama_tingkat as tingkat_pembuka_nama
         FROM kerohanian k
         JOIN anggota a ON k.anggota_id = a.id
-        LEFT JOIN tingkatan t ON a.tingkat_id = t.id
+        LEFT JOIN tingkatan t ON k.tingkat_id = t.id
         LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id
         LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.id
         ORDER BY k.tanggal_pembukaan DESC";
@@ -87,21 +88,90 @@ $sql = "SELECT k.*, a.nama_lengkap, a.no_anggota, a.tingkat_id, t.nama_tingkat, 
 $result = $conn->query($sql);
 $total_kerohanian = $result->num_rows;
 
-$is_readonly = $_SESSION['role'] == 'user';
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+$user_ranting_id = $_SESSION['ranting_id'] ?? 0;
+
+// Get user's organization name for ownership checking
+$user_org_name = '';
+if ($user_role == 'negara' && $user_pengurus_id) {
+    $org_result = $conn->query("SELECT nama FROM negara WHERE id = $user_pengurus_id");
+    if ($org_result && $org_result->num_rows > 0) {
+        $user_org_name = $org_result->fetch_assoc()['nama'];
+    }
+} elseif ($user_role == 'pengprov' && $user_pengurus_id) {
+    $org_result = $conn->query("SELECT nama FROM provinsi WHERE id = $user_pengurus_id");
+    if ($org_result && $org_result->num_rows > 0) {
+        $user_org_name = $org_result->fetch_assoc()['nama'];
+    }
+} elseif ($user_role == 'pengkot' && $user_pengurus_id) {
+    $org_result = $conn->query("SELECT nama FROM kota WHERE id = $user_pengurus_id");
+    if ($org_result && $org_result->num_rows > 0) {
+        $user_org_name = $org_result->fetch_assoc()['nama'];
+    }
+} elseif ($user_role == 'unit' && $user_ranting_id) {
+    $org_result = $conn->query("SELECT nama_ranting as nama FROM ranting WHERE id = $user_ranting_id");
+    if ($org_result && $org_result->num_rows > 0) {
+        $user_org_name = $org_result->fetch_assoc()['nama'];
+    }
+}
+
+// Role-based permissions
+// Admin can do everything
+// negara, pengprov, pengkot can add, edit, delete their own data
+// Other roles are read-only
+$is_readonly = !in_array($user_role, ['admin', 'negara', 'pengprov', 'pengkot']);
+$can_add = in_array($user_role, ['admin', 'negara', 'pengprov', 'pengkot']);
+$can_edit = in_array($user_role, ['admin', 'negara', 'pengprov', 'pengkot']);
+$can_delete = in_array($user_role, ['admin', 'negara', 'pengprov', 'pengkot']);
+$can_import = in_array($user_role, ['admin', 'negara', 'pengprov', 'pengkot']);
+
+// Helper: format no_anggota sesuai pengaturan
+function formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) {
+    if (empty($no_anggota)) return $no_anggota;
+    if (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $m)) {
+        $kode_full = $m[1]; $ranting_kode = $m[2]; $year_seq = $m[3];
+    } elseif (preg_match('/^([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $m)) {
+        $kode_full = ''; $ranting_kode = $m[1]; $year_seq = $m[2];
+    } elseif (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)$/', $no_anggota, $m)) {
+        $kode_full = $m[1]; $ranting_kode = $m[2]; $year_seq = '';
+    } else { return $no_anggota; }
+    $negara_kode   = strlen($kode_full) >= 2 ? substr($kode_full, 0, 2) : '';
+    $provinsi_kode = strlen($kode_full) >= 5 ? substr($kode_full, 2, 3) : '';
+    $kota_kode     = strlen($kode_full) >= 8 ? substr($kode_full, 5, 3) : '';
+    $tahun  = strlen($year_seq) >= 4 ? substr($year_seq, 0, 4) : '';
+    $urutan = strlen($year_seq) >= 4 ? substr($year_seq, 4) : '';
+    $kode_parts = [];
+    if ($pengaturan_nomor['kode_negara']   ?? true) $kode_parts[] = $negara_kode;
+    if ($pengaturan_nomor['kode_provinsi'] ?? true) $kode_parts[] = $provinsi_kode;
+    if ($pengaturan_nomor['kode_kota']     ?? true) $kode_parts[] = $kota_kode;
+    $kode_str = implode('', $kode_parts);
+    $ranting_str = '';
+    if ($pengaturan_nomor['kode_ranting'] ?? true) {
+        $ranting_str = !empty($kode_str) ? '.' . $ranting_kode : $ranting_kode;
+    }
+    $year_part = ($pengaturan_nomor['tahun_daftar']   ?? true) ? $tahun : '';
+    $seq_part  = ($pengaturan_nomor['urutan_daftar']  ?? true) ? $urutan : '';
+    $year_seq_str = '';
+    if (!empty($year_part) || !empty($seq_part)) {
+        $year_seq_str = (!empty($kode_str) || !empty($ranting_str)) ? '-' . $year_part . $seq_part : $year_part . $seq_part;
+    }
+    return $kode_str . $ranting_str . $year_seq_str;
+}
 
 function formatTanggal($date) {
     if (empty($date)) return '-';
     return date('d-m-Y', strtotime($date));
 }
 
-function singkatTingkat($nama_tingkat) {
-    $singkat = [
+function singkatanTingkat($nama_tingkat) {
+    $singkatan = [
         'Dasar I' => 'DI', 'Dasar II' => 'DII', 'Calon Keluarga' => 'Cakel',
         'Putih' => 'P', 'Putih Hijau' => 'PH', 'Hijau' => 'H', 'Hijau Biru' => 'HB',
         'Biru' => 'B', 'Biru Merah' => 'BM', 'Merah' => 'M', 'Merah Kuning' => 'MK',
         'Kuning' => 'K/PM', 'Pendekar' => 'PKE'
     ];
-    return isset($singkat[$nama_tingkat]) ? $singkat[$nama_tingkat] : $nama_tingkat;
+    return isset($singkatan[$nama_tingkat]) ? $singkatan[$nama_tingkat] : $nama_tingkat;
 }
 ?>
 
@@ -163,6 +233,9 @@ function singkatTingkat($nama_tingkat) {
         
         .btn-secondary { background: #6c757d; color: white; }
         .btn-secondary:hover { background: #5a6268; }
+
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
         
         .filter-container {
             background: white;
@@ -300,7 +373,14 @@ function singkatTingkat($nama_tingkat) {
             </div>
             <?php if (!$is_readonly): ?>
             <div class="header-right">
+                <?php if ($can_import): ?>
+                <a href="kerohanian_import.php" class="btn btn-success">⬆️ Import CSV</a>
+                <?php else: ?>
+                <a href="index.php" class="btn btn-secondary">🔙 Kembali</a>
+                <?php endif; ?>
+                <?php if ($can_add): ?>
                 <a href="kerohanian_tambah.php" class="btn btn-primary">+ Tambah Kerohanian</a>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
         </div>
@@ -327,7 +407,6 @@ function singkatTingkat($nama_tingkat) {
             </div>
             
             <div class="filter-buttons">
-                <button class="btn btn-primary" style="padding: 8px 16px; font-size: 12px;" onclick="applyFilters()">🔎 Terapkan Filter</button>
                 <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;" onclick="resetFilters()">🔄 Reset Filter</button>
             </div>
         </div>
@@ -339,37 +418,39 @@ function singkatTingkat($nama_tingkat) {
                     <tr>
                         <th>No. Anggota</th>
                         <th>Nama Anggota</th>
-                        <th>Tingkat</th>
-                        <th>Tgl Pembukaan</th>
                         <th>Penyelenggara</th>
+                        <th>Tgl Pembukaan</th>
                         <th>Lokasi</th>
                         <th>Pembuka</th>
-                        <th>Tingkat Pembuka</th>
-                        <th>Unit/Ranting</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="kerohanian-tbody">
                     <?php while ($row = $result->fetch_assoc()): ?>
                     <tr>
-                        <td><?php echo $row['no_anggota']; ?></td>
+                        <td><?php echo htmlspecialchars(formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor)); ?></td>
                         <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
-                        <td><span class="badge"><?php echo singkatTingkat($row['nama_tingkat'] ?? '-'); ?></span></td>
-                        <td><?php echo formatTanggal($row['tanggal_pembukaan']); ?></td>
                         <td><?php echo htmlspecialchars($row['penyelenggara'] ?? '-'); ?></td>
+                        <td><?php echo formatTanggal($row['tanggal_pembukaan']); ?></td>
                         <td><?php echo htmlspecialchars($row['lokasi'] ?? '-'); ?></td>
                         <td><?php echo htmlspecialchars($row['pembuka_nama'] ?? '-'); ?></td>
-                        <td><span class="badge"><?php echo singkatTingkat($row['tingkat_pembuka_nama'] ?? '-'); ?></span></td>
-                        <td><?php echo htmlspecialchars($row['nama_ranting'] ?? '-'); ?></td>
                         <td>
+                            <?php
+                            // Check if user can edit/delete this specific record
+                            // Admin can edit all, others can only edit their own organization's data
+                            $record_penyelenggara = $row['penyelenggara'] ?? '';
+                            $is_owner = ($user_role === 'admin') || ($record_penyelenggara === $user_org_name);
+                            ?>
                             <div class="action-icons">
                                 <a href="kerohanian_detail.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-view" title="Lihat">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <?php if (!$is_readonly): ?>
+                                <?php if ($can_edit && $is_owner): ?>
                                 <a href="kerohanian_edit.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-edit" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                <?php endif; ?>
+                                <?php if ($can_delete && $is_owner): ?>
                                 <a href="kerohanian_hapus.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus data ini?')">
                                     <i class="fas fa-trash"></i>
                                 </a>
@@ -385,6 +466,20 @@ function singkatTingkat($nama_tingkat) {
     </div>
     
     <script>
+        let debounceTimer;
+
+        // Trigger filter saat input berubah (live search)
+        document.getElementById('filter-anggota').addEventListener('input', debounceFilter);
+        document.getElementById('filter-penyelenggara').addEventListener('input', debounceFilter);
+        document.getElementById('filter-pembuka').addEventListener('input', debounceFilter);
+
+        function debounceFilter() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                applyFilters();
+            }, 300); // Tunggu 300ms setelah berhenti mengetik
+        }
+
         function applyFilters() {
             const anggota = document.getElementById('filter-anggota').value;
             const penyelenggara = document.getElementById('filter-penyelenggara').value;
@@ -409,6 +504,8 @@ function singkatTingkat($nama_tingkat) {
             const tbody = document.getElementById('kerohanian-tbody');
             const noData = document.getElementById('no-data');
             const totalCount = document.getElementById('total-count');
+            const canEdit = <?php echo $can_edit ? 'true' : 'false'; ?>;
+            const canDelete = <?php echo $can_delete ? 'true' : 'false'; ?>;
             
             if (data.length === 0) {
                 tbody.innerHTML = '';
@@ -422,30 +519,41 @@ function singkatTingkat($nama_tingkat) {
             
             let html = '';
             data.forEach(row => {
+                let actionHtml = `
+                    <div class="action-icons">
+                        <a href="kerohanian_detail.php?id=${row.id}" class="icon-btn icon-view" title="Lihat">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                `;
+                
+                if (canEdit || canDelete) {
+                    if (canEdit) {
+                        actionHtml += `
+                            <a href="kerohanian_edit.php?id=${row.id}" class="icon-btn icon-edit" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        `;
+                    }
+                    if (canDelete) {
+                        actionHtml += `
+                            <a href="kerohanian_hapus.php?id=${row.id}" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus data ini?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        `;
+                    }
+                }
+                
+                actionHtml += `</div>`;
+
                 html += `
                     <tr>
                         <td>${row.no_anggota}</td>
                         <td>${row.nama_anggota}</td>
-                        <td><span class="badge">${row.tingkat}</span></td>
-                        <td>${row.tanggal}</td>
                         <td>${row.penyelenggara}</td>
+                        <td>${row.tanggal}</td>
                         <td>${row.lokasi}</td>
                         <td>${row.pembuka_nama}</td>
-                        <td><span class="badge">${row.tingkat_pembuka}</span></td>
-                        <td>-</td>
-                        <td>
-                            <div class="action-icons">
-                                <a href="kerohanian_detail.php?id=${row.id}" class="icon-btn icon-view" title="Lihat">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="kerohanian_edit.php?id=${row.id}" class="icon-btn icon-edit" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="kerohanian_hapus.php?id=${row.id}" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus data ini?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </div>
-                        </td>
+                        <td>${actionHtml}</td>
                     </tr>
                 `;
             });
@@ -457,7 +565,7 @@ function singkatTingkat($nama_tingkat) {
             document.getElementById('filter-anggota').value = '';
             document.getElementById('filter-penyelenggara').value = '';
             document.getElementById('filter-pembuka').value = '';
-            location.reload();
+            applyFilters(); // Kembali tampilkan semua data via AJAX atau reload
         }
     </script>
 </body>

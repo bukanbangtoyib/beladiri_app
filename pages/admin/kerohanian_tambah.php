@@ -1,7 +1,8 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+// Block tamu role, allow admin, negara, pengprov, pengkot, unit
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] == 'tamu') {
     header("Location: ../../login.php");
     exit();
 }
@@ -22,7 +23,62 @@ $permission_manager = new PermissionManager(
 $GLOBALS['permission_manager'] = $permission_manager;
 
 if (!$permission_manager->can('anggota_read')) {
-    die("âŒ Akses ditolak!");
+    die("❌ Akses ditolak!");
+}
+
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+$user_ranting_id = $_SESSION['ranting_id'] ?? 0;
+
+// Get organization name for non-admin users
+$user_org_name = '';
+if ($user_role != 'admin') {
+    if ($user_role == 'negara' && $user_pengurus_id) {
+        $org_result = $conn->query("SELECT nama FROM negara WHERE id = $user_pengurus_id");
+        if ($org_result && $org_result->num_rows > 0) {
+            $user_org_name = $org_result->fetch_assoc()['nama'];
+        }
+    } elseif ($user_role == 'pengprov' && $user_pengurus_id) {
+        $org_result = $conn->query("SELECT nama FROM provinsi WHERE id = $user_pengurus_id");
+        if ($org_result && $org_result->num_rows > 0) {
+            $user_org_name = $org_result->fetch_assoc()['nama'];
+        }
+    } elseif ($user_role == 'pengkot' && $user_pengurus_id) {
+        $org_result = $conn->query("SELECT nama FROM kota WHERE id = $user_pengurus_id");
+        if ($org_result && $org_result->num_rows > 0) {
+            $user_org_name = $org_result->fetch_assoc()['nama'];
+        }
+    } elseif ($user_role == 'unit' && $user_ranting_id) {
+        $org_result = $conn->query("SELECT nama_ranting as nama FROM ranting WHERE id = $user_ranting_id");
+        if ($org_result && $org_result->num_rows > 0) {
+            $user_org_name = $org_result->fetch_assoc()['nama'];
+        }
+    }
+}
+
+// Get all organizations for admin dropdown
+$all_organizations = [];
+if ($user_role == 'admin') {
+    // Get all negara
+    $negara_result = $conn->query("SELECT id, nama, 'negara' as type FROM negara ORDER BY nama");
+    while ($row = $negara_result->fetch_assoc()) {
+        $all_organizations[] = $row;
+    }
+    // Get all provinsi
+    $provinsi_result = $conn->query("SELECT id, nama, 'provinsi' as type FROM provinsi ORDER BY nama");
+    while ($row = $provinsi_result->fetch_assoc()) {
+        $all_organizations[] = $row;
+    }
+    // Get all kota
+    $kota_result = $conn->query("SELECT id, nama, 'kota' as type FROM kota ORDER BY nama");
+    while ($row = $kota_result->fetch_assoc()) {
+        $all_organizations[] = $row;
+    }
+    // Get all ranting
+    $ranting_result = $conn->query("SELECT id, nama_ranting as nama, 'ranting' as type FROM ranting ORDER BY nama_ranting");
+    while ($row = $ranting_result->fetch_assoc()) {
+        $all_organizations[] = $row;
+    }
 }
 
 $error = '';
@@ -35,19 +91,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $pembuka_nama = $conn->real_escape_string($_POST['pembuka_nama']);
     $penyelenggara = $conn->real_escape_string($_POST['penyelenggara']);
     $tingkat_pembuka_id = !empty($_POST['tingkat_pembuka_id']) ? (int)$_POST['tingkat_pembuka_id'] : NULL;
+    $tingkat_id = !empty($_POST['tingkat_id']) ? (int)$_POST['tingkat_id'] : NULL;
     
     // Cek apakah sudah pernah pembukaan kerohanian
     $check = $conn->query("SELECT id FROM kerohanian WHERE anggota_id = $anggota_id");
     if ($check->num_rows > 0) {
         $error = "Anggota sudah memiliki pembukaan kerohanian!";
     } else {
-        $sql = "INSERT INTO kerohanian (anggota_id, tanggal_pembukaan, lokasi, pembuka_nama, penyelenggara, tingkat_pembuka_id)
-                VALUES (?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO kerohanian (anggota_id, tanggal_pembukaan, lokasi, pembuka_nama, penyelenggara, tingkat_pembuka_id, tingkat_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
         
         if ($stmt) {
-            $stmt->bind_param("isssi", $anggota_id, $tanggal_pembukaan, $lokasi, $pembuka_nama, $penyelenggara, $tingkat_pembuka_id);
+            $stmt->bind_param("issssii", $anggota_id, $tanggal_pembukaan, $lokasi, $pembuka_nama, $penyelenggara, $tingkat_pembuka_id, $tingkat_id);
             
             if ($stmt->execute()) {
                 // Update status kerohanian di anggota
@@ -67,13 +124,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // Ambil daftar anggota yang belum pembukaan kerohanian
-$anggota_result = $conn->query("SELECT a.id, a.no_anggota, a.nama_lengkap 
+$anggota_result = $conn->query("SELECT a.id, a.no_anggota, a.nama_lengkap, r.nama_ranting 
                                 FROM anggota a
+                                LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id
                                 WHERE NOT EXISTS (SELECT 1 FROM kerohanian WHERE anggota_id = a.id)
                                 ORDER BY a.nama_lengkap");
 
 // Ambil daftar tingkat
 $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY urutan");
+$tingkat_list = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY urutan");
 ?>
 
 <!DOCTYPE html>
@@ -82,6 +141,7 @@ $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tambah Kerohanian - Sistem Beladiri</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; }
@@ -112,8 +172,9 @@ $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
             font-weight: 600;
             font-size: 14px;
         }
-        
-        input[type="text"], input[type="date"], select {
+
+        input[type="text"], input[type="date"], input[type="file"], input[type="tel"], input[type="time"],
+        select, textarea {
             width: 100%;
             padding: 11px 14px;
             border: 1px solid #ddd;
@@ -138,6 +199,22 @@ $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
         
         .required { color: #dc3545; }
         .form-hint { font-size: 12px; color: #999; margin-top: 6px; }
+        h3 { color: #333; margin-bottom: 25px; font-size: 16px; padding-bottom: 12px; border-bottom: 2px solid #667eea; }
+        
+        /* Select2 styling to match other inputs */
+        .select2-container .select2-selection--single {
+            height: 42px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .select2-container .select2-selection--single .select2-selection__rendered {
+            line-height: 42px;
+            padding-left: 14px;
+            font-size: 14px;
+        }
+        .select2-container .select2-selection--single .select2-selection__arrow {
+            height: 40px;
+        }
         
         .btn {
             padding: 12px 30px;
@@ -163,6 +240,30 @@ $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
         
         .alert-error { background: #fff5f5; color: #c00; border-left-color: #dc3545; }
         .alert-success { background: #f0fdf4; color: #060; border-left-color: #28a745; }
+        
+        .suggestions-box {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: 52%;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .suggestions-box.show { display: block; }
+        
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .suggestion-item:hover { background: #f5f5f5; }
+        .suggestion-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -181,50 +282,41 @@ $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
             <?php endif; ?>
             
             <form method="POST">
-                <div class="form-group">
-                    <label>Anggota <span class="required">*</span></label>
-                    <select name="anggota_id" required>
-                        <option value="">-- Pilih Anggota --</option>
-                        <?php while ($row = $anggota_result->fetch_assoc()): ?>
-                            <option value="<?php echo $row['id']; ?>">
-                                <?php echo $row['no_anggota']; ?> - <?php echo htmlspecialchars($row['nama_lengkap']); ?>
-                            </option>
-                        <?php endwhile; ?>
-                    </select>
-                    <div class="form-hint">Pilih anggota yang akan pembukaan kerohanian</div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Tanggal Pembukaan <span class="required">*</span></label>
-                        <input type="date" name="tanggal_pembukaan" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Lokasi Pembukaan <span class="required">*</span></label>
-                        <input type="text" name="lokasi" required placeholder="Contoh: Gedung Olahraga">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Lokasi Pembukaan <span class="required">*</span></label>
-                        <input type="text" name="lokasi" required placeholder="Contoh: Gedung Olahraga">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Nama Pembuka <span class="required">*</span></label>
-                        <input type="text" name="pembuka_nama" required placeholder="Nama pembuka kerohanian">
-                    </div>
-                </div>
+                <h3>Penyelenggara</h3>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label>Penyelenggara <span class="required">*</span></label>
-                        <input type="text" name="penyelenggara" required placeholder="Nama organisasi penyelenggara">
-                        <div class="form-hint">Organisasi yang menyelenggarakan pembukaan kerohanian</div>
+                        <?php if ($user_role == 'admin'): ?>
+                            <!-- Admin: searchable dropdown with all organizations -->
+                            <select name="penyelenggara" id="penyelenggara_select" required class="select2-searchable" style="width: 100%;">
+                                <option value="">-- Pilih Penyelenggara --</option>
+                                <?php foreach ($all_organizations as $org): ?>
+                                    <option value="<?php echo htmlspecialchars($org['nama']); ?>">
+                                        <?php echo htmlspecialchars($org['nama']) . ' (' . ucfirst($org['type']) . ')'; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-hint">Pilih organisasi penyelenggara dari dropdown</div>
+                        <?php else: ?>
+                            <!-- Non-admin: fixed to their organization -->
+                            <input type="text" name="penyelenggara" value="<?php echo htmlspecialchars($user_org_name); ?>" readonly class="form-control-plaintext" style="background: #f8f9fa; color: #666;">
+                            <input type="hidden" name="penyelenggara" value="<?php echo htmlspecialchars($user_org_name); ?>">
+                        <?php endif; ?>
                     </div>
-
+                    
+                    <div class="form-group">
+                        <label>Tanggal Pembukaan <span class="required">*</span></label>
+                        <input type="date" name="tanggal_pembukaan" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">                    
+                    <div class="form-group">
+                        <label>Nama Pembuka <span class="required">*</span></label>
+                        <input type="text" name="pembuka_nama" required placeholder="Nama pembuka kerohanian">
+                    </div>
+                
                     <div class="form-group">
                         <label>Tingkat Pembuka <span class="required">*</span></label>
                         <select name="tingkat_pembuka_id" required>
@@ -238,6 +330,36 @@ $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
                         <div class="form-hint">Tingkat pembuka kerohanian</div>
                     </div>
                 </div>
+                    
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label>Lokasi Pembukaan <span class="required">*</span></label>
+                        <textarea name="lokasi" required placeholder="Contoh: Gedung Olahraga"></textarea>
+                    </div>
+                </div>
+
+                <h3>Data Peserta Pembukaan Kerohanian</h3>            
+
+                <div class="form-group">
+                    <label>Anggota <span class="required">*</span></label>
+                    <input type="text" id="anggota_search" placeholder="Ketik nama anggota..." autocomplete="off" required>
+                    <input type="hidden" id="anggota_id" name="anggota_id">
+                    <div id="anggota_suggestions" class="suggestions-box"></div>
+                    <div class="form-hint">Ketik nama anggota untuk mencari (format: nama - ranting)</div>
+                </div>
+                <div class="form-group">
+                        <label>Tingkat<span class="required">*</span></label>
+                        <select name="tingkat_id" required>
+                            <option value="">-- Pilih Tingkat --</option>
+                            <?php while ($row = $tingkat_list->fetch_assoc()): ?>
+                                <option value="<?php echo $row['id']; ?>">
+                                    <?php echo htmlspecialchars($row['nama_tingkat']); ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                        <div class="form-hint">Tingkat saat pembukaan kerohanian</div>
+                    </div>
+                
                 
                 <div class="button-group">
                     <button type="submit" class="btn btn-primary">💾 Simpan</button>
@@ -246,5 +368,76 @@ $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
             </form>
         </div>
     </div>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        // Initialize Select2 for admin penyelenggara dropdown
+        <?php if ($user_role == 'admin'): ?>
+        $(document).ready(function() {
+            $('#penyelenggara_select').select2({
+                placeholder: '-- Pilih Penyelenggara --',
+                allowClear: false,
+                width: '100%'
+            });
+        });
+        <?php endif; ?>
+        const anggotaSearch = document.getElementById('anggota_search');
+        const anggotaId = document.getElementById('anggota_id');
+        const suggestionsBox = document.getElementById('anggota_suggestions');
+        let timeout = null;
+        
+        anggotaSearch.addEventListener('input', function() {
+            clearTimeout(timeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                suggestionsBox.classList.remove('show');
+                suggestionsBox.innerHTML = '';
+                anggotaId.value = '';
+                return;
+            }
+            
+            timeout = setTimeout(() => {
+                fetch('../../api/get_anggota.php?exclude_kerohanian=1&q=' + encodeURIComponent(query))
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data.length > 0) {
+                            suggestionsBox.innerHTML = data.data.map(item => 
+                                '<div class="suggestion-item" data-id="' + item.id + '" data-nama="' + item.nama_lengkap + '">' + 
+                                item.display + '</div>'
+                            ).join('');
+                            suggestionsBox.classList.add('show');
+                        } else {
+                            suggestionsBox.innerHTML = '<div class="suggestion-item">Tidak ada hasil</div>';
+                            suggestionsBox.classList.add('show');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }, 300);
+        });
+        
+        suggestionsBox.addEventListener('click', function(e) {
+            if (e.target.classList.contains('suggestion-item') && e.target.dataset.id) {
+                anggotaSearch.value = e.target.dataset.nama;
+                anggotaId.value = e.target.dataset.id;
+                suggestionsBox.classList.remove('show');
+            }
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!anggotaSearch.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.classList.remove('show');
+            }
+        });
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (!anggotaId.value) {
+                e.preventDefault();
+                alert('Silakan pilih anggota dari daftar yang muncul');
+            }
+        });
+    </script>
 </body>
 </html>

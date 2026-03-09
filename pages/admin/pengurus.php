@@ -22,13 +22,15 @@ $permission_manager = new PermissionManager(
 // Store untuk global use
 $GLOBALS['permission_manager'] = $permission_manager;
 
-// Check permission untuk action ini
-if (!$permission_manager->can('anggota_read')) {
+// Check permission untuk action ini - allow all roles including tamu
+$user_role = $_SESSION['role'] ?? '';
+$allowed_roles = ['admin', 'negara', 'pengprov', 'pengkot', 'unit', 'tamu'];
+if (!in_array($user_role, $allowed_roles)) {
     die("❌ Akses ditolak!");
 }
 
 // Hitung jumlah dari 4 tabel baru
-$pusat = $conn->query("SELECT COUNT(*) as count FROM negara")->fetch_assoc();
+$negara = $conn->query("SELECT COUNT(*) as count FROM negara")->fetch_assoc();
 $provinsi = $conn->query("SELECT COUNT(*) as count FROM provinsi")->fetch_assoc();
 $kota = $conn->query("SELECT COUNT(*) as count FROM kota")->fetch_assoc();
 $ranting = $conn->query("SELECT COUNT(*) as count FROM ranting")->fetch_assoc();
@@ -114,7 +116,7 @@ $ranting = $conn->query("SELECT COUNT(*) as count FROM ranting")->fetch_assoc();
             text-align: center;
         }
         
-        .card-header.pusat {
+        .card-header.negara {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
@@ -152,12 +154,16 @@ $ranting = $conn->query("SELECT COUNT(*) as count FROM ranting")->fetch_assoc();
         .info-box {
             background: #f0f7ff;
             border-left: 4px solid #667eea;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 30px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .info-box strong { color: #667eea; }
+        .info-box h4 { color: #667eea; margin-bottom: 5px; }
+        .info-box p { font-size: 13px; color: #333; margin: 0; }
     </style>
 </head>
 <body>
@@ -168,20 +174,30 @@ $ranting = $conn->query("SELECT COUNT(*) as count FROM ranting")->fetch_assoc();
         <p class="subtitle">Kelola data pengurus negara, provinsi, dan kota/kabupaten</p>
         
         <div class="info-box">
-            <strong>ℹ️ Informasi : </strong> Pilih salah satu jenis kepengurusan di bawah untuk mengelola data struktur organisasi.
-            <a href="pengurus_import.php" class="btn btn-success">⬆️ Import CSV</a>
+            <div>
+                <h4><strong>ℹ️ Informasi : </strong></h4> 
+                <p>Pilih salah satu jenis kepengurusan di bawah untuk mengelola data struktur organisasi.</p>
+            </div>
+            <?php 
+            $user_role = strtolower($_SESSION['role'] ?? '');
+            
+            // Simple direct output based on role
+            if ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov') {
+                echo '<a href="pengurus_import.php" class="btn btn-success">⬆️ Import CSV</a>';
+            }
+            ?>
         </div>
         
         <div class="cards-grid">
             <!-- Card Pengurus Negara -->
-            <a href="pengurus_list.php?jenis=pusat" class="card">
-                <div class="card-header pusat">
+            <a href="pengurus_list.php?jenis=negara" class="card">
+                <div class="card-header negara">
                     <div class="card-icon">🏛️</div>
                     <div class="card-title">Pengurus Negara</div>
                     <div class="card-desc">Tingkat Negara</div>
                 </div>
                 <div class="card-body">
-                    <div class="card-number"><?php echo $pusat['count']; ?></div>
+                    <div class="card-number"><?php echo $negara['count']; ?></div>
                     <div class="card-label">Struktur Aktif</div>
                 </div>
             </a>

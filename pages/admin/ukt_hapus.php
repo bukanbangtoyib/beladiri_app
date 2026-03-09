@@ -18,12 +18,6 @@ $permission_manager = new PermissionManager(
     $_SESSION['ranting_id'] ?? null
 );
 
-// Check permission untuk action ini - hanya admin yang bisa hapus
-if ($_SESSION['role'] != 'admin') {
-    header("Location: ukt.php?msg=forbidden");
-    exit();
-}
-
 $id = (int)$_GET['id'];
 
 // Ambil data UKT
@@ -35,6 +29,21 @@ if ($ukt_result->num_rows == 0) {
 }
 
 $ukt = $ukt_result->fetch_assoc();
+
+// Check if user can delete this UKT (must have permission + no participants)
+if (!$permission_manager->canDeleteUKT($id)) {
+    // Check if there are participants
+    $peserta_result = $conn->query("SELECT COUNT(*) as total FROM ukt_peserta WHERE ukt_id = $id");
+    $peserta = $peserta_result->fetch_assoc();
+    
+    if ($peserta && $peserta['total'] > 0) {
+        header("Location: ukt.php?msg=cannot_delete_has_participants");
+        exit();
+    } else {
+        header("Location: ukt.php?msg=forbidden");
+        exit();
+    }
+}
 
 // Delete semua peserta UKT terlebih dahulu
 $conn->query("DELETE FROM ukt_peserta WHERE ukt_id = $id");

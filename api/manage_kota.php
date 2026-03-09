@@ -8,8 +8,16 @@ session_start();
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'message' => 'Akses ditolak!']);
+    exit();
+}
+
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+// For write operations, restrict to admin/negara/pengprov
+if (in_array($action, ['add', 'update', 'delete', 'reorder']) && !in_array($_SESSION['role'], ['admin', 'negara', 'pengprov'])) {
+    echo json_encode(['success' => false, 'message' => 'Akses ditolak! Hanya admin/negara/pengprov yang bisa melakukan aksi ini.']);
     exit();
 }
 
@@ -18,8 +26,6 @@ include dirname(dirname(__FILE__)) . '/config/database.php';
 // Auto-update status based on periode_akhir
 $today = date('Y-m-d');
 $conn->query("UPDATE kota SET aktif = 0 WHERE periode_akhir IS NOT NULL AND periode_akhir != '' AND periode_akhir < '$today' AND aktif = 1");
-
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 /**
  * Helper function untuk generate kode kota (3-digit zero-padded, per provinsi)

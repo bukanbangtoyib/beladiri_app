@@ -9,6 +9,9 @@ if (!isset($_SESSION['user_id'])) {
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../config/settings.php';
+include 'ukt_helper.php';
+
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -34,11 +37,12 @@ $error = '';
 $success = '';
 
 // Ambil data peserta UKT
-$peserta_sql = "SELECT up.*, a.nama_lengkap, a.no_anggota, u.tanggal_pelaksanaan, t2.nama_tingkat as tingkat_ke
+$peserta_sql = "SELECT up.*, a.nama_lengkap, a.no_anggota, u.tanggal_pelaksanaan, t2.nama_tingkat as tingkat_ke, r.nama_ranting
                 FROM ukt_peserta up
                 JOIN anggota a ON up.anggota_id = a.id
                 JOIN ukt u ON up.ukt_id = u.id
                 LEFT JOIN tingkatan t2 ON up.tingkat_ke_id = t2.id
+                LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id
                 WHERE up.id = $id AND up.ukt_id = $ukt_id";
 
 $peserta_result = $conn->query($peserta_sql);
@@ -71,14 +75,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 mkdir($upload_dir, 0755, true);
             }
             
-            // Format nama file: Sert-UKT-DDMMYYYY-NamaLengkap.pdf
-            // Contoh: Sert-UKT-27012026-Budi_Santoso.pdf
+            // Format nama file: Sert-UKT-DDMMYYYY-NamaLengkap-Ranting.pdf
+            // Contoh: Sert-UKT-27012026-Budi_Santoso-Ranting_A.pdf
             $tanggal_ukt = date('dmY', strtotime($peserta['tanggal_pelaksanaan']));
             // Sanitasi nama lengkap - hanya alphanumeric, spasi, dan hyphen
             $nama_clean = preg_replace("/[^a-zA-Z0-9 -]/i", "", $peserta['nama_lengkap']);
             $nama_clean = preg_replace('/\s+/', '_', trim($nama_clean));
             $nama_clean = substr($nama_clean, 0, 50); // Batasi panjang nama
-            $file_name = 'Sert-UKT-' . $tanggal_ukt . '-' . $nama_clean . '.pdf';
+            
+            // Sanitasi nama ranting
+            $ranting_val = $peserta['nama_ranting'] ?? 'Tanpa_Ranting';
+            $ranting_clean = preg_replace("/[^a-zA-Z0-9 -]/i", "", $ranting_val);
+            $ranting_clean = preg_replace('/\s+/', '_', trim($ranting_clean));
+            $ranting_clean = substr($ranting_clean, 0, 30);
+
+            $file_name = 'Sert-UKT-' . $tanggal_ukt . '-' . $nama_clean . '-' . $ranting_clean . '.pdf';
             $file_path = $upload_dir . basename($file_name); // Pencegahan path traversal
             
             // Hapus file lama jika ada
@@ -410,7 +421,7 @@ if (!empty($peserta['sertifikat_path'])) {
             <div class="info-card">
                 <div class="info-row">
                     <div class="label">No Anggota</div>
-                    <div class="value"><?php echo $peserta['no_anggota']; ?></div>
+                    <div class="value"><?php echo formatNoAnggotaDisplay($peserta['no_anggota'], $pengaturan_nomor); ?></div>
                 </div>
                 
                 <div class="info-row">
@@ -461,8 +472,8 @@ if (!empty($peserta['sertifikat_path'])) {
                     <input type="file" id="sertifikat" name="sertifikat" accept=".pdf" required>
                     <div class="form-hint">
                         Format: PDF | Ukuran maksimal: 5MB<br>
-                        Nama file akan otomatis menjadi: <strong>Sert-UKT-DDMMYYYY-NamaLengkap.pdf</strong><br>
-                        Contoh: <strong>Sert-UKT-27012026-Budi_Santoso.pdf</strong>
+                        Nama file akan otomatis menjadi: <strong>Sert-UKT-DDMMYYYY-NamaLengkap-Ranting.pdf</strong><br>
+                        Contoh: <strong>Sert-UKT-27012026-Budi_Santoso-Ranting_A.pdf</strong>
                     </div>
                 </div>
                 

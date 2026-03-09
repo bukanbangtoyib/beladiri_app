@@ -1,7 +1,16 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../../login.php");
+    exit();
+}
+
+$user_role = $_SESSION['role'] ?? '';
+$user_ranting_id = $_SESSION['ranting_id'] ?? 0;
+
+// Allow admin, ranting, and unit roles
+if (!in_array($user_role, ['admin', 'ranting', 'unit'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -35,6 +44,13 @@ if ($check->num_rows == 0) {
 }
 
 $ranting = $check->fetch_assoc();
+
+// Check ownership for ranting/unit roles
+if ($user_role === 'ranting' || $user_role === 'unit') {
+    if ($id != $user_ranting_id) {
+        die("❌ Anda hanya bisa menghapus data ranting Anda sendiri!");
+    }
+}
 
 // Cek apakah ada anggota di ranting ini
 $anggota_check = $conn->query("SELECT COUNT(*) as count FROM anggota WHERE ranting_saat_ini_id = $id");

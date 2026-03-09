@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -26,6 +26,10 @@ $GLOBALS['permission_manager'] = $permission_manager;
 if (!$permission_manager->can('anggota_read')) {
     die("❌ Akses ditolak!");
 }
+
+// Get user info for permission checks
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
 
 $id = (int)$_GET['id'];
 $jenis = isset($_GET['jenis']) ? $_GET['jenis'] : 'pusat';
@@ -55,6 +59,47 @@ if ($result->num_rows == 0) {
 
 $pengurus = $result->fetch_assoc();
 
+// Permission check: Ensure user can edit this data based on their role
+if ($user_role === 'negara') {
+    if ($jenis === 'pusat') {
+        // Negara cannot edit themselves
+        die("❌ Anda tidak dapat mengedit data negara sendiri!");
+    }
+    // Check if the data belongs to their negara
+    if ($jenis === 'provinsi') {
+        if ($pengurus['negara_id'] != $user_pengurus_id) {
+            die("❌ Data tidak ditemukan atau bukan bagian dari wilayah Anda!");
+        }
+    } elseif ($jenis === 'kota') {
+        // Get province info to check negara
+        $prov_check = $conn->query("SELECT negara_id FROM provinsi WHERE id = " . (int)$pengurus['provinsi_id']);
+        if ($prov_check->num_rows == 0) {
+            die("❌ Data tidak valid!");
+        }
+        $prov = $prov_check->fetch_assoc();
+        if ($prov['negara_id'] != $user_pengurus_id) {
+            die("❌ Data tidak ditemukan atau bukan bagian dari wilayah Anda!");
+        }
+    }
+} elseif ($user_role === 'pengprov') {
+    if ($jenis === 'pusat' || $jenis === 'provinsi') {
+        if ($jenis === 'provinsi' && $id != $user_pengurus_id) {
+            die("❌ Anda hanya dapat mengedit provinsi Anda sendiri!");
+        }
+        if ($jenis === 'pusat') {
+            die("❌ Akses ditolak!");
+        }
+    } elseif ($jenis === 'kota') {
+        if ($pengurus['provinsi_id'] != $user_pengurus_id) {
+            die("❌ Data tidak ditemukan atau bukan bagian dari wilayah Anda!");
+        }
+    }
+} elseif ($user_role === 'pengkot') {
+    if ($jenis !== 'kota' || $id != $user_pengurus_id) {
+        die("❌ Akses ditolak!");
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nama = $conn->real_escape_string($_POST['nama']);
     $kode = $conn->real_escape_string($_POST['kode']);
@@ -64,16 +109,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $periode_akhir = $_POST['periode_akhir'];
     $alamat = $conn->real_escape_string($_POST['alamat']);
     
-    // Handle id_negara for provinces and id_provinsi for kota
-    $id_negara = NULL;
-    $id_provinsi = NULL;
+    // Handle negara_id for provinces and provinsi_id for kota
+    $negara_id = NULL;
+    $provinsi_id = NULL;
     
-    if ($jenis == 'provinsi' && isset($_POST['id_negara'])) {
-        $id_negara = (int)$_POST['id_negara'];
+    if ($jenis == 'provinsi' && isset($_POST['negara_id'])) {
+        $negara_id = (int)$_POST['negara_id'];
     } elseif ($jenis == 'kota') {
-        $id_provinsi = (int)$_POST['id_provinsi'];
-        if (isset($_POST['id_negara'])) {
-            $id_negara = (int)$_POST['id_negara'];
+        $provinsi_id = (int)$_POST['provinsi_id'];
+        if (isset($_POST['negara_id'])) {
+            $negara_id = (int)$_POST['negara_id'];
         }
     }
     
@@ -88,19 +133,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                          $periode_mulai, $periode_akhir, $alamat, $id);
     } elseif ($jenis == 'provinsi') {
         $sql = "UPDATE $table_name SET 
-                nama = ?, kode = ?, id_negara = ?, sk_kepengurusan = ?,
+                nama = ?, kode = ?, negara_id = ?, sk_kepengurusan = ?,
                 periode_mulai = ?, periode_akhir = ?, alamat_sekretariat = ?
                 WHERE id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssisssi", $nama, $kode, $id_negara, $sk_kepengurusan,
+        $stmt->bind_param("ssissssi", $nama, $kode, $negara_id, $sk_kepengurusan,
                          $periode_mulai, $periode_akhir, $alamat, $id);
     } else { // kota
         $sql = "UPDATE $table_name SET 
-                nama = ?, kode = ?, id_negara = ?, id_provinsi = ?, sk_kepengurusan = ?,
+                nama = ?, kode = ?, negara_id = ?, provinsi_id = ?, sk_kepengurusan = ?,
                 periode_mulai = ?, periode_akhir = ?, alamat_sekretariat = ?
                 WHERE id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssiiisssi", $nama, $kode, $id_negara, $id_provinsi, $sk_kepengurusan,
+        $stmt->bind_param("ssiiisssi", $nama, $kode, $negara_id, $provinsi_id, $sk_kepengurusan,
                          $periode_mulai, $periode_akhir, $alamat, $id);
     }
     
@@ -261,7 +306,7 @@ $label_jenis_text = [
                 <div class="form-row">
                     <div class="form-group" style="flex:2;">
                         <label>Negara <span class="required">*</span></label>
-                        <select name="id_negara" id="negara_select" onchange="updateNegaraKode()" required>
+                        <select name="negara_id" id="negara_select" onchange="updateNegaraKode()" required>
                             <option value="">-- Pilih Negara --</option>
                             <?php foreach ($negara_list as $n): ?>
                                 <option value="<?php echo $n['id']; ?>" data-kode="<?php echo $n['kode']; ?>" <?php echo ($pengurus['negara_id'] ?? 0) == $n['id'] ? 'selected' : ''; ?>>
@@ -292,7 +337,7 @@ $label_jenis_text = [
                 <div class="form-row">
                     <div class="form-group" style="flex:2;">
                         <label>Negara <span class="required">*</span></label>
-                        <select name="id_negara" id="negara_select_kota" onchange="updateProvinsiForKota()" required>
+                        <select name="negara_id" id="negara_select_kota" onchange="updateProvinsiForKota()" required>
                             <option value="">-- Pilih Negara --</option>
                             <?php foreach ($negara_list as $n): ?>
                                 <option value="<?php echo $n['id']; ?>" data-kode="<?php echo $n['kode']; ?>" <?php echo ($pengurus['negara_id'] ?? 0) == $n['id'] ? 'selected' : ''; ?>>
@@ -310,10 +355,10 @@ $label_jenis_text = [
                 <div class="form-row">
                     <div class="form-group" style="flex:2;">
                         <label>Provinsi <span class="required">*</span></label>
-                        <select name="id_provinsi" id="provinsi_select_kota" required>
+                        <select name="provinsi_id" id="provinsi_select_kota" required>
                             <option value="">-- Pilih Provinsi --</option>
                             <?php foreach ($provinsi_list as $p): ?>
-                                <option value="<?php echo $p['id']; ?>" data-id_negara="<?php echo $p['negara_id']; ?>" data-kode="<?php echo $p['kode']; ?>" <?php echo ($pengurus['provinsi_id'] ?? 0) == $p['id'] ? 'selected' : ''; ?> style="<?php echo ($p['negara_id'] ?? 0) != ($pengurus['negara_id'] ?? 0) ? 'display:none;' : ''; ?>">
+                                <option value="<?php echo $p['id']; ?>" data-negara_id="<?php echo $p['negara_id']; ?>" data-kode="<?php echo $p['kode']; ?>" <?php echo ($pengurus['provinsi_id'] ?? 0) == $p['id'] ? 'selected' : ''; ?> style="<?php echo ($p['negara_id'] ?? 0) != ($pengurus['negara_id'] ?? 0) ? 'display:none;' : ''; ?>">
                                     <?php echo htmlspecialchars($p['nama']); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -341,7 +386,7 @@ $label_jenis_text = [
                     Array.from(provinsiSelect.options).forEach(option => {
                         if (option.value === '') {
                             option.style.display = 'block';
-                        } else if (option.dataset.id_negara === negaraId) {
+                        } else if (option.dataset.negara_id === negaraId) {
                             option.style.display = 'block';
                         } else {
                             option.style.display = 'none';
@@ -350,7 +395,7 @@ $label_jenis_text = [
                     
                     // Reset province selection if not matching
                     const selectedProvinsi = provinsiSelect.options[provinsiSelect.selectedIndex];
-                    if (selectedProvinsi && selectedProvinsi.value !== '' && selectedProvinsi.dataset.id_negara !== negaraId) {
+                    if (selectedProvinsi && selectedProvinsi.value !== '' && selectedProvinsi.dataset.negara_id !== negaraId) {
                         provinsiSelect.value = '';
                         document.getElementById('kode_provinsi_kota').value = '';
                     }

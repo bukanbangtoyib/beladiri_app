@@ -291,7 +291,9 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
             <a href="pages/admin/pengurus.php">📋 Kepengurusan</a>
             <a href="pages/admin/ranting.php">🌳 Unit / Ranting</a>
             <a href="pages/admin/anggota.php">👥 Manajemen Anggota</a>
+            <?php if (in_array($_SESSION['role'], ['admin', 'negara', 'pengprov', 'pengkot'])): ?>
             <a href="pages/admin/ukt.php">🏆 Ujian Kenaikan Tingkat</a>
+            <?php endif; ?>
             <a href="pages/admin/kerohanian.php">🙏 Kerohanian</a>                        
             <a href="pages/admin/jadwal_latihan.php">⏰ Jadwal Latihan</a>
             

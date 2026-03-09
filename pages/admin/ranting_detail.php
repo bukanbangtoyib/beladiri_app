@@ -137,6 +137,14 @@ $anggota_count = $conn->query($anggota_sql)->fetch_assoc();
 $jadwal_sql = "SELECT * FROM jadwal_latihan WHERE ranting_id = $id ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu')";
 $jadwal_result = $conn->query($jadwal_sql);
 
+// Ambil daftar pelatih
+$pelatih_sql = "SELECT a.id, a.nama_lengkap, a.no_anggota, t.nama_tingkat, rp.keterangan 
+                FROM ranting_pelatih rp 
+                JOIN anggota a ON rp.anggota_id = a.id 
+                LEFT JOIN tingkatan t ON a.tingkat_id = t.id 
+                WHERE rp.ranting_id = $id";
+$pelatih_result = $conn->query($pelatih_sql);
+
 // Cari file SK - HANYA YANG TERAKHIR
 $upload_dir = '../../uploads/sk_pembentukan/';
 $sk_file = null;
@@ -418,6 +426,36 @@ function get_revision_number($filename) {
             </div>
         </div>
         
+        <div class="info-card" id="trainer-section">
+            <h3>👨‍🏫 Daftar Pelatih</h3>
+            <?php if ($pelatih_result->num_rows > 0): ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama Pelatih</th>
+                            <th>No Anggota</th>
+                            <th>Tingkatan</th>
+                            <th>Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($p = $pelatih_result->fetch_assoc()): ?>
+                            <tr>
+                                <td><a href="anggota_detail.php?id=<?php echo $p['id']; ?>" class="data-link"><?php echo htmlspecialchars($p['nama_lengkap']); ?></a></td>
+                                <td><code><?php echo htmlspecialchars(formatNoAnggotaDisplay($p['no_anggota'], $pengaturan_nomor)); ?></code></td>
+                                <td><span class="badge badge-ukm" style="background: #e3f2fd; color: #1976d2;"><?php echo htmlspecialchars($p['nama_tingkat'] ?? '-'); ?></span></td>
+                                <td><small><?php echo htmlspecialchars($p['keterangan'] ?? '-'); ?></small></td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <div class="no-data">
+                    <p>📭 Belum ada pelatih yang terdata di ranting ini</p>
+                </div>
+            <?php endif; ?>
+        </div>
+
         <div class="info-card">
             <h3>⏰ Jadwal Latihan</h3>
             

@@ -1,7 +1,9 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+// Allow admin, negara, pengprov, pengkot to edit
+$allowed_roles = ['admin', 'negara', 'pengprov', 'pengkot'];
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], $allowed_roles)) {
     header("Location: ../../login.php");
     exit();
 }
@@ -25,6 +27,29 @@ if (!$permission_manager->can('anggota_read')) {
     die("❌ Akses ditolak!");
 }
 
+$user_role = $_SESSION['role'];
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+$user_ranting_id = $_SESSION['ranting_id'] ?? 0;
+
+// Get user's organization name
+$user_org_name = '';
+if ($user_role == 'negara' && $user_pengurus_id) {
+    $org_result = $conn->query("SELECT nama FROM negara WHERE id = $user_pengurus_id");
+    if ($org_result && $org_result->num_rows > 0) {
+        $user_org_name = $org_result->fetch_assoc()['nama'];
+    }
+} elseif ($user_role == 'pengprov' && $user_pengurus_id) {
+    $org_result = $conn->query("SELECT nama FROM provinsi WHERE id = $user_pengurus_id");
+    if ($org_result && $org_result->num_rows > 0) {
+        $user_org_name = $org_result->fetch_assoc()['nama'];
+    }
+} elseif ($user_role == 'pengkot' && $user_pengurus_id) {
+    $org_result = $conn->query("SELECT nama FROM kota WHERE id = $user_pengurus_id");
+    if ($org_result && $org_result->num_rows > 0) {
+        $user_org_name = $org_result->fetch_assoc()['nama'];
+    }
+}
+
 $id = (int)$_GET['id'];
 $error = '';
 $success = '';
@@ -36,17 +61,26 @@ if ($result->num_rows == 0) {
 
 $kerohanian = $result->fetch_assoc();
 
+// Check ownership - admin can edit all, others can only edit their own organization's data
+$record_penyelenggara = $kerohanian['penyelenggara'] ?? '';
+$is_owner = ($user_role === 'admin') || ($record_penyelenggara === $user_org_name);
+
+if (!$is_owner) {
+    die("❌ Anda hanya bisa mengedit data yang dibuat oleh organisasi Anda!");
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $tanggal_pembukaan = $_POST['tanggal_pembukaan'];
     $lokasi = $conn->real_escape_string($_POST['lokasi']);
     $pembuka_nama = $conn->real_escape_string($_POST['pembuka_nama']);
     $penyelenggara = $conn->real_escape_string($_POST['penyelenggara']);
     $tingkat_pembuka_id = !empty($_POST['tingkat_pembuka_id']) ? (int)$_POST['tingkat_pembuka_id'] : NULL;
+    $tingkat_id = !empty($_POST['tingkat_id']) ? (int)$_POST['tingkat_id'] : NULL;
     
-    $sql = "UPDATE kerohanian SET tanggal_pembukaan = ?, lokasi = ?, pembuka_nama = ?, penyelenggara = ?, tingkat_pembuka_id = ? WHERE id = ?";
+    $sql = "UPDATE kerohanian SET tanggal_pembukaan = ?, lokasi = ?, pembuka_nama = ?, penyelenggara = ?, tingkat_pembuka_id = ?, tingkat_id = ? WHERE id = ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssssii", $tanggal_pembukaan, $lokasi, $pembuka_nama, $penyelenggara, $tingkat_pembuka_id, $id);
+    $stmt->bind_param("ssssiii", $tanggal_pembukaan, $lokasi, $pembuka_nama, $penyelenggara, $tingkat_pembuka_id, $tingkat_id, $id);
     
     if ($stmt->execute()) {
         $success = "Data kerohanian berhasil diupdate!";
@@ -58,6 +92,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 // Ambil daftar tingkat
 $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY urutan");
+$tingkat_list = [];
+while ($row = $tingkat_result->fetch_assoc()) {
+    $tingkat_list[] = $row;
+}
 ?>
 
 <!DOCTYPE html>
@@ -191,14 +229,26 @@ $tingkat_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
                 </div>
 
                 <div class="form-group">
+                    <label>Tingkat Saat Pembukaan <span class="required">*</span></label>
+                    <select name="tingkat_id" required>
+                        <option value="">-- Pilih Tingkat --</option>
+                        <?php foreach ($tingkat_list as $row): ?>
+                            <option value="<?php echo $row['id']; ?>" <?php echo $kerohanian['tingkat_id'] == $row['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($row['nama_tingkat']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="form-group">
                     <label>Tingkat Pembuka <span class="required">*</span></label>
                     <select name="tingkat_pembuka_id" required>
                         <option value="">-- Pilih Tingkat --</option>
-                        <?php while ($row = $tingkat_result->fetch_assoc()): ?>
+                        <?php foreach ($tingkat_list as $row): ?>
                             <option value="<?php echo $row['id']; ?>" <?php echo $kerohanian['tingkat_pembuka_id'] == $row['id'] ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($row['nama_tingkat']); ?>
                             </option>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </select>
                 </div>
                 

@@ -59,8 +59,8 @@ if ($result->num_rows == 0) {
 $peserta = $result->fetch_assoc();
 
 // Fungsi singkatan tingkat
-function singkatTingkat($tingkat_ke) {
-    $singkat = [
+function singkatanTingkat($tingkat_ke) {
+    $singkatan = [
         'Dasar I' => 'DI',
         'Dasar II' => 'DII',
         'Calon Keluarga' => 'Cakel',
@@ -75,7 +75,7 @@ function singkatTingkat($tingkat_ke) {
         'Kuning' => 'K/PM',
         'Pendekar' => 'PKE'
     ];
-    return isset($singkat[$tingkat_ke]) ? $singkat[$tingkat_ke] : $tingkat_ke;
+    return isset($singkatan[$tingkat_ke]) ? $singkatan[$tingkat_ke] : $tingkat_ke;
 }
 
 // Hitung rata-rata dari 10 komponen
@@ -220,9 +220,9 @@ if ($print_mode) {
         <tbody>
             <tr>
                 <td>1</td>
-                <td><?php echo htmlspecialchars($peserta['no_anggota']); ?></td>
+                <td><a href="anggota_detail.php?id=<?php echo $peserta['anggota_id']; ?>" style="color: inherit; text-decoration: none; font-weight: bold;"><?php echo htmlspecialchars($peserta['no_anggota']); ?></a></td>
                 <td><?php echo htmlspecialchars($peserta['nama_lengkap']); ?></td>
-                <td><?php echo singkatTingkat($peserta['tingkat_ke'] ?? ''); ?></td>
+                <td><?php echo singkatanTingkat($peserta['tingkat_ke'] ?? ''); ?></td>
                 <td><?php echo htmlspecialchars($peserta['nama_ranting'] ?? '-'); ?></td>
                 <td><?php echo $peserta['nilai_a'] !== null ? number_format($peserta['nilai_a'], 2) : '-'; ?></td>
                 <td><?php echo $peserta['nilai_b'] !== null ? number_format($peserta['nilai_b'], 2) : '-'; ?></td>
@@ -479,7 +479,7 @@ if ($print_mode) {
             <div class="info-grid">
                 <div class="info-item">
                     <span class="label">No Anggota</span>
-                    <span class="value"><?php echo htmlspecialchars($peserta['no_anggota']); ?></span>
+                    <span class="value"><a href="anggota_detail.php?id=<?php echo $peserta['anggota_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 700;"><?php echo htmlspecialchars($peserta['no_anggota']); ?></a></span>
                 </div>
                 <div class="info-item">
                     <span class="label">Nama Lengkap</span>

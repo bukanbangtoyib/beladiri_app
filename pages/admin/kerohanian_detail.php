@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../config/settings.php';
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -27,12 +28,45 @@ if (!$permission_manager->can('anggota_read')) {
 
 $id = (int)$_GET['id'];
 
+// Helper: format no_anggota sesuai pengaturan
+function formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) {
+    if (empty($no_anggota)) return $no_anggota;
+    if (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $m)) {
+        $kode_full = $m[1]; $ranting_kode = $m[2]; $year_seq = $m[3];
+    } elseif (preg_match('/^([A-Za-z0-9]+)-([A-Za-z0-9]+)$/', $no_anggota, $m)) {
+        $kode_full = ''; $ranting_kode = $m[1]; $year_seq = $m[2];
+    } elseif (preg_match('/^([A-Za-z0-9]+)\.([A-Za-z0-9]+)$/', $no_anggota, $m)) {
+        $kode_full = $m[1]; $ranting_kode = $m[2]; $year_seq = '';
+    } else { return $no_anggota; }
+    $negara_kode = strlen($kode_full) >= 2 ? substr($kode_full, 0, 2) : '';
+    $provinsi_kode = strlen($kode_full) >= 5 ? substr($kode_full, 2, 3) : '';
+    $kota_kode = strlen($kode_full) >= 8 ? substr($kode_full, 5, 3) : '';
+    $tahun = strlen($year_seq) >= 4 ? substr($year_seq, 0, 4) : '';
+    $urutan = strlen($year_seq) >= 4 ? substr($year_seq, 4) : '';
+    $kode_parts = [];
+    if ($pengaturan_nomor['kode_negara'] ?? true)   $kode_parts[] = $negara_kode;
+    if ($pengaturan_nomor['kode_provinsi'] ?? true) $kode_parts[] = $provinsi_kode;
+    if ($pengaturan_nomor['kode_kota'] ?? true)     $kode_parts[] = $kota_kode;
+    $kode_str = implode('', $kode_parts);
+    $ranting_str = '';
+    if ($pengaturan_nomor['kode_ranting'] ?? true) {
+        $ranting_str = !empty($kode_str) ? '.' . $ranting_kode : $ranting_kode;
+    }
+    $year_part = ($pengaturan_nomor['tahun_daftar'] ?? true) ? $tahun : '';
+    $seq_part  = ($pengaturan_nomor['urutan_daftar'] ?? true) ? $urutan : '';
+    $year_seq_str = '';
+    if (!empty($year_part) || !empty($seq_part)) {
+        $year_seq_str = (!empty($kode_str) || !empty($ranting_str)) ? '-' . $year_part . $seq_part : $year_part . $seq_part;
+    }
+    return $kode_str . $ranting_str . $year_seq_str;
+}
+
 $sql = "SELECT k.*, a.nama_lengkap, a.no_anggota, a.tanggal_lahir, a.jenis_kelamin,
-               r.nama_ranting, t.nama_tingkat, t_pembuka.nama_tingkat as tingkat_pembuka_nama
+               r.nama_ranting, t.nama_tingkat as tingkat_saat_pembukaan, t_pembuka.nama_tingkat as tingkat_pembuka_nama
         FROM kerohanian k
         JOIN anggota a ON k.anggota_id = a.id
         LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id
-        LEFT JOIN tingkatan t ON a.tingkat_id = t.id
+        LEFT JOIN tingkatan t ON k.tingkat_id = t.id
         LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.id
         WHERE k.id = $id";
 
@@ -82,7 +116,7 @@ $age = $birthDate->diff($today)->y;
         .info-row {
             display: grid;
             grid-template-columns: 180px 1fr;
-            gap: 30px;
+            gap: 75px;
             margin-bottom: 15px;
             padding-bottom: 15px;
             border-bottom: 1px solid #eee;
@@ -126,7 +160,7 @@ $age = $birthDate->diff($today)->y;
             
             <div class="info-row">
                 <div class="label">No Anggota</div>
-                <div class="value"><strong><?php echo $kerohanian['no_anggota']; ?></strong></div>
+                <div class="value"><strong><a href="anggota_detail.php?id=<?php echo $kerohanian['anggota_id']; ?>" style="color: #667eea; text-decoration: none;"><?php echo htmlspecialchars(formatNoAnggotaDisplay($kerohanian['no_anggota'], $pengaturan_nomor)); ?></a></strong></div>
             </div>
             
             <div class="info-row">
@@ -145,8 +179,13 @@ $age = $birthDate->diff($today)->y;
             </div>
             
             <div class="info-row">
-                <div class="label">Tingkat Saat Ini</div>
-                <div class="value"><span class="badge"><?php echo $kerohanian['nama_tingkat']; ?></span></div>
+                <div class="label">Tingkat Saat Pembukaan</div>
+                <div class="value"><span class="badge"><?php echo $kerohanian['tingkat_saat_pembukaan']; ?></span></div>
+            </div>
+
+            <div class="info-row">
+                <div class="label">Penyelenggara</div>
+                <div class="value"><?php echo htmlspecialchars($kerohanian['penyelenggara']); ?></div>
             </div>
 
             <div class="info-row">
@@ -165,20 +204,10 @@ $age = $birthDate->diff($today)->y;
             </div>
 
             <div class="info-row">
-                <div class="label">Penyelenggara</div>
-                <div class="value"><?php echo htmlspecialchars($kerohanian['penyelenggara']); ?></div>
-            </div>
-
-            <div class="info-row">
                 <div class="label">Tingkat Pembuka</div>
                 <div class="value"><span class="badge"><?php echo $kerohanian['tingkat_pembuka_nama']; ?></span></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Unit/Ranting</div>
-                <div class="value"><?php echo htmlspecialchars($kerohanian['nama_ranting'] ?? '-'); ?></div>
-            </div>
-            
+            </div>         
+                
             <?php if ($_SESSION['role'] == 'admin'): ?>
             <div class="button-group">
                 <button onclick="window.print()" class="btn btn-warning" style="background: #6c757d;">

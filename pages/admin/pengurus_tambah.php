@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -27,9 +27,36 @@ if (!$permission_manager->can('anggota_read')) {
     die("❌ Akses ditolak!");
 }
 
+// Get user info for permission checks
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+
 $jenis = isset($_GET['jenis']) ? $_GET['jenis'] : 'pusat';
 if (!in_array($jenis, ['pusat', 'provinsi', 'kota'])) {
     $jenis = 'pusat';
+}
+
+// Permission check: Ensure user can add data based on their role
+if ($user_role === 'negara') {
+    // Negara can only add province and kota, not themselves
+    if ($jenis === 'pusat') {
+        die("❌ Anda tidak dapat menambahkan negara!");
+    }
+} elseif ($user_role === 'pengprov') {
+    // Pengprov can only add kota, not province
+    if ($jenis === 'provinsi') {
+        die("❌ Anda tidak dapat menambahkan provinsi!");
+    }
+    if ($jenis === 'pusat') {
+        die("❌ Akses ditolak!");
+    }
+} elseif ($user_role === 'pengkot') {
+    // Pengkot can only add kota (ranting is handled in another page)
+    if ($jenis !== 'kota') {
+        die("❌ Anda tidak dapat menambahkan data ini!");
+    }
+} elseif ($user_role !== 'admin') {
+    die("❌ Akses ditolak!");
 }
 
 // Map jenis to table and column names
@@ -49,16 +76,50 @@ $success = '';
 // Get parent data for dropdowns
 $negara_list = [];
 $provinsi_list = [];
+$auto_selected_negara = 0;
+$auto_selected_provinsi = 0;
+$auto_selected_kota = 0;
 
 if ($jenis == 'provinsi' || $jenis == 'kota') {
-    $negara_result = $conn->query("SELECT id, kode, nama FROM negara ORDER BY nama");
+    if ($user_role === 'negara') {
+        // Negara can only add to their own negara - auto-select
+        $auto_selected_negara = $user_pengurus_id;
+        $negara_result = $conn->query("SELECT id, kode, nama FROM negara WHERE id = " . (int)$auto_selected_negara);
+    } else {
+        $negara_result = $conn->query("SELECT id, kode, nama FROM negara ORDER BY nama");
+    }
     while ($row = $negara_result->fetch_assoc()) {
         $negara_list[] = $row;
     }
 }
 
 if ($jenis == 'kota') {
-    $provinsi_result = $conn->query("SELECT id, kode, nama, negara_id FROM provinsi ORDER BY nama");
+    if ($user_role === 'negara') {
+        // Get provinces in their negara
+        $provinsi_result = $conn->query("SELECT id, kode, nama, negara_id FROM provinsi WHERE negara_id = " . (int)$user_pengurus_id . " ORDER BY nama");
+    } elseif ($user_role === 'pengprov') {
+        // Pengprov can only add to their own province - auto-select
+        $auto_selected_provinsi = $user_pengurus_id;
+        // Get their negara too
+        $prov_check = $conn->query("SELECT negara_id FROM provinsi WHERE id = " . (int)$user_pengurus_id);
+        if ($prov_check && $pc = $prov_check->fetch_assoc()) {
+            $auto_selected_negara = $pc['negara_id'];
+        }
+        $provinsi_result = $conn->query("SELECT id, kode, nama, negara_id FROM provinsi WHERE id = " . (int)$user_pengurus_id);
+    } elseif ($user_role === 'pengkot') {
+        // Pengkot can only add ranting under their kota - auto-select all
+        $auto_selected_provinsi = 0; // Will be fetched
+        $auto_selected_kota = $user_pengurus_id;
+        // Get their provinsi and negara
+        $kota_check = $conn->query("SELECT negara_id, provinsi_id FROM kota WHERE id = " . (int)$user_pengurus_id);
+        if ($kota_check && $kc = $kota_check->fetch_assoc()) {
+            $auto_selected_negara = $kc['negara_id'];
+            $auto_selected_provinsi = $kc['provinsi_id'];
+        }
+        $provinsi_result = $conn->query("SELECT id, kode, nama, negara_id FROM provinsi WHERE id = " . (int)$auto_selected_provinsi);
+    } else {
+        $provinsi_result = $conn->query("SELECT id, kode, nama, negara_id FROM provinsi ORDER BY nama");
+    }
     while ($row = $provinsi_result->fetch_assoc()) {
         $provinsi_list[] = $row;
     }
@@ -235,14 +296,17 @@ if (empty($final_kode) && $jenis == 'kota') {
                 <div class="form-row">
                     <div class="form-group">
                         <label>Negara <span class="required">*</span></label>
-                        <select name="negara_id" id="negara_id" required onchange="updateKode()">
+                        <select name="negara_id" id="negara_id" required onchange="updateKode()" <?php echo ($user_role === 'negara') ? 'disabled' : ''; ?>>
                             <option value="">-- Pilih Negara --</option>
                             <?php foreach ($negara_list as $negara): ?>
-                                <option value="<?php echo $negara['id']; ?>" data-kode="<?php echo $negara['kode']; ?>">
+                                <option value="<?php echo $negara['id']; ?>" data-kode="<?php echo $negara['kode']; ?>" <?php echo ($auto_selected_negara == $negara['id']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($negara['nama']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <?php if ($user_role === 'negara'): ?>
+                        <input type="hidden" name="negara_id" value="<?php echo $auto_selected_negara; ?>">
+                        <?php endif; ?>
                     </div>
                     <div class="form-group">
                         <label>Kode</label>
@@ -253,14 +317,17 @@ if (empty($final_kode) && $jenis == 'kota') {
                 <div class="form-row">
                     <div class="form-group">
                         <label>Negara <span class="required">*</span></label>
-                        <select name="negara_id" id="negara_id" required onchange="loadProvinsi()">
+                        <select name="negara_id" id="negara_id" required onchange="loadProvinsi()" <?php echo in_array($user_role, ['negara', 'pengprov', 'pengkot']) ? 'disabled' : ''; ?>>
                             <option value="">-- Pilih Negara --</option>
                             <?php foreach ($negara_list as $negara): ?>
-                                <option value="<?php echo $negara['id']; ?>">
+                                <option value="<?php echo $negara['id']; ?>" <?php echo ($auto_selected_negara == $negara['id']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($negara['nama']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <?php if (in_array($user_role, ['negara', 'pengprov', 'pengkot'])): ?>
+                        <input type="hidden" name="negara_id" value="<?php echo $auto_selected_negara; ?>">
+                        <?php endif; ?>
                     </div>
                     <div class="form-group">
                         <label>Kode Negara</label>
@@ -270,14 +337,17 @@ if (empty($final_kode) && $jenis == 'kota') {
                 <div class="form-row">
                     <div class="form-group">
                         <label>Provinsi <span class="required">*</span></label>
-                        <select name="provinsi_id" id="provinsi_id" required onchange="updateKode()">
+                        <select name="provinsi_id" id="provinsi_id" required onchange="updateKode()" <?php echo in_array($user_role, ['pengprov', 'pengkot']) ? 'disabled' : ''; ?>>
                             <option value="">-- Pilih Provinsi --</option>
                             <?php foreach ($provinsi_list as $provinsi): ?>
-                                <option value="<?php echo $provinsi['id']; ?>" data-kode="<?php echo $provinsi['kode']; ?>" data-negara="<?php echo $provinsi['negara_id']; ?>">
+                                <option value="<?php echo $provinsi['id']; ?>" data-kode="<?php echo $provinsi['kode']; ?>" data-negara="<?php echo $provinsi['negara_id']; ?>" <?php echo ($auto_selected_provinsi == $provinsi['id']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($provinsi['nama']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <?php if (in_array($user_role, ['pengprov', 'pengkot'])): ?>
+                        <input type="hidden" name="provinsi_id" value="<?php echo $auto_selected_provinsi; ?>">
+                        <?php endif; ?>
                     </div>
                     <div class="form-group">
                         <label>Kode</label>
@@ -356,6 +426,24 @@ if (empty($final_kode) && $jenis == 'kota') {
     negaraKodeMap[<?php echo $negara['id']; ?>] = '<?php echo $negara['kode']; ?>';
     <?php endforeach; ?>
     
+    // Auto-trigger functions on page load if there are auto-selected values
+    document.addEventListener('DOMContentLoaded', function() {
+        <?php if ($jenis == 'provinsi' && $auto_selected_negara > 0): ?>
+        // Trigger code update for pre-selected negara
+        updateKode();
+        <?php elseif ($jenis == 'kota'): ?>
+        // Trigger province loading for pre-selected negara
+        loadProvinsi();
+        // If there's a pre-selected province, trigger code update
+        setTimeout(function() {
+            const provinsiSelect = document.getElementById('provinsi_id');
+            if (provinsiSelect && provinsiSelect.value) {
+                updateKode();
+            }
+        }, 100);
+        <?php endif; ?>
+    });
+    
     // Function to get next code via AJAX
     async function getNextCode(table, parentId, parentField) {
         try {
@@ -381,7 +469,11 @@ if (empty($final_kode) && $jenis == 'kota') {
             const negaraIdAttr = opt.getAttribute('data-negara');
             opt.style.display = (negaraId === '' || negaraIdAttr === negaraId) ? '' : 'none';
         });
-        provinsiSelect.value = '';
+        
+        // Only clear if not disabled (pengprov/pengkot roles)
+        if (!provinsiSelect.disabled) {
+            provinsiSelect.value = '';
+        }
         document.getElementById('kode_otomatis').value = '';
     }
     

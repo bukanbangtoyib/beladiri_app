@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -10,6 +10,7 @@ include '../../config/database.php';
 include 'ukt_helper.php'; // Include helper functions
 include '../../helpers/navbar.php';
 include '../../auth/PermissionManager.php';
+include '../../config/settings.php';
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -23,15 +24,58 @@ $permission_manager = new PermissionManager(
 // Store untuk global use
 $GLOBALS['permission_manager'] = $permission_manager;
 
-// Check permission untuk action ini
-if (!$permission_manager->can('anggota_read')) {
-    die("❌ Akses ditolak!");
+// For pengkot role on UKT pages, use custom permission check instead of general permission
+$user_role = $_SESSION['role'] ?? '';
+if ($user_role === 'pengkot' || $user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov') {
+    // Continue to UKT-specific permission check later
+} else {
+    if (!$permission_manager->can('anggota_read')) {
+        die("❌ Akses ditolak!");
+    }
 }
 
+include '../../config/settings.php';
+
 $ukt_id = (int)($_GET['ukt_id'] ?? 0);
+
+// Cek UKT ada
+$ukt_check = $conn->query("SELECT * FROM ukt WHERE id = $ukt_id");
+if (!$ukt_check || $ukt_check->num_rows == 0) {
+    die("UKT tidak ditemukan!");
+}
+$ukt = $ukt_check->fetch_assoc();
+
+// Check if user can manage this UKT - special handling for pengkot
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+
+$can_manage = false;
+
+if ($user_role === 'pengkot') {
+    // Pengkot can only manage their own city UKT
+    $can_manage = ($ukt['jenis_penyelenggara'] === 'kota' && (int)$ukt['penyelenggara_id'] === (int)$user_pengurus_id);
+} elseif ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov') {
+    $can_manage = $permission_manager->canManageUKT('ukt_update', $ukt['jenis_penyelenggara'], $ukt['penyelenggara_id']);
+}
+
+if (!$can_manage) {
+    die("❌ Akses ditolak! Anda tidak memiliki izin untuk import nilai UKT ini.");
+}
 $error = '';
 $success = '';
 $import_log = [];
+
+// Handle download template
+if (isset($_GET['download']) && $_GET['download'] === 'template') {
+    $filename = "nilai_ukt_template.csv";
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['No Anggota', 'Nilai A', 'Nilai B', 'Nilai C', 'Nilai D', 'Nilai E', 'Nilai F', 'Nilai G', 'Nilai H', 'Nilai I', 'Nilai J']);
+    fclose($output);
+    exit();
+}
 
 // Cek UKT ada
 $ukt_check = $conn->query("SELECT * FROM ukt WHERE id = $ukt_id");
@@ -114,14 +158,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                     $peserta_result = $peserta_stmt->get_result();
                     
                     if ($peserta_result->num_rows == 0) {
-                        $import_log[] = "Baris $row_num: ❌ Anggota '$no_anggota' tidak ditemukan di UKT ini";
-                        $skipped++;
-                        continue;
+                        // AUTO-REGISTER: Cari anggota di sistem (tabel anggota)
+                        $anggota_stmt = $conn->prepare("SELECT id, tingkat_id FROM anggota WHERE no_anggota = ? LIMIT 1");
+                        $anggota_stmt->bind_param("s", $no_anggota);
+                        $anggota_stmt->execute();
+                        $anggota_res = $anggota_stmt->get_result();
+                        
+                        if ($anggota_res->num_rows > 0) {
+                            $anggota_data = $anggota_res->fetch_assoc();
+                            $anggota_id = $anggota_data['id'];
+                            $tingkat_dari_id = $anggota_data['tingkat_id'];
+                            
+                            // Hitung tingkat_ke
+                            $tingkat_ke_id = null;
+                            if ($tingkat_dari_id) {
+                                $next_t = $conn->query("SELECT id FROM tingkatan WHERE urutan = (SELECT urutan + 1 FROM tingkatan WHERE id = $tingkat_dari_id) LIMIT 1");
+                                if ($next_t->num_rows > 0) {
+                                    $tingkat_ke_id = $next_t->fetch_assoc()['id'];
+                                }
+                            }
+                            
+                            // Daftar sebagai peserta baru
+                            $ins_peserta = $conn->prepare("INSERT INTO ukt_peserta (ukt_id, anggota_id, tingkat_dari_id, tingkat_ke_id, status) VALUES (?, ?, ?, ?, 'peserta')");
+                            $ins_peserta->bind_param("iiii", $ukt_id, $anggota_id, $tingkat_dari_id, $tingkat_ke_id);
+                            
+                            if ($ins_peserta->execute()) {
+                                $peserta_id = $conn->insert_id;
+                                $import_log[] = "Baris $row_num: 🆕 Anggota '" . formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) . "' berhasil didaftarkan sebagai peserta baru";
+                            } else {
+                                $import_log[] = "Baris $row_num: ❌ Gagal mendaftarkan anggota '$no_anggota' - " . $ins_peserta->error;
+                                $skipped++;
+                                continue;
+                            }
+                        } else {
+                            $import_log[] = "Baris $row_num: ❌ No Anggota '" . formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) . "' tidak terdaftar di sistem";
+                            $skipped++;
+                            continue;
+                        }
+                    } else {
+                        $peserta_data = $peserta_result->fetch_assoc();
+                        $peserta_id = $peserta_data['id'];
+                        $anggota_id = $peserta_data['anggota_id'];
                     }
-                    
-                    $peserta_data = $peserta_result->fetch_assoc();
-                    $peserta_id = $peserta_data['id'];
-                    $anggota_id = $peserta_data['anggota_id'];
                     
                     // Ambil nilai A-J
                     $letters = ['a','b','c','d','e','f','g','h','i','j'];
@@ -201,7 +279,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                         }
                     }
                     
-                    $import_log[] = "Baris $row_num: ✓ Anggota '$no_anggota' - Rata-rata: " . 
+                    $import_log[] = "Baris $row_num: ✓ Anggota '" . formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) . "' - Rata-rata: " . 
                                    ($avg !== null ? round($avg, 2) : '-') . " - Status: " . ucfirst($status);
                     $imported++;
                     $update_stmt->close();
@@ -233,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
             justify-content: space-between;
         }
         
-        .container { max-width: 900px; margin: 20px auto; padding: 0 20px; }
+        .container { max-width: 800px; margin: 20px auto; padding: 0 20px; }
         .form-container {
             background: white;
             padding: 30px;
@@ -241,7 +319,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
-        h1 { margin-bottom: 10px; color: #333; }
+        h1 { margin-bottom: 15px; color: #333; }
         
         .form-group { margin-bottom: 20px; }
         label {
@@ -268,24 +346,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
         
         .info-box h4 { color: #667eea; margin-bottom: 10px; }
         .info-box p { font-size: 13px; color: #333; margin-bottom: 8px; }
-        
-        .template-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 12px;
-        }
-        
-        .template-table th, .template-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        
-        .template-table th {
-            background: #f0f7ff;
-            font-weight: 600;
-        }
         
         .btn {
             padding: 12px 30px;
@@ -329,6 +389,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
             color: #333;
             padding: 4px 0;
         }
+
+        .tab-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        
+        .template-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .template-link:hover {
+            background: #218838;
+        }
     </style>
 </head>
 <body>
@@ -343,7 +425,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
             <?php endif; ?>
             
             <?php if ($success): ?>
-                <div class="alert alert-success">✓ <?php echo $success; ?></div>
+                <div class="alert alert-success">✅ <?php echo $success; ?></div>
                 <?php if (count($import_log) > 0): ?>
                 <div class="log-box">
                     <strong>📋 Detail Import:</strong><br>
@@ -357,51 +439,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
             <div class="info-box">
                 <h4>📋 Format File CSV</h4>
                 <p><strong>CSV harus memiliki kolom:</strong></p>
-                <p>1. <strong>No Anggota</strong> - Nomor identitas anggota</p>
-                <p>2-11. <strong>Nilai A sampai Nilai J</strong> - Nilai materi (10 kolom)</p>
-                
-                <p style="margin-top: 15px; font-weight: 600;">✅ Contoh Format CSV:</p>
-                <table class="template-table">
-                    <thead>
-                        <tr>
-                            <th>No Anggota</th>
-                            <th>Nilai A</th>
-                            <th>Nilai B</th>
-                            <th>Nilai C</th>
-                            <th>Nilai D</th>
-                            <th>Nilai E</th>
-                            <th>Nilai F</th>
-                            <th>Nilai G</th>
-                            <th>Nilai H</th>
-                            <th>Nilai I</th>
-                            <th>Nilai J</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>12345</td>
-                            <td>75</td>
-                            <td>80</td>
-                            <td>85</td>
-                            <td>70</td>
-                            <td>65</td>
-                            <td>90</td>
-                            <td>88</td>
-                            <td>75</td>
-                            <td>82</td>
-                            <td>79</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
+                    <li style="margin-bottom: 4px;"><strong>No Anggota</strong> - Identitas unik anggota</li>
+                    <li style="margin-bottom: 4px;"><strong>Nilai A s/d Nilai J</strong> - Nilai materi untuk tiap kolom</li>
+                </ol>
                 
                 <p style="margin-top: 15px; color: #666; font-size: 12px;">
                     💡 <strong>Catatan:</strong><br>
-                    • Rata-rata dihitung hanya dari nilai yang ada (tidak kosong)<br>
-                    • Peserta dinyatakan LULUS jika rata-rata ≥ 60<br>
-                    • Jika LULUS, tingkat anggota otomatis naik 1 level<br>
-                    • ukt_terakhir otomatis terupdate ke tanggal hari ini<br>
-                    • Gunakan nilai 0-100 untuk setiap materi
+                    • Rata-rata dihitung otomatis dari nilai yang terisi.<br>
+                    • Status LULUS otomatis jika rata-rata ≥ 60.<br>
+                    • Anggota yang lulus otomatis naik tingkat.<br>
+                    • <strong>Auto-Register:</strong> Anggota baru di CSV otomatis didaftarkan ke UKT ini.
                 </p>
+            </div>
+
+            <div class="tab-header">
+                <a href="?ukt_id=<?php echo $ukt_id; ?>&download=template" class="template-link">📥 Download Template</a>
             </div>
             
             <form method="POST" enctype="multipart/form-data">

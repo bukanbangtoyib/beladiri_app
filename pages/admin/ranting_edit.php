@@ -1,7 +1,16 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../../login.php");
+    exit();
+}
+
+$user_role = $_SESSION['role'] ?? '';
+$user_ranting_id = $_SESSION['ranting_id'] ?? 0;
+
+// Allow admin, ranting, and unit roles
+if (!in_array($user_role, ['admin', 'ranting', 'unit'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -36,6 +45,13 @@ if ($result->num_rows == 0) {
     die("Unit/Ranting tidak ditemukan!");
 }
 $ranting = $result->fetch_assoc();
+
+// Check ownership for ranting/unit roles
+if ($user_role === 'ranting' || $user_role === 'unit') {
+    if ($ranting['id'] != $user_ranting_id) {
+        die("❌ Anda hanya bisa mengedit data ranting Anda sendiri!");
+    }
+}
 
 // Get kota name for SK naming
 $kota_result = $conn->query("SELECT nama FROM kota WHERE id = " . $ranting['kota_id']);
@@ -136,6 +152,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $no_kontak, $kota_id, $id);
         
         if ($stmt->execute()) {
+            // Update Jadwal Latihan
+            // Delete existing schedules first
+            $conn->query("DELETE FROM jadwal_latihan WHERE ranting_id = $id");
+            
+            // Insert new schedules
+            if (isset($_POST['jadwal_hari']) && is_array($_POST['jadwal_hari'])) {
+                $jadwal_added = 0;
+                foreach ($_POST['jadwal_hari'] as $idx => $hari) {
+                    if (!empty($hari) && !empty($_POST['jadwal_jam_mulai'][$idx]) && !empty($_POST['jadwal_jam_selesai'][$idx])) {
+                        $jam_mulai = $_POST['jadwal_jam_mulai'][$idx];
+                        $jam_selesai = $_POST['jadwal_jam_selesai'][$idx];
+                        
+                        $jadwal_sql = "INSERT INTO jadwal_latihan (ranting_id, hari, jam_mulai, jam_selesai)
+                                     VALUES (?, ?, ?, ?)";
+                        $jadwal_stmt = $conn->prepare($jadwal_sql);
+                        $jadwal_stmt->bind_param("isss", $id, $hari, $jam_mulai, $jam_selesai);
+                        
+                        if ($jadwal_stmt->execute()) {
+                            $jadwal_added++;
+                        }
+                    }
+                }
+            }
+
+            // Update Pelatih
+            $conn->query("DELETE FROM ranting_pelatih WHERE ranting_id = $id");
+            if (isset($_POST['pelatih_id']) && is_array($_POST['pelatih_id'])) {
+                foreach ($_POST['pelatih_id'] as $idx => $pelatih_id) {
+                    if (!empty($pelatih_id)) {
+                        $ket = $_POST['pelatih_keterangan'][$idx] ?? '';
+                        $p_sql = "INSERT INTO ranting_pelatih (ranting_id, anggota_id, keterangan) VALUES (?, ?, ?)";
+                        $p_stmt = $conn->prepare($p_sql);
+                        $p_stmt->bind_param("iis", $id, $pelatih_id, $ket);
+                        $p_stmt->execute();
+                    }
+                }
+            }
             if (!$success) {
                 $success = "Data unit/ranting berhasil diupdate!";
             } else {
@@ -146,6 +199,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $error = "Error: " . $stmt->error;
         }
     }
+}
+
+// Get existing schedules
+$jadwal_list_existing = [];
+$jadwal_result = $conn->query("SELECT * FROM jadwal_latihan WHERE ranting_id = $id ORDER BY CASE 
+    WHEN hari = 'Senin' THEN 1
+    WHEN hari = 'Selasa' THEN 2
+    WHEN hari = 'Rabu' THEN 3
+    WHEN hari = 'Kamis' THEN 4
+    WHEN hari = 'Jumat' THEN 5
+    WHEN hari = 'Sabtu' THEN 6
+    WHEN hari = 'Minggu' THEN 7
+END");
+while ($row = $jadwal_result->fetch_assoc()) {
+    $jadwal_list_existing[] = $row;
+}
+
+// Get existing trainers
+$pelatih_list_existing = [];
+$p_result = $conn->query("SELECT rp.*, a.nama_lengkap, a.no_anggota, t.nama_tingkat 
+                          FROM ranting_pelatih rp
+                          JOIN anggota a ON rp.anggota_id = a.id
+                          LEFT JOIN tingkatan t ON a.tingkat_id = t.id
+                          WHERE rp.ranting_id = $id");
+while ($row = $p_result->fetch_assoc()) {
+    $pelatih_list_existing[] = $row;
 }
 
 // Get negara list
@@ -314,10 +393,74 @@ $kota_result = $conn->query("SELECT id, nama FROM kota ORDER BY nama");
             color: #333;
         }
         
+        .jadwal-item {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+        }
+        
+        .jadwal-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        
+        .jadwal-remove {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .jadwal-remove:hover {
+            background: #c82333;
+        }
+
+        .btn-small { padding: 8px 12px; font-size: 12px; }
+        
         select:disabled {
             background-color: #e9ecef;
             cursor: not-allowed;
         }
+
+        /* Trainer Styles */
+        .pelatih-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #f9f9f9;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #eee;
+        }
+        .pelatih-info { flex: 1; font-size: 14px; }
+        .pelatih-ket { flex: 1; }
+        .search-results {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .search-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        .search-item:hover { background: #f0f7ff; }
     </style>
 </head>
 <body>
@@ -473,6 +616,71 @@ $kota_result = $conn->query("SELECT id, nama FROM kota ORDER BY nama");
                     </div>
                 </div>
                 
+                <hr>
+                
+                <h3>👨‍🏫 Daftar Pelatih</h3>
+                <div class="info-box">
+                    <strong>ℹ️ Info:</strong> Cari pelatih berdasarkan nama atau nomor anggota.
+                </div>
+
+                <div style="position: relative; margin-bottom: 20px;">
+                    <input type="text" id="pelatih-search" placeholder="Cari nama pelatih..." autocomplete="off" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                    <div id="pelatih-results" class="search-results"></div>
+                </div>
+
+                <div id="pelatih-list" style="margin-bottom: 20px;">
+                    <?php foreach ($pelatih_list_existing as $p): ?>
+                        <div class="pelatih-item" id="pelatih-row-<?php echo $p['anggota_id']; ?>">
+                            <input type="hidden" name="pelatih_id[]" value="<?php echo $p['anggota_id']; ?>">
+                            <div class="pelatih-info">
+                                <strong><?php echo htmlspecialchars($p['nama_lengkap']); ?></strong><br>
+                                <small><?php echo htmlspecialchars($p['no_anggota']); ?> | <?php echo htmlspecialchars($p['nama_tingkat']); ?></small>
+                            </div>
+                            <div class="pelatih-ket">
+                                <input type="text" name="pelatih_keterangan[]" value="<?php echo htmlspecialchars($p['keterangan'] ?? ''); ?>" placeholder="Keterangan (opsional)...">
+                            </div>
+                            <button type="button" class="jadwal-remove" onclick="removePelatih('<?php echo $p['anggota_id']; ?>')">X</button>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <hr>
+                
+                <h3>⏰ Jadwal Latihan</h3>
+                
+                <div id="jadwal-list">
+                    <?php foreach ($jadwal_list_existing as $idx => $j): ?>
+                        <div class="jadwal-item" id="jadwal-<?php echo $idx; ?>">
+                            <div class="jadwal-row">
+                                <div class="form-group">
+                                    <label>Hari</label>
+                                    <select name="jadwal_hari[]" required>
+                                        <option value="">-- Pilih Hari --</option>
+                                        <?php 
+                                        $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+                                        foreach ($hari_options as $h) {
+                                            $selected = ($j['hari'] == $h) ? 'selected' : '';
+                                            echo "<option value=\"$h\" $selected>$h</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Jam Mulai</label>
+                                    <input type="time" name="jadwal_jam_mulai[]" value="<?php echo substr($j['jam_mulai'], 0, 5); ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Jam Selesai</label>
+                                    <input type="time" name="jadwal_jam_selesai[]" value="<?php echo substr($j['jam_selesai'], 0, 5); ?>" required>
+                                </div>
+                                <div><button type="button" class="jadwal-remove" onclick="hapusJadwal('jadwal-<?php echo $idx; ?>')">Hapus</button></div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                
+                <button type="button" class="btn btn-primary btn-small" onclick="tambahJadwal()">+ Tambah Jadwal</button>
+                
                                                 
                 <div class="button-group">
                     <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
@@ -483,6 +691,123 @@ $kota_result = $conn->query("SELECT id, nama FROM kota ORDER BY nama");
     </div>
     
     <script>
+        let jadwalIndex = <?php echo count($jadwal_list_existing); ?>;
+        
+        function tambahJadwal() {
+            const container = document.getElementById('jadwal-list');
+            
+            const jadwalDiv = document.createElement('div');
+            jadwalDiv.className = 'jadwal-item';
+            jadwalDiv.id = 'jadwal-' + jadwalIndex;
+            
+            const hariOptions = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+            let optionsHtml = '<option value="">-- Pilih Hari --</option>';
+            hariOptions.forEach(h => {
+                optionsHtml += '<option value="' + h + '">' + h + '</option>';
+            });
+            
+            jadwalDiv.innerHTML = `
+                <div class="jadwal-row">
+                    <div class="form-group">
+                        <label>Hari</label>
+                        <select name="jadwal_hari[]" required>
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Jam Mulai</label>
+                        <input type="time" name="jadwal_jam_mulai[]" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Jam Selesai</label>
+                        <input type="time" name="jadwal_jam_selesai[]" required>
+                    </div>
+                    
+                    <div><button type="button" class="jadwal-remove" onclick="hapusJadwal('jadwal-${jadwalIndex}')">Hapus</button></div>
+                </div>
+            `;
+            
+            container.appendChild(jadwalDiv);
+            jadwalIndex++;
+        }
+                
+        function hapusJadwal(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+            }
+        }
+
+        let selectedPelatih = new Set([<?php echo implode(',', array_column($pelatih_list_existing, 'anggota_id')); ?>].map(String));
+        
+        // Trainer Search Logic
+        const pelatihSearch = document.getElementById('pelatih-search');
+        const pelatihResults = document.getElementById('pelatih-results');
+        const pelatihList = document.getElementById('pelatih-list');
+
+        pelatihSearch.addEventListener('input', function() {
+            const query = this.value.trim();
+            if (query.length < 2) {
+                pelatihResults.style.display = 'none';
+                return;
+            }
+
+            fetch(`../../api/get_anggota.php?q=${encodeURIComponent(query)}&jenis=pelatih`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.data.length > 0) {
+                        let html = '';
+                        data.data.forEach(p => {
+                            if (!selectedPelatih.has(p.id.toString())) {
+                                html += `<div class="search-item" onclick="addPelatih('${p.id}', '${p.nama_lengkap}', '${p.no_anggota}', '${p.tingkat}')">
+                                    <strong>${p.nama_lengkap}</strong> (${p.no_anggota})<br>
+                                    <small>${p.tingkat} - ${p.ranting}</small>
+                                </div>`;
+                            }
+                        });
+                        pelatihResults.innerHTML = html || '<div class="search-item">Semua hasil sudah ditambahkan</div>';
+                        pelatihResults.style.display = 'block';
+                    } else {
+                        pelatihResults.innerHTML = '<div class="search-item">Tidak ditemukan</div>';
+                        pelatihResults.style.display = 'block';
+                    }
+                });
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target !== pelatihSearch) pelatihResults.style.display = 'none';
+        });
+
+        function addPelatih(id, nama, nomor, tingkat) {
+            if (selectedPelatih.has(id.toString())) return;
+            selectedPelatih.add(id.toString());
+
+            const div = document.createElement('div');
+            div.className = 'pelatih-item';
+            div.id = 'pelatih-row-' + id;
+            div.innerHTML = `
+                <input type="hidden" name="pelatih_id[]" value="${id}">
+                <div class="pelatih-info">
+                    <strong>${nama}</strong><br>
+                    <small>${nomor} | ${tingkat}</small>
+                </div>
+                <div class="pelatih-ket">
+                    <input type="text" name="pelatih_keterangan[]" placeholder="Keterangan (opsional)...">
+                </div>
+                <button type="button" class="jadwal-remove" onclick="removePelatih('${id}')">X</button>
+            `;
+            pelatihList.appendChild(div);
+            pelatihSearch.value = '';
+            pelatihResults.style.display = 'none';
+        }
+
+        function removePelatih(id) {
+            selectedPelatih.delete(id.toString());
+            document.getElementById('pelatih-row-' + id).remove();
+        }
+
         // Initialize on page load - filter provinces based on selected negara
         document.addEventListener('DOMContentLoaded', function() {
             const negaraSelect = document.getElementById('id_negara');

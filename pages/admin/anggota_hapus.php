@@ -1,7 +1,16 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../../login.php");
+    exit();
+}
+
+$user_role = $_SESSION['role'] ?? '';
+$user_ranting_id = $_SESSION['ranting_id'] ?? 0;
+
+// Allow admin, ranting, and unit roles
+if (!in_array($user_role, ['admin', 'ranting', 'unit'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -28,9 +37,18 @@ if (!$permission_manager->can('anggota_read')) {
 
 $id = (int)$_GET['id'];
 
-$result = $conn->query("SELECT nama_lengkap FROM anggota WHERE id = $id");
+$result = $conn->query("SELECT nama_lengkap, ranting_saat_ini_id FROM anggota WHERE id = $id");
 if ($result->num_rows == 0) {
     die("Anggota tidak ditemukan!");
+}
+$anggota = $result->fetch_assoc();
+
+// Check ownership for ranting and unit roles
+if ($user_role === 'ranting' || $user_role === 'unit') {
+    $member_ranting_id = $anggota['ranting_saat_ini_id'] ?? 0;
+    if ($member_ranting_id != $user_ranting_id) {
+        die("❌ Anda hanya bisa menghapus anggota dari ranting Anda sendiri!");
+    }
 }
 
 $conn->query("DELETE FROM anggota WHERE id = $id");

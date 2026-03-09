@@ -1,7 +1,10 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+$user_role = $_SESSION['role'] ?? '';
+
+// Allow admin, negara, and pengprov roles
+if (!isset($_SESSION['user_id']) || !in_array($user_role, ['admin', 'negara', 'pengprov'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -26,7 +29,16 @@ if (!$permission_manager->can('anggota_read')) {
 }
 
 // Get active tab
-$active_tab = $_GET['tab'] ?? 'negara';
+$active_tab = $_GET['tab'] ?? $_GET['jenis'] ?? 'negara';
+
+// For negara role, default to provinsi tab
+// For pengprov role, default to kota tab
+$user_role = $_SESSION['role'] ?? '';
+if ($user_role === 'negara' && !isset($_GET['tab'])) {
+    $active_tab = 'provinsi';
+} elseif ($user_role === 'pengprov' && !isset($_GET['tab'])) {
+    $active_tab = 'kota';
+}
 
 $error = '';
 $success = '';
@@ -64,23 +76,33 @@ function parse_date($date_str) {
 // Handle download template
 if (isset($_GET['download'])) {
     $template = $_GET['download'];
-    $templates = [
-        'negara' => '../../templates/csv/negara_template.csv',
-        'provinsi' => '../../templates/csv/provinsi_template.csv',
-        'kota' => '../../templates/csv/kota_template.csv'
-    ];
+    $filename = $template . "_template.csv";
     
-    if (isset($templates[$template]) && file_exists($templates[$template])) {
-        header('Content-Description: File Transfer');
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="' . basename($templates[$template]) . '"');
-        header('Expires: 0');
-        header('Cache-Control: must-revalidate');
-        header('Pragma: public');
-        header('Content-Length: ' . filesize($templates[$template]));
-        readfile($templates[$template]);
-        exit();
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    $output = fopen('php://output', 'w');
+
+    if ($template === 'negara') {
+        fputcsv($output, ['kode', 'nama', 'ketua_nama', 'sk_kepengurusan', 'periode_mulai', 'periode_akhir', 'alamat_sekretariat']);
+        fputcsv($output, ['ID', 'Indonesia', 'Budi Santoso', 'SK/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 123, Jakarta']);
+        fputcsv($output, ['MY', 'Malaysia', 'Ahmad Faisal', 'SK/002/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 456, Kuala Lumpur']);
+        fputcsv($output, ['SG', 'Singapura', 'Lim Wei Ming', '', '', '', '']);
+    } elseif ($template === 'provinsi') {
+        fputcsv($output, ['negara_kode', 'nama', 'ketua_nama', 'sk_kepengurusan', 'periode_mulai', 'periode_akhir', 'alamat_sekretariat']);
+        fputcsv($output, ['ID', 'Jawa Timur', 'H. Suparno', 'SK/JTM/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 1, Surabaya']);
+        fputcsv($output, ['ID', 'Jawa Barat', 'Drs. H. Dedi', 'SK/JBR/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 2, Bandung']);
+        fputcsv($output, ['ID', 'DKI Jakarta', 'H. Anis', '', '', '', '']);
+        fputcsv($output, ['MY', 'Selangor', 'Tuan Ahmad', '', '', '', '']);
+    } elseif ($template === 'kota') {
+        fputcsv($output, ['negara_kode', 'provinsi_kode', 'nama', 'ketua_nama', 'sk_kepengurusan', 'periode_mulai', 'periode_akhir', 'alamat_sekretariat']);
+        fputcsv($output, ['ID', '001', 'Surabaya', 'H. Marjuki', 'SK/SBY/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 1, Surabaya']);
+        fputcsv($output, ['ID', '001', 'Malang', 'Bpk. HM. Sidik', '', '', '', '']);
+        fputcsv($output, ['ID', '001', 'Gresik', 'H. M. Najib', '', '', '', '']);
+        fputcsv($output, ['ID', '002', 'Bandung', 'Ir. H. Oded', '', '', '', '']);
     }
+
+    fclose($output);
+    exit();
 }
 
 // Handle Negara Import
@@ -627,8 +649,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
             
             <!-- Tabs -->
             <div class="tabs">
+                <?php if ($user_role !== 'negara' && $user_role !== 'pengprov'): ?>
                 <button class="tab <?php echo $active_tab == 'negara' ? 'active' : ''; ?>" onclick="location.href='?tab=negara'">🌍 Negara</button>
+                <?php endif; ?>
+                <?php if ($user_role !== 'pengprov'): ?>
                 <button class="tab <?php echo $active_tab == 'provinsi' ? 'active' : ''; ?>" onclick="location.href='?tab=provinsi'">🏛️ Provinsi</button>
+                <?php endif; ?>
                 <button class="tab <?php echo $active_tab == 'kota' ? 'active' : ''; ?>" onclick="location.href='?tab=kota'">🏙️ Kota</button>
             </div>
             
@@ -649,6 +675,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
             <?php endif; ?>
             
             <!-- Tab Content: Negara -->
+            <?php if ($user_role !== 'negara'): ?>
             <div class="tab-content <?php echo $active_tab == 'negara' ? 'active' : ''; ?>" id="tab-negara">
                 <div class="tab-header">
                     <h3>Import Negara</h3>
@@ -682,6 +709,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     </div>
                 </form>
             </div>
+            <?php endif; ?>
             
             <!-- Tab Content: Provinsi -->
             <div class="tab-content <?php echo $active_tab == 'provinsi' ? 'active' : ''; ?>" id="tab-provinsi">

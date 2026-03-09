@@ -14,19 +14,17 @@
  * @param int $tingkat_urutan Urutan tingkat (1-13)
  * @return int Interval dalam bulan
  */
-function getIntervalBulanByTingkat($tingkat_urutan) {
-    if ($tingkat_urutan >= 1 && $tingkat_urutan <= 6) {
-        return 6; // 6 bulan
-    } elseif ($tingkat_urutan == 7) {
-        return 12; // 1 tahun
-    } elseif ($tingkat_urutan >= 8 && $tingkat_urutan <= 9) {
-        return 24; // 2 tahun
-    } elseif ($tingkat_urutan >= 10 && $tingkat_urutan <= 12) {
-        return 36; // 3 tahun
-    } else {
-        // Tingkat 13 (Pendekar) tidak ada UKT
-        return 999999;
+function getIntervalBulanByTingkat($conn, $tingkat_urutan) {
+    // Ambil dari database jika tersedia
+    $result = $conn->query("SELECT waktu_ukt FROM tingkatan WHERE urutan = $tingkat_urutan");
+    if ($result && $row = $result->fetch_assoc()) {
+        if ($row['waktu_ukt'] !== null && $row['waktu_ukt'] > 0) {
+            return (int)$row['waktu_ukt'];
+        }
     }
+
+    // Harus ada di database, jika tidak ada atau 0, anggap tidak layak/interval sangat besar
+    return 999;
 }
 
 /**
@@ -46,7 +44,7 @@ function getIntervalBulanByTingkat($tingkat_urutan) {
 function checkUKTEligibility($conn, $anggota_id) {
     // Ambil tingkat terakhir anggota
     $anggota = $conn->query(
-        "SELECT a.tingkat_id, t.urutan 
+        "SELECT a.tingkat_id, a.ukt_terakhir, t.urutan 
          FROM anggota a
          LEFT JOIN tingkatan t ON a.tingkat_id = t.id
          WHERE a.id = $anggota_id"
@@ -93,6 +91,9 @@ function checkUKTEligibility($conn, $anggota_id) {
     if ($ukt_terakhir_query->num_rows > 0) {
         $data = $ukt_terakhir_query->fetch_assoc();
         $ukt_terakhir_date = $data['tanggal_pelaksanaan'];
+    } else if (!empty($anggota['ukt_terakhir']) && $anggota['ukt_terakhir'] != '0000-00-00') {
+        // Fallback ke input manual di profil anggota jika data UKT resmi tidak ada
+        $ukt_terakhir_date = $anggota['ukt_terakhir'];
     }
     
     // Jika belum pernah UKT, langsung layak
@@ -103,13 +104,13 @@ function checkUKTEligibility($conn, $anggota_id) {
             'next_eligible_date' => date('Y-m-d'),
             'hari_tersisa' => 0,
             'tingkat_urutan' => $tingkat_urutan,
-            'interval_bulan' => getIntervalBulanByTingkat($tingkat_urutan),
+            'interval_bulan' => getIntervalBulanByTingkat($conn, $tingkat_urutan),
             'alasan' => 'Belum pernah mengikuti UKT'
         ];
     }
     
     // Hitung interval berdasarkan tingkat
-    $interval_bulan = getIntervalBulanByTingkat($tingkat_urutan);
+    $interval_bulan = getIntervalBulanByTingkat($conn, $tingkat_urutan);
     
     // Hitung tanggal eligible berikutnya
     try {

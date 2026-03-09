@@ -1,14 +1,18 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id'])) {
     header("Location: ../../login.php");
     exit();
 }
 
 include '../../config/database.php';
+include 'ukt_helper.php';
+
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../config/settings.php';
+
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -22,10 +26,17 @@ $permission_manager = new PermissionManager(
 // Store untuk global use
 $GLOBALS['permission_manager'] = $permission_manager;
 
-// Check permission untuk action ini
-if (!$permission_manager->can('anggota_read')) {
-    die("❌ Akses ditolak!");
+// For pengkot role on UKT pages, use custom permission check instead of general permission
+$user_role = $_SESSION['role'] ?? '';
+if ($user_role === 'pengkot' || $user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov') {
+    // Continue to UKT-specific permission check later
+} else {
+    if (!$permission_manager->can('anggota_read')) {
+        die("❌ Akses ditolak!");
+    }
 }
+
+include '../../config/settings.php';
 
 // Pastikan kolom untuk nilai per materi dan rata-rata ada di tabel ukt_peserta
 $required_columns = ['nilai_a','nilai_b','nilai_c','nilai_d','nilai_e','nilai_f','nilai_g','nilai_h','nilai_i','nilai_j','rata_rata'];
@@ -46,6 +57,23 @@ if ($ukt_check->num_rows == 0) {
     die("UKT tidak ditemukan!");
 }
 $ukt = $ukt_check->fetch_assoc();
+
+// Check if user can manage this UKT - special handling for pengkot
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+
+$can_manage = false;
+
+if ($user_role === 'pengkot') {
+    // Pengkot can only manage their own city UKT
+    $can_manage = ($ukt['jenis_penyelenggara'] === 'kota' && (int)$ukt['penyelenggara_id'] === (int)$user_pengurus_id);
+} elseif ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov') {
+    $can_manage = $permission_manager->canManageUKT('ukt_update', $ukt['jenis_penyelenggara'], $ukt['penyelenggara_id']);
+}
+
+if (!$can_manage) {
+    die("❌ Akses ditolak! Anda tidak memiliki izin untuk menginput nilai UKT ini.");
+}
 
 // Proses form submit
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -194,7 +222,7 @@ $total_peserta = $peserta_result->num_rows;
         }
         
         table { 
-            width: 100%; 
+            width: auto; 
             border-collapse: collapse; 
             margin-top: 0;
         }
@@ -205,8 +233,9 @@ $total_peserta = $peserta_result->num_rows;
             font-weight: 600;
             border-bottom: 2px solid #ddd;
             font-size: 13px;
-            min-width: 60px;
+            min-width: 40px;
         }
+        
         td { 
             padding: 12px; 
             border-bottom: 1px solid #eee;
@@ -245,7 +274,7 @@ $total_peserta = $peserta_result->num_rows;
             border-radius: 4px;
             font-weight: 600;
             display: inline-block;
-            min-width: 110px;
+            min-width: 90px;
             text-align: center;
             white-space: nowrap;
         }
@@ -299,10 +328,13 @@ $total_peserta = $peserta_result->num_rows;
             border-left: 4px solid #667eea;
             padding: 15px;
             border-radius: 4px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            font-size: 13px;
         }
-        
-        .info-box strong { color: #667eea; }
+
+        .info-box strong {
+            color: #667eea;
+        }
         
         .rata-rata-cell {
             font-weight: 600;
@@ -332,31 +364,13 @@ $total_peserta = $peserta_result->num_rows;
                 <strong>ℹ️ Catatan:</strong> Rata-rata dihitung hanya dari kolom yang ada nilai. Peserta dinyatakan LULUS jika rata-rata ≥ 60. Jika LULUS, tingkat anggota otomatis naik 1 level dan ukt_terakhir terupdate.
             </div>
             
-            <!-- Action buttons untuk input manual dan import CSV -->
+            <!-- Action buttons untuk import CSV -->
             <div class="action-buttons">
-                <button type="button" class="btn btn-primary" onclick="toggleForm('manual')">
-                    📝 Input Manual
-                </button>
-                <button type="button" class="btn btn-success" onclick="toggleForm('csv')">
+                <a href="ukt_import_nilai.php?ukt_id=<?php echo $id; ?>" class="btn btn-success">
                     📥 Import CSV
-                </button>
+                </a>
             </div>
             
-            <!-- Form Import CSV -->
-            <div id="csv-form" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="margin-bottom: 15px;">📥 Import Nilai dari CSV</h3>
-                <form method="POST" enctype="multipart/form-data" action="ukt_import_nilai.php?ukt_id=<?php echo $id; ?>">
-                    <div style="margin-bottom: 15px;">
-                        <label for="csv_file" style="display: block; margin-bottom: 8px; font-weight: 600;">Pilih File CSV:</label>
-                        <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
-                        <div style="font-size: 12px; color: #666; margin-top: 8px;">
-                            Format: No Anggota, Nilai A, Nilai B, ... Nilai J<br>
-                            <a href="#" onclick="showCSVTemplate(event)" style="color: #667eea; text-decoration: none;">Lihat contoh format</a>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-success">📥 Upload & Import</button>
-                </form>
-            </div>
             
             <!-- Form Input Manual -->
             <div id="manual-form" style="display: block;">
@@ -366,8 +380,8 @@ $total_peserta = $peserta_result->num_rows;
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="text-align: left; width: 100px;">No Anggota</th>
-                                    <th style="text-align: left;">Nama Anggota</th>
+                                    <th style="text-align: left; width: 180px;">No Anggota</th>
+                                    <th style="text-align: left; width: 200px;">Nama Anggota</th>
                                     <th>A</th>
                                     <th>B</th>
                                     <th>C</th>
@@ -379,13 +393,13 @@ $total_peserta = $peserta_result->num_rows;
                                     <th>I</th>
                                     <th>J</th>
                                     <th style="width: 80px;">Rata-rata</th>
-                                    <th style="width: 140px;">Status</th>
+                                    <th style="width: 100px;">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php while ($row = $peserta_result->fetch_assoc()): ?>
                                 <tr>
-                                    <td><?php echo $row['no_anggota']; ?></td>
+                                    <td><?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?></td>
                                     <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
 
                                     <?php $letters = ['a','b','c','d','e','f','g','h','i','j']; ?>
@@ -493,7 +507,19 @@ $total_peserta = $peserta_result->num_rows;
         // Event listener untuk perubahan input
         document.querySelectorAll('.materi').forEach(el => {
             const id = el.getAttribute('data-id');
-            el.addEventListener('input', () => computeRow(id));
+            el.addEventListener('input', (e) => {
+                // Hanya izinkan angka dan titik
+                let val = e.target.value;
+                val = val.replace(/[^0-9.]/g, '');
+                
+                // Pastikan hanya satu titik
+                if ((val.match(/\./g) || []).length > 1) {
+                    val = val.substring(0, val.lastIndexOf('.'));
+                }
+                
+                e.target.value = val;
+                computeRow(id);
+            });
         });
 
         // Initialize pada load

@@ -22,9 +22,10 @@ $permission_manager = new PermissionManager(
 // Store untuk global use
 $GLOBALS['permission_manager'] = $permission_manager;
 
-// Check permission untuk action ini
-if (!$permission_manager->can('anggota_read')) {
-    die("❌ Akses ditolak!");
+// Check if user has any UKT access (Unit and Tamu have no access)
+$ukt_filter = $permission_manager->getUKTFilterSQL();
+if ($ukt_filter['where'] === '1=0') {
+    die("❌ Akses ditolak! Anda tidak memiliki izin untuk mengakses halaman ini.");
 }
 
 // Handle AJAX request untuk filter
@@ -33,16 +34,23 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     
     $tahun = isset($_GET['tahun']) ? $conn->real_escape_string(trim($_GET['tahun'])) : '';
     $lokasi = isset($_GET['lokasi']) ? $conn->real_escape_string(trim($_GET['lokasi'])) : '';
-    $penyelenggara = isset($_GET['penyelenggara']) ? $conn->real_escape_string(trim($_GET['penyelenggara'])) : '';
+    $jenis_peny = isset($_GET['jenis_peny']) ? $conn->real_escape_string(trim($_GET['jenis_peny'])) : '';
+    $peny_id = isset($_GET['peny_id']) ? (int)$_GET['peny_id'] : 0;
     
-    $sql = "SELECT u.id, u.tanggal_pelaksanaan, u.lokasi, p.nama as nama_penyelenggara,
+    // Get filter based on user role
+    $ukt_filter = $permission_manager->getUKTFilterSQL();
+    
+    $sql = "SELECT u.id, u.tanggal_pelaksanaan, u.lokasi, 
+            COALESCE(n.nama, p.nama, k.nama) as nama_penyelenggara,
             COUNT(up.id) as total_peserta,
             SUM(CASE WHEN up.status = 'lulus' THEN 1 ELSE 0 END) as peserta_lulus,
             SUM(CASE WHEN up.status = 'tidak_lulus' THEN 1 ELSE 0 END) as peserta_tidak_lulus
             FROM ukt u
-            LEFT JOIN kota p ON u.penyelenggara_id = p.id
+            LEFT JOIN negara n ON u.penyelenggara_id = n.id AND u.jenis_penyelenggara = 'pusat'
+            LEFT JOIN provinsi p ON u.penyelenggara_id = p.id AND u.jenis_penyelenggara = 'provinsi'
+            LEFT JOIN kota k ON u.penyelenggara_id = k.id AND u.jenis_penyelenggara = 'kota'
             LEFT JOIN ukt_peserta up ON u.id = up.ukt_id
-            WHERE 1=1";
+            WHERE {$ukt_filter['where']}";
     
     if ($tahun) {
         $sql .= " AND YEAR(u.tanggal_pelaksanaan) = '$tahun'";
@@ -52,13 +60,27 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
         $sql .= " AND u.lokasi LIKE '%$lokasi%'";
     }
     
-    if ($penyelenggara) {
-        $sql .= " AND p.nama LIKE '%$penyelenggara%'";
+    if ($jenis_peny) {
+        $sql .= " AND u.jenis_penyelenggara = '$jenis_peny'";
+    }
+    
+    if ($peny_id > 0) {
+        $sql .= " AND u.penyelenggara_id = $peny_id";
     }
     
     $sql .= " GROUP BY u.id ORDER BY u.tanggal_pelaksanaan DESC";
     
-    $result = $conn->query($sql);
+    // Execute with params if available
+    if (!empty($ukt_filter['params'])) {
+        $stmt = $conn->prepare($sql);
+        $types = str_repeat('i', count($ukt_filter['params']));
+        $stmt->bind_param($types, ...$ukt_filter['params']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    } else {
+        $result = $conn->query($sql);
+    }
+    
     $rows = [];
     
     while ($row = $result->fetch_assoc()) {
@@ -77,12 +99,26 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     exit();
 }
 
-// Query awal untuk semua data UKT
-$sql = "SELECT u.*, p.nama as nama_penyelenggara
+// Query awal untuk semua data UKT dengan filter berdasarkan role
+$ukt_filter = $permission_manager->getUKTFilterSQL();
+$sql = "SELECT u.*, COALESCE(n.nama, p.nama, k.nama) as nama_penyelenggara
         FROM ukt u
-        LEFT JOIN kota p ON u.penyelenggara_id = p.id
+        LEFT JOIN negara n ON u.penyelenggara_id = n.id AND u.jenis_penyelenggara = 'pusat'
+        LEFT JOIN provinsi p ON u.penyelenggara_id = p.id AND u.jenis_penyelenggara = 'provinsi'
+        LEFT JOIN kota k ON u.penyelenggara_id = k.id AND u.jenis_penyelenggara = 'kota'
+        WHERE {$ukt_filter['where']}
         ORDER BY u.tanggal_pelaksanaan DESC";
-$result = $conn->query($sql);
+
+// Prepare statement if there are params
+if (!empty($ukt_filter['params'])) {
+    $stmt = $conn->prepare($sql);
+    $types = str_repeat('i', count($ukt_filter['params']));
+    $stmt->bind_param($types, ...$ukt_filter['params']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    $result = $conn->query($sql);
+}
 
 // Hitung total
 $total_ukt = $result->num_rows;
@@ -91,7 +127,12 @@ $result->data_seek(0);
 // Ambil data tahun untuk dropdown filter
 $tahun_result = $conn->query("SELECT DISTINCT YEAR(tanggal_pelaksanaan) as tahun FROM ukt ORDER BY tahun DESC");
 
-$is_readonly = $_SESSION['role'] == 'user';
+$can_create_info = $permission_manager->canCreateOwnUKT();
+$can_create = $can_create_info['can'];
+$can_update = $permission_manager->canUpdateOwnUKT();
+
+// Default: read-only unless can_update is true
+$is_readonly = !$can_update;
 ?>
 
 <!DOCTYPE html>
@@ -100,6 +141,7 @@ $is_readonly = $_SESSION['role'] == 'user';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UKT - Sistem Beladiri</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; }
@@ -244,6 +286,26 @@ $is_readonly = $_SESSION['role'] == 'user';
             gap: 5px;
             flex-wrap: wrap;
         }
+
+        /* Select2 alignment */
+        .select2-container--default .select2-selection--single {
+            height: 38px;
+            padding: 4px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 28px;
+            padding-left: 0;
+            font-size: 13px;
+            color: #333;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #999;
+        }
     </style>
 </head>
 <body>
@@ -255,7 +317,7 @@ $is_readonly = $_SESSION['role'] == 'user';
                 <h1>Daftar Pelaksanaan UKT</h1>
                 <p style="color: #666;">Total: <strong id="total-count"><?php echo $total_ukt; ?> pelaksanaan</strong></p>
             </div>
-            <?php if (!$is_readonly): ?>
+            <?php if ($can_create): ?>
             <a href="ukt_buat.php" class="btn btn-primary">+ Buat UKT Baru</a>
             <?php endif; ?>
         </div>
@@ -276,19 +338,31 @@ $is_readonly = $_SESSION['role'] == 'user';
                 </div>
                 
                 <div class="filter-group">
-                    <label>Lokasi</label>
-                    <input type="text" id="filter-lokasi" placeholder="Cari lokasi...">
+                    <label>Lokasi (Pencarian Langsung)</label>
+                    <input type="text" id="filter-lokasi" placeholder="Ketik untuk mencari lokasi...">
                 </div>
                 
                 <div class="filter-group">
-                    <label>Penyelenggara</label>
-                    <input type="text" id="filter-penyelenggara" placeholder="Cari penyelenggara...">
+                    <label>Jenis Penyelenggara</label>
+                    <select id="filter-jenis-penyelenggara" onchange="handleJenisFilterChange()">
+                        <option value="">-- Semua Jenis --</option>
+                        <option value="pusat">Pusat (PP)</option>
+                        <option value="provinsi">Provinsi (PengProv)</option>
+                        <option value="kota">Kota / Kabupaten (PengKot)</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Nama Penyelenggara</label>
+                    <select id="filter-nama-penyelenggara" disabled>
+                        <option value="">-- Pilih Penyelenggara --</option>
+                    </select>
+                    <div id="loadingFilterPenyelenggara" style="display:none; font-size:10px; color:#999;">Memuat...</div>
                 </div>
             </div>
             
             <div class="filter-buttons">
-                <button class="btn btn-primary" onclick="applyFilters()">🔎 Terapkan Filter</button>
-                <button class="btn btn-secondary" onclick="resetFilters()">🔄 Reset Filter</button>
+                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;" onclick="resetFilters()">🔄 Reset Filter</button>
             </div>
         </div>
         
@@ -336,11 +410,12 @@ $is_readonly = $_SESSION['role'] == 'user';
                         <td>
                             <div class="action-buttons">
                                 <a href="ukt_detail.php?id=<?php echo $row['id']; ?>" class="btn btn-info btn-small">Lihat</a>
-                                <?php if (!$is_readonly && $_SESSION['role'] == 'admin'): ?>
+                                <?php 
+                                $can_manage_this = $permission_manager->canManageUKT('ukt_update', $row['jenis_penyelenggara'], $row['penyelenggara_id']);
+                                if ($can_manage_this): 
+                                ?>
                                 <a href="ukt_edit.php?id=<?php echo $row['id']; ?>" class="btn btn-info btn-small" style="background: #ffc107; color: black;">Edit</a>
                                 <a href="ukt_hapus.php?id=<?php echo $row['id']; ?>" class="btn btn-info btn-small" style="background: #dc3545;" onclick="return confirm('Yakin hapus UKT ini?')">Hapus</a>
-                                <?php elseif (!$is_readonly): ?>
-                                <a href="ukt_input_nilai.php?id=<?php echo $row['id']; ?>" class="btn btn-success btn-small">Input Nilai</a>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -352,16 +427,83 @@ $is_readonly = $_SESSION['role'] == 'user';
         </div>
     </div>
     
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
+        $(document).ready(function() {
+            // Init Select2 for Year
+            $('#filter-tahun').select2({
+                placeholder: "-- Semua Tahun --",
+                allowClear: true,
+                width: '100%'
+            }).on('change', applyFilters);
+
+            // Init Select2 for Organizer Name
+            $('#filter-nama-penyelenggara').select2({
+                placeholder: "-- Pilih Penyelenggara --",
+                allowClear: true,
+                width: '100%'
+            }).on('change', applyFilters);
+
+            // Focus search on open
+            $('#filter-tahun, #filter-nama-penyelenggara').on('select2:open', function() {
+                const searchField = document.querySelector('.select2-search__field');
+                if (searchField) searchField.focus();
+            });
+
+            // Live search for Location (with debounce)
+            let searchTimeout;
+            $('#filter-lokasi').on('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(applyFilters, 400);
+            });
+            
+            // Apply initial filters if any or just trigger AJAX
+            // applyFilters();
+        });
+
+        function handleJenisFilterChange() {
+            const jenis = document.getElementById('filter-jenis-penyelenggara').value;
+            const namaSelect = document.getElementById('filter-nama-penyelenggara');
+            const loading = document.getElementById('loadingFilterPenyelenggara');
+            
+            namaSelect.innerHTML = '<option value="">-- Semua Penyelenggara --</option>';
+            namaSelect.disabled = true;
+            
+            if (!jenis) {
+                $(namaSelect).trigger('change');
+                return;
+            }
+            
+            loading.style.display = 'block';
+            fetch(`../../api/get_penyelenggara.php?jenis_pengurus=${encodeURIComponent(jenis)}`)
+                .then(r => r.json())
+                .then(data => {
+                    loading.style.display = 'none';
+                    if (data.success && data.data.length > 0) {
+                        data.data.forEach(item => {
+                            const opt = document.createElement('option');
+                            opt.value = item.id;
+                            opt.textContent = item.nama;
+                            namaSelect.appendChild(opt);
+                        });
+                        namaSelect.disabled = false;
+                    }
+                    $(namaSelect).trigger('change');
+                });
+        }
+
         function applyFilters() {
             const tahun = document.getElementById('filter-tahun').value;
             const lokasi = document.getElementById('filter-lokasi').value;
-            const penyelenggara = document.getElementById('filter-penyelenggara').value;
+            const jenisPeny = document.getElementById('filter-jenis-penyelenggara').value;
+            const penyId = document.getElementById('filter-nama-penyelenggara').value;
             
             let url = '?ajax=1';
             if (tahun) url += `&tahun=${encodeURIComponent(tahun)}`;
             if (lokasi) url += `&lokasi=${encodeURIComponent(lokasi)}`;
-            if (penyelenggara) url += `&penyelenggara=${encodeURIComponent(penyelenggara)}`;
+            if (jenisPeny) url += `&jenis_peny=${encodeURIComponent(jenisPeny)}`;
+            if (penyId) url += `&peny_id=${encodeURIComponent(penyId)}`;
             
             fetch(url)
                 .then(response => response.json())
@@ -416,10 +558,11 @@ $is_readonly = $_SESSION['role'] == 'user';
         }
         
         function resetFilters() {
-            document.getElementById('filter-tahun').value = '';
+            $('#filter-tahun').val('').trigger('change.select2');
             document.getElementById('filter-lokasi').value = '';
-            document.getElementById('filter-penyelenggara').value = '';
-            location.reload();
+            document.getElementById('filter-jenis-penyelenggara').value = '';
+            $('#filter-nama-penyelenggara').html('<option value="">-- Pilih Penyelenggara --</option>').val('').trigger('change.select2').prop('disabled', true);
+            applyFilters();
         }
     </script>
 </body>

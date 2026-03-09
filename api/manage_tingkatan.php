@@ -20,14 +20,16 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 switch ($action) {
     case 'create':
         $nama_tingkat = $conn->real_escape_string($_POST['nama_tingkat'] ?? '');
+        $singkatan = $conn->real_escape_string($_POST['singkatan'] ?? '');
         $urutan = (int)($_POST['urutan'] ?? 0);
+        $waktu_ukt = (int)($_POST['waktu_ukt'] ?? 0);
         
         if (empty($nama_tingkat)) {
             echo json_encode(['success' => false, 'message' => 'Nama tingkat tidak boleh kosong!']);
             exit();
         }
         
-        $sql = "INSERT INTO tingkatan (nama_tingkat, urutan) VALUES ('$nama_tingkat', $urutan)";
+        $sql = "INSERT INTO tingkatan (nama_tingkat, singkatan, urutan, waktu_ukt) VALUES ('$nama_tingkat', '$singkatan', $urutan, $waktu_ukt)";
         if ($conn->query($sql)) {
             echo json_encode(['success' => true, 'message' => 'Tingkat berhasil ditambahkan!']);
         } else {
@@ -50,14 +52,16 @@ switch ($action) {
     case 'update':
         $id = (int)$_POST['id'];
         $nama_tingkat = $conn->real_escape_string($_POST['nama_tingkat'] ?? '');
+        $singkatan = $conn->real_escape_string($_POST['singkatan'] ?? '');
         $urutan = (int)($_POST['urutan'] ?? 0);
+        $waktu_ukt = (int)($_POST['waktu_ukt'] ?? 0);
         
         if (empty($nama_tingkat)) {
             echo json_encode(['success' => false, 'message' => 'Nama tingkat tidak boleh kosong!']);
             exit();
         }
         
-        $sql = "UPDATE tingkatan SET nama_tingkat = '$nama_tingkat', urutan = $urutan WHERE id = $id";
+        $sql = "UPDATE tingkatan SET nama_tingkat = '$nama_tingkat', singkatan = '$singkatan', urutan = $urutan, waktu_ukt = $waktu_ukt WHERE id = $id";
         if ($conn->query($sql)) {
             echo json_encode(['success' => true, 'message' => 'Tingkat berhasil diperbarui!']);
         } else {

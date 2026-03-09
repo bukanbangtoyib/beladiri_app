@@ -27,6 +27,49 @@ if (!$permission_manager->can('anggota_read')) {
     die("❌ Akses ditolak!");
 }
 
+// Handle AJAX Request for dynamic filtering
+if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
+    header('Content-Type: application/json');
+    $ranting_id = isset($_GET['ranting_id']) ? (int)$_GET['ranting_id'] : 0;
+    $filter_negara = isset($_GET['filter_negara']) ? (int)$_GET['filter_negara'] : 0;
+    $filter_provinsi = isset($_GET['filter_provinsi']) ? (int)$_GET['filter_provinsi'] : 0;
+    $filter_kota = isset($_GET['filter_kota']) ? (int)$_GET['filter_kota'] : 0;
+    $filter_hari = isset($_GET['filter_hari']) ? $_GET['filter_hari'] : '';
+
+    $jadwal_where = [];
+    $join_clause = "FROM jadwal_latihan j 
+        LEFT JOIN ranting r ON j.ranting_id = r.id 
+        LEFT JOIN kota k ON r.kota_id = k.id 
+        LEFT JOIN provinsi prov ON k.provinsi_id = prov.id";
+
+    if ($ranting_id > 0) $jadwal_where[] = "j.ranting_id = $ranting_id";
+    if ($filter_kota > 0) $jadwal_where[] = "r.kota_id = $filter_kota";
+    if ($filter_provinsi > 0) $jadwal_where[] = "k.provinsi_id = $filter_provinsi";
+    if ($filter_negara > 0) $jadwal_where[] = "prov.negara_id = $filter_negara";
+    if ($filter_hari) $jadwal_where[] = "j.hari = '" . $conn->real_escape_string($filter_hari) . "'";
+
+    $where_clause = count($jadwal_where) > 0 ? "WHERE " . implode(" AND ", $jadwal_where) : "";
+    $sql = "SELECT j.*, r.id as ranting_id, r.nama_ranting $join_clause $where_clause ORDER BY FIELD(j.hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), j.jam_mulai";
+    $res = $conn->query($sql);
+
+    $rows = [];
+    while ($row = $res->fetch_assoc()) {
+        $mulai = strtotime($row['jam_mulai']);
+        $selesai = strtotime($row['jam_selesai']);
+        $rows[] = [
+            'id' => (int)$row['id'],
+            'ranting_id' => (int)$row['ranting_id'],
+            'nama_ranting' => htmlspecialchars($row['nama_ranting'] ?? '-'),
+            'hari' => $row['hari'],
+            'jam_mulai' => date('H:i', $mulai),
+            'jam_selesai' => date('H:i', $selesai),
+            'durasi' => round(($selesai - $mulai) / 3600)
+        ];
+    }
+    echo json_encode(['success' => true, 'data' => $rows]);
+    exit();
+}
+
 // Ambil filter dari GET
 $ranting_id = isset($_GET['ranting_id']) ? (int)$_GET['ranting_id'] : 0;
 $filter_negara = isset($_GET['filter_negara']) ? (int)$_GET['filter_negara'] : 0;
@@ -135,7 +178,7 @@ if ($filter_hari) {
 }
 
 $where_clause = count($jadwal_where) > 0 ? "WHERE " . implode(" AND ", $jadwal_where) : "";
-$jadwal_result = $conn->query("SELECT j.*, r.nama_ranting $join_clause $where_clause ORDER BY FIELD(j.hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), j.jam_mulai");
+$jadwal_result = $conn->query("SELECT j.*, r.id as ranting_id, r.nama_ranting $join_clause $where_clause ORDER BY FIELD(j.hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), j.jam_mulai");
 
 $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 $is_readonly = $_SESSION['role'] == 'tamu';
@@ -151,9 +194,11 @@ $is_readonly = $_SESSION['role'] == 'tamu';
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; }
         
-        .container { max-width: 1100px; margin: 20px auto; padding: 0 20px; }
+        .container { margin: 20px auto; padding: 0 20px; }
         
         .card {
+            max-width: 1400px;
+            margin: auto;
             background: white;
             padding: 25px;
             border-radius: 8px;
@@ -176,6 +221,22 @@ $is_readonly = $_SESSION['role'] == 'tamu';
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 20px;
+        }
+        
+        .filter-row-regional {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-row-regional label {
+            font-size: 15px;
+        }
+        
+        .filter-row-regional select {
+            font-size: 15px;
+            padding: 8px;
         }
         
         .form-group {
@@ -227,14 +288,19 @@ $is_readonly = $_SESSION['role'] == 'tamu';
             font-size: 13px; 
             transition: all 0.3s;
         }
-        .btn-primary { background: #667eea; color: white; }
-        .btn-primary:hover { background: #5568d3; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
         .btn-reset { background: #6c757d; color: white; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { background: #f8f9fa; padding: 12px; text-align: left; border: 1px solid #ddd; font-weight: 600; }
+
+        th:nth-child(1),
+        th:nth-child(2), td:nth-child(2),
+        th:nth-child(3), td:nth-child(3),
+        th:nth-child(4), td:nth-child(4),
+        th:nth-child(5), td:nth-child(5) {
+            text-align: center;
+        }
+
         td { padding: 12px; border: 1px solid #ddd; }
         tr:hover { background: #f9f9f9; }
         
@@ -285,9 +351,8 @@ $is_readonly = $_SESSION['role'] == 'tamu';
                 <strong>ℹ️ Cara Menggunakan:</strong> Pilih Negara terlebih dahulu, lalu Provinsi akan menampilkan list yang ada di bawahnya, kemudian Kota, dan terakhir Unit/Ranting.
             </div>
             
-            <form method="GET" style="margin-bottom: 20px;">
-                <div class="filter-section">
-                    <div class="filter-row">
+            <form id="filterForm" onsubmit="return false;">
+                        <div class="filter-row-regional">
                         <!-- Filter 1: Negara -->
                         <div class="form-group">
                             <label for="filter_negara">🌍 Negara</label>
@@ -345,7 +410,7 @@ $is_readonly = $_SESSION['role'] == 'tamu';
                         <!-- Filter 4: Ranting -->
                         <div class="form-group">
                             <label for="ranting_id">🢂 Unit/Ranting</label>
-                            <select name="ranting_id" id="ranting_id" onchange="this.form.submit()" <?php echo $filter_kota == 0 ? 'disabled' : ''; ?>>
+                            <select name="ranting_id" id="ranting_id" onchange="applyFilters()" <?php echo $filter_kota == 0 ? 'disabled' : ''; ?>>
                                 <option value="">-- Pilih Ranting --</option>
                                 <?php 
                                 if ($ranting_result && $ranting_result->num_rows > 0) {
@@ -366,7 +431,7 @@ $is_readonly = $_SESSION['role'] == 'tamu';
                         <!-- Filter 5: Hari -->
                         <div class="form-group">
                             <label for="filter_hari">📅 Hari</label>
-                            <select name="filter_hari" id="filter_hari" onchange="this.form.submit()">
+                            <select name="filter_hari" id="filter_hari" onchange="applyFilters()">
                                 <option value="">-- Semua Hari --</option>
                                 <?php 
                                 $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
@@ -380,7 +445,6 @@ $is_readonly = $_SESSION['role'] == 'tamu';
                         </div>
                         
                         <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
-                            <button type="submit" class="btn btn-primary">🔍 Filter</button>
                             <a href="jadwal_latihan.php" class="btn btn-reset">🔄 Reset</a>
                         </div>
                     </div>
@@ -389,44 +453,32 @@ $is_readonly = $_SESSION['role'] == 'tamu';
         </div>
                 
         <!-- Daftar Jadwal -->
-        <?php $show_jadwal = ($ranting_id > 0 || $filter_hari || $filter_kota || $filter_provinsi || $filter_negara); ?>
-        <?php if ($show_jadwal): ?>
         <div class="card">
             <h3>📋 Jadwal Latihan</h3>
             
             <?php if ($jadwal_result && $jadwal_result->num_rows > 0): ?>
-            <table>
+            <table style="width: 100%;">
                 <thead>
                     <tr>
                         <th>Unit/Ranting</th>
                         <th>Hari</th>
                         <th>Jam Mulai</th>
                         <th>Jam Selesai</th>
-                        <th style="width: 100px;">Durasi</th>
-                        <?php if (!$is_readonly): ?><th style="width: 80px;">Aksi</th><?php endif; ?>
+                        <th>Durasi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="jadwal-tbody">
                     <?php while ($row = $jadwal_result->fetch_assoc()): 
                         $mulai = strtotime($row['jam_mulai']);
                         $selesai = strtotime($row['jam_selesai']);
                         $durasi = round(($selesai - $mulai) / 3600);
                     ?>
-                    <tr>
-                        <td><strong><?php echo htmlspecialchars($row['nama_ranting'] ?? '-'); ?></strong></td>
+                    <tr id="row-<?php echo $row['id']; ?>">
+                        <td><strong><a href="ranting_detail.php?id=<?php echo $row['ranting_id']; ?>"><?php echo htmlspecialchars($row['nama_ranting'] ?? '-'); ?></a></strong></td>
                         <td><strong><?php echo $row['hari']; ?></strong></td>
                         <td><?php echo date('H:i', $mulai); ?></td>
                         <td><?php echo date('H:i', $selesai); ?></td>
                         <td><?php echo $durasi; ?> jam</td>
-                        <?php if (!$is_readonly): ?>
-                        <td>
-                            <form method="POST" style="display: inline;">
-                                <input type="hidden" name="action" value="delete">
-                                <input type="hidden" name="jadwal_id" value="<?php echo $row['id']; ?>">
-                                <button type="submit" class="btn btn-danger" onclick="return confirm('Hapus jadwal ini?')">Hapus</button>
-                            </form>
-                        </td>
-                        <?php endif; ?>
                     </tr>
                     <?php endwhile; ?>
                 </tbody>
@@ -437,42 +489,9 @@ $is_readonly = $_SESSION['role'] == 'tamu';
             </div>
             <?php endif; ?>
         </div>
-        <?php endif; ?>
 
-        <!-- Form Input Jadwal -->
-        <?php if ($ranting_id > 0 && !$is_readonly): ?>
-        <div class="card">
-            <h3>➕ Tambah Jadwal Baru</h3>
-            
-            <form method="POST" style="margin-bottom: 25px;">
-                <input type="hidden" name="action" value="add">
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="hari">Hari</label>
-                        <select name="hari" id="hari" required>
-                            <option value="">-- Pilih Hari --</option>
-                            <?php foreach ($hari_options as $h): ?>
-                                <option value="<?php echo $h; ?>"><?php echo $h; ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="jam_mulai">Jam Mulai</label>
-                        <input type="time" name="jam_mulai" id="jam_mulai" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="jam_selesai">Jam Selesai</label>
-                        <input type="time" name="jam_selesai" id="jam_selesai" required>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn btn-primary" style="margin-top: 10px;">➕ Tambah Jadwal</button>
-            </form>
-        </div>
-        <?php endif; ?>        
+
+        <!-- Form Input Jadwal -->        
     </div>
 
     <script>
@@ -485,6 +504,9 @@ $is_readonly = $_SESSION['role'] == 'tamu';
             
             const negaraId = negaraSelect.value;
             
+            // Trigger filter even if empty
+            applyFilters();
+
             if (negaraId === '') {
                 // Jika tidak ada negara yang dipilih, disable semua dropdown
                 provinsiSelect.disabled = true;
@@ -528,6 +550,9 @@ $is_readonly = $_SESSION['role'] == 'tamu';
             
             const provinsiId = provinsiSelect.value;
             
+            // Trigger filter even if empty
+            applyFilters();
+
             if (provinsiId === '') {
                 // Jika tidak ada provinsi yang dipilih, disable kota dan ranting
                 kotaSelect.disabled = true;
@@ -565,6 +590,9 @@ $is_readonly = $_SESSION['role'] == 'tamu';
             
             const kotaId = kotaSelect.value;
             
+            // Trigger filter even if empty
+            applyFilters();
+
             if (kotaId === '') {
                 // Jika tidak ada kota yang dipilih, disable ranting
                 rantingSelect.disabled = true;
@@ -587,6 +615,57 @@ $is_readonly = $_SESSION['role'] == 'tamu';
                     }
                 })
                 .catch(error => console.error('Error:', error));
+        }
+
+        function applyFilters() {
+            const formData = new FormData(document.getElementById('filterForm'));
+            const params = new URLSearchParams();
+            params.append('ajax', '1');
+            
+            const filterMap = {
+                'filter_negara': 'filter_negara',
+                'filter_provinsi': 'filter_provinsi',
+                'filter_kota': 'filter_kota',
+                'ranting_id': 'ranting_id',
+                'filter_hari': 'filter_hari'
+            };
+
+            for (const [id, param] of Object.entries(filterMap)) {
+                const val = document.getElementById(id).value;
+                if (val) params.append(param, val);
+            }
+
+            fetch('?' + params.toString())
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        updateTable(data.data);
+                    }
+                });
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('jadwal-tbody');
+            const isReadonly = <?php echo $is_readonly ? 'true' : 'false'; ?>;
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="no-data"><p>🔭 Belum ada jadwal latihan untuk filter yang dipilih</p></td></tr>';
+                return;
+            }
+
+            let html = '';
+            data.forEach(row => {
+                html += `
+                    <tr id="row-${row.id}">
+                        <td><strong><a href="ranting_detail.php?id=${row.ranting_id}">${row.nama_ranting}</a></strong></td>
+                        <td><strong>${row.hari}</strong></td>
+                        <td>${row.jam_mulai}</td>
+                        <td>${row.jam_selesai}</td>
+                        <td>${row.durasi} jam</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
         }
     </script>
 </body>

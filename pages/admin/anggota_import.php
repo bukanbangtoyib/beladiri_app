@@ -32,20 +32,20 @@ $success = '';
 $import_log = [];
 
 // Handle download template
-if (isset($_GET['download'])) {
-    $template_file = '../../templates/csv/anggota_template.csv';
+if (isset($_GET['download']) && $_GET['download'] === 'anggota') {
+    $filename = "anggota_template.csv";
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
     
-    if (file_exists($template_file)) {
-        header('Content-Description: File Transfer');
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="anggota_template.csv"');
-        header('Expires: 0');
-        header('Cache-Control: must-revalidate');
-        header('Pragma: public');
-        header('Content-Length: ' . filesize($template_file));
-        readfile($template_file);
-        exit();
-    }
+    $output = fopen('php://output', 'w');
+    // Header
+    fputcsv($output, ['negara_kode', 'provinsi_kode', 'kota_kode', 'ranting_kode', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'no_handphone', 'jenis_anggota', 'tingkat_id', 'tahun_bergabung', 'ranting_awal_manual']);
+    // Filter examples
+    fputcsv($output, ['ID', '001', '001', '001', 'Budi Santoso', 'Jakarta', '1990-05-15', 'L', '08123456789', 'murid', '1', '2024', 'Ranting Surabaya Timur']);
+    fputcsv($output, ['ID', '001', '001', '001', 'Siti Nurhaliza', 'Bandung', '1992-03-20', 'P', '08123456780', 'pelatih', '2', '2023', 'Ranting Bandung Utara']);
+    
+    fclose($output);
+    exit();
 }
 
 // Helper function untuk parse tanggal
@@ -233,6 +233,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_excel'])) {
                     $check_result = $check_stmt->get_result();
                     if ($check_result->num_rows > 0) {
                         log_import_anggota($row_num, "No Anggota sudah ada - dilewati", 'warning');
+                        $skipped++;
+                        continue;
+                    }
+                    
+                    // Check duplikat berdasarkan nama lengkap dan tanggal lahir
+                    $dup_check = $conn->prepare("SELECT id, nama_lengkap FROM anggota WHERE nama_lengkap = ? AND tanggal_lahir = ?");
+                    $dup_check->bind_param("ss", $nama_lengkap, $tanggal_lahir);
+                    $dup_check->execute();
+                    $dup_result = $dup_check->get_result();
+                    if ($dup_result->num_rows > 0) {
+                        $dup_row = $dup_result->fetch_assoc();
+                        log_import_anggota($row_num, "Data duplikat ('$nama_lengkap' dengan tanggal lahir $tanggal_lahir) sudah ada - dilewati", 'warning');
                         $skipped++;
                         continue;
                     }

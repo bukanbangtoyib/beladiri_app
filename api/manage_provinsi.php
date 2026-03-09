@@ -8,8 +8,20 @@ session_start();
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+$user_role = $_SESSION['role'] ?? '';
+
+// All authenticated users can read province data (get_by_negara, list)
+// Write operations (add, update, delete) require admin/negara/pengprov roles
+if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'message' => 'Akses ditolak!']);
+    exit();
+}
+
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+// For write operations, restrict to admin/negara/pengprov
+if (in_array($action, ['add', 'update', 'delete']) && !in_array($user_role, ['admin', 'negara', 'pengprov'])) {
+    echo json_encode(['success' => false, 'message' => 'Akses ditolak! Hanya admin/negara/pengprov yang bisa melakukan aksi ini.']);
     exit();
 }
 
@@ -18,8 +30,6 @@ include dirname(dirname(__FILE__)) . '/config/database.php';
 // Auto-update status based on periode_akhir
 $today = date('Y-m-d');
 $conn->query("UPDATE provinsi SET aktif = 0 WHERE periode_akhir IS NOT NULL AND periode_akhir != '' AND periode_akhir < '$today' AND aktif = 1");
-
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 switch ($action) {
     case 'list':

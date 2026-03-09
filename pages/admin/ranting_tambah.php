@@ -116,6 +116,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $success .= " ($jadwal_added jadwal ditambahkan)";
                     }
                 }
+
+                // Tambah Pelatih jika ada
+                if (isset($_POST['pelatih_id']) && is_array($_POST['pelatih_id'])) {
+                    $pelatih_added = 0;
+                    foreach ($_POST['pelatih_id'] as $idx => $pelatih_id) {
+                        if (!empty($pelatih_id)) {
+                            $ket = $_POST['pelatih_keterangan'][$idx] ?? '';
+                            $p_sql = "INSERT INTO ranting_pelatih (ranting_id, anggota_id, keterangan) VALUES (?, ?, ?)";
+                            $p_stmt = $conn->prepare($p_sql);
+                            $p_stmt->bind_param("iis", $ranting_id_baru, $pelatih_id, $ket);
+                            if ($p_stmt->execute()) {
+                                $pelatih_added++;
+                            }
+                        }
+                    }
+                    if ($pelatih_added > 0) {
+                        $success .= " ($pelatih_added pelatih ditambahkan)";
+                    }
+                }
                 
                 header("refresh:2;url=ranting_detail.php?id=$ranting_id_baru");
             } else {
@@ -271,6 +290,39 @@ $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
             background-color: #e9ecef;
             cursor: not-allowed;
         }
+
+        /* Trainer Styles */
+        .pelatih-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #f9f9f9;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #eee;
+        }
+        .pelatih-info { flex: 1; font-size: 14px; }
+        .pelatih-ket { flex: 1; }
+        .search-results {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .search-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        .search-item:hover { background: #f0f7ff; }
     </style>
 </head>
 <body>
@@ -410,6 +462,22 @@ $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
                 
                 <hr>
                 
+                <h3>👨‍🏫 Daftar Pelatih</h3>
+                <div class="info-box">
+                    <strong>ℹ️ Info:</strong> Cari pelatih berdasarkan nama atau nomor anggota.
+                </div>
+
+                <div style="position: relative; margin-bottom: 20px;">
+                    <input type="text" id="pelatih-search" placeholder="Cari nama pelatih..." autocomplete="off" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                    <div id="pelatih-results" class="search-results"></div>
+                </div>
+
+                <div id="pelatih-list" style="margin-bottom: 20px;">
+                    <!-- Daftar pelatih akan muncul di sini -->
+                </div>
+
+                <hr>
+                
                 <h3>⏰ Jadwal Latihan (Opsional)</h3>
                 
                 <div class="info-box">
@@ -430,7 +498,74 @@ $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
     
     <script>
         let jadwalIndex = 0;
+        let selectedPelatih = new Set();
         
+        // Trainer Search Logic
+        const pelatihSearch = document.getElementById('pelatih-search');
+        const pelatihResults = document.getElementById('pelatih-results');
+        const pelatihList = document.getElementById('pelatih-list');
+
+        pelatihSearch.addEventListener('input', function() {
+            const query = this.value.trim();
+            if (query.length < 2) {
+                pelatihResults.style.display = 'none';
+                return;
+            }
+
+            fetch(`../../api/get_anggota.php?q=${encodeURIComponent(query)}&jenis=pelatih`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.data.length > 0) {
+                        let html = '';
+                        data.data.forEach(p => {
+                            if (!selectedPelatih.has(p.id.toString())) {
+                                html += `<div class="search-item" onclick="addPelatih('${p.id}', '${p.nama_lengkap}', '${p.no_anggota}', '${p.tingkat}')">
+                                    <strong>${p.nama_lengkap}</strong> (${p.no_anggota})<br>
+                                    <small>${p.tingkat} - ${p.ranting}</small>
+                                </div>`;
+                            }
+                        });
+                        pelatihResults.innerHTML = html || '<div class="search-item">Semua hasil sudah ditambahkan</div>';
+                        pelatihResults.style.display = 'block';
+                    } else {
+                        pelatihResults.innerHTML = '<div class="search-item">Tidak ditemukan</div>';
+                        pelatihResults.style.display = 'block';
+                    }
+                });
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target !== pelatihSearch) pelatihResults.style.display = 'none';
+        });
+
+        function addPelatih(id, nama, nomor, tingkat) {
+            if (selectedPelatih.has(id)) return;
+            selectedPelatih.add(id);
+
+            const div = document.createElement('div');
+            div.className = 'pelatih-item';
+            div.id = 'pelatih-row-' + id;
+            div.innerHTML = `
+                <input type="hidden" name="pelatih_id[]" value="${id}">
+                <div class="pelatih-info">
+                    <strong>${nama}</strong><br>
+                    <small>${nomor} | ${tingkat}</small>
+                </div>
+                <div class="pelatih-ket">
+                    <input type="text" name="pelatih_keterangan[]" placeholder="Keterangan (opsional)...">
+                </div>
+                <button type="button" class="jadwal-remove" onclick="removePelatih('${id}')">X</button>
+            `;
+            pelatihList.appendChild(div);
+            pelatihSearch.value = '';
+            pelatihResults.style.display = 'none';
+        }
+
+        function removePelatih(id) {
+            selectedPelatih.delete(id.toString());
+            document.getElementById('pelatih-row-' + id).remove();
+        }
+
         function tambahJadwal() {
             const container = document.getElementById('jadwal-list');
             

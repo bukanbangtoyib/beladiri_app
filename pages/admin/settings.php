@@ -148,7 +148,7 @@ if (isset($_POST['save_nomor'])) {
 }
 
 // Get data untuk tingkatan
-$tingkatan_result = $conn->query("SELECT * FROM tingkatan ORDER BY urutan ASC");
+$tingkatan_result = $conn->query("SELECT id, nama_tingkat, singkatan, urutan, waktu_ukt, created_at FROM tingkatan ORDER BY urutan ASC");
 $tingkatan_list = [];
 while ($row = $tingkatan_result->fetch_assoc()) {
     $count = $conn->query("SELECT COUNT(*) as cnt FROM anggota WHERE tingkat_id = " . $row['id'])->fetch_assoc();
@@ -199,6 +199,7 @@ $kota_result = $conn->query("
         k.nama,
         k.aktif,
         k.provinsi_id,
+        p.negara_id,
         p.nama as nama_provinsi,
         n.nama as nama_negara
     FROM kota k
@@ -220,9 +221,12 @@ $ranting_result = $conn->query("
         r.kode as kode,
         1 as aktif,
         k.nama as nama_kota,
-        k.kode as kode_kota
+        k.kode as kode_kota,
+        k.provinsi_id,
+        p.negara_id
     FROM ranting r 
     LEFT JOIN kota k ON r.kota_id = k.id
+    LEFT JOIN provinsi p ON k.provinsi_id = p.id
     ORDER BY k.nama ASC, r.nama_ranting ASC
 ");
 $ranting_list = [];
@@ -270,7 +274,7 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
             font-weight: 600;
         }
         
-        input[type="text"], input[type="email"], input[type="file"], textarea, select {
+        input[type="text"], input[type="email"], input[type="file"], input[type="number"], textarea, select {
             width: 100%;
             padding: 11px 14px;
             border: 1px solid #ddd;
@@ -716,7 +720,9 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                         <tr>
                             <th>No</th>
                             <th>Nama Tingkat</th>
-                            <th>Urutan</th>
+                            <th>Singkatan</th>
+                            <th style="display: none;">Urutan</th>
+                            <th>Waktu UKT (Bulan)</th>
                             <th>Jumlah Anggota</th>
                             <th>Aksi</th>
                         </tr>
@@ -726,7 +732,9 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                         <tr>
                             <td><?php echo $i + 1; ?></td>
                             <td><strong><?php echo htmlspecialchars($tingkat['nama_tingkat']); ?></strong></td>
-                            <td><?php echo $tingkat['urutan']; ?></td>
+                            <td><?php echo htmlspecialchars($tingkat['singkatan'] ?? '-'); ?></td>
+                            <td style="display: none;"><?php echo $tingkat['urutan']; ?></td>
+                            <td><?php echo $tingkat['waktu_ukt'] ?? '0'; ?> bulan</td>
                             <td>
                                 <?php if ($tingkat['jumlah_anggota'] > 0): ?>
                                     <span class="badge badge-warning"><?php echo $tingkat['jumlah_anggota']; ?> anggota</span>
@@ -735,7 +743,7 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <button class="btn btn-primary btn-sm" onclick="editTingkat(<?php echo $tingkat['id']; ?>, '<?php echo htmlspecialchars($tingkat['nama_tingkat']); ?>', <?php echo $tingkat['urutan']; ?>)">✏️ Edit</button>
+                                <button class="btn btn-primary btn-sm" onclick="editTingkat(<?php echo $tingkat['id']; ?>, '<?php echo htmlspecialchars($tingkat['nama_tingkat']); ?>', '<?php echo htmlspecialchars($tingkat['singkatan'] ?? ''); ?>', <?php echo $tingkat['urutan']; ?>, <?php echo $tingkat['waktu_ukt'] ?? 0; ?>)">✏️ Edit</button>
                                 <?php if ($tingkat['jumlah_anggota'] == 0): ?>
                                     <button class="btn btn-danger btn-sm" onclick="deleteTingkat(<?php echo $tingkat['id']; ?>, '<?php echo htmlspecialchars($tingkat['nama_tingkat']); ?>')">🗑️ Hapus</button>
                                 <?php endif; ?>
@@ -1048,10 +1056,16 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                         <div class="kode-card-header">
                             <h3>🏘️ Manajemen Kota/Kabupaten</h3>
                             <div style="display: flex; gap: 10px;">
-                                <select id="filter-kota-provinsi" onchange="filterKotaTable()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                <select id="filter-kota-negara" onchange="cascadeKotaNegara()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                    <option value="">Semua Negara</option>
+                                    <?php foreach ($negara_list as $negara): ?>
+                                        <option value="<?php echo $negara['id']; ?>"><?php echo htmlspecialchars($negara['nama']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <select id="filter-kota-provinsi" onchange="filterKotaTable()" disabled style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
                                     <option value="">Semua Provinsi</option>
                                     <?php foreach ($provinsi_list as $provinsi): ?>
-                                        <option value="<?php echo $provinsi['id']; ?>"><?php echo htmlspecialchars($provinsi['nama_pengurus'] ?? $provinsi['nama'] ?? '-'); ?></option>
+                                        <option value="<?php echo $provinsi['id']; ?>" data-negara="<?php echo $provinsi['negara_id']; ?>"><?php echo htmlspecialchars($provinsi['nama_pengurus'] ?? $provinsi['nama'] ?? '-'); ?></option>
                                     <?php endforeach; ?>
                                 </select>                                
                             </div>
@@ -1074,7 +1088,7 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                                 </thead>
                                 <tbody id="kota-table">
                                     <?php foreach ($kota_list as $i => $kota): ?>
-                                    <tr data-provinsi="<?php echo $kota['provinsi_id']; ?>">
+                                    <tr data-provinsi="<?php echo $kota['provinsi_id']; ?>" data-negara="<?php echo $kota['negara_id'] ?? ''; ?>">
                                         <td><?php echo $i + 1; ?></td>
                                         <td><strong><?php echo htmlspecialchars($kota['kode'] ?? '-'); ?></strong></td>
                                         <td><?php echo htmlspecialchars($kota['nama'] ?? '-'); ?></td>
@@ -1115,10 +1129,22 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                         <div class="kode-card-header">
                             <h3>🏠 Manajemen Unit/Ranting</h3>
                             <div style="display: flex; gap: 10px;">
-                                <select id="filter-ranting-kota" onchange="filterRantingTable()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                <select id="filter-ranting-negara" onchange="cascadeRantingNegara()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                    <option value="">Semua Negara</option>
+                                    <?php foreach ($negara_list as $negara): ?>
+                                        <option value="<?php echo $negara['id']; ?>"><?php echo htmlspecialchars($negara['nama']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <select id="filter-ranting-provinsi" onchange="cascadeRantingProvinsi()" disabled style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                    <option value="">Semua Provinsi</option>
+                                    <?php foreach ($provinsi_list as $provinsi): ?>
+                                        <option value="<?php echo $provinsi['id']; ?>" data-negara="<?php echo $provinsi['negara_id']; ?>"><?php echo htmlspecialchars($provinsi['nama_pengurus'] ?? $provinsi['nama'] ?? '-'); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <select id="filter-ranting-kota" onchange="filterRantingTable()" disabled style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
                                     <option value="">Semua Kota</option>
                                     <?php foreach ($kota_list as $kota): ?>
-                                        <option value="<?php echo $kota['id']; ?>"><?php echo htmlspecialchars($kota['nama']); ?></option>
+                                        <option value="<?php echo $kota['id']; ?>" data-provinsi="<?php echo $kota['provinsi_id']; ?>" data-negara="<?php echo $kota['negara_id'] ?? ''; ?>"><?php echo htmlspecialchars($kota['nama']); ?></option>
                                     <?php endforeach; ?>
                                 </select>                                
                             </div>
@@ -1140,7 +1166,7 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                                 </thead>
                                 <tbody id="ranting-table">
                                     <?php foreach ($ranting_list as $i => $ranting): ?>
-                                    <tr data-kota="<?php echo $ranting['id_kota']; ?>">
+                                    <tr data-kota="<?php echo $ranting['id_kota']; ?>" data-provinsi="<?php echo $ranting['provinsi_id']; ?>" data-negara="<?php echo $ranting['negara_id']; ?>">
                                         <td><?php echo $i + 1; ?></td>
                                         <td><strong><?php echo htmlspecialchars($ranting['kode'] ?? '-'); ?></strong></td>
                                         <td><?php echo htmlspecialchars($ranting['nama_ranting'] ?? $ranting['nama'] ?? '-'); ?></td>
@@ -1183,6 +1209,15 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                     <input type="text" name="nama_tingkat" id="tingkatan_nama" required>
                 </div>
                 <div class="form-group">
+                    <label>Singkatan</label>
+                    <input type="text" name="singkatan" id="tingkatan_singkatan" placeholder="Contoh: DI, DII, P, H, dll" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label>Waktu UKT (Bulan)</label>
+                    <input type="number" name="waktu_ukt" id="tingkatan_waktu" placeholder="Contoh: 6, 12, 24" min="0">
+                    <div class="form-hint">Interval bulan untuk kelayakan UKT berikutnya.</div>
+                </div>
+                <div class="form-group" style="display: none;">
                     <label>Urutan</label>
                     <input type="number" name="urutan" id="tingkatan_urutan" value="<?php echo $next_urutan; ?>" required>
                 </div>
@@ -1240,9 +1275,13 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
         }
         
         function filterKotaTable() {
+            const negaraId = document.getElementById('filter-kota-negara').value;
             const provinsiId = document.getElementById('filter-kota-provinsi').value;
             document.querySelectorAll('#kota-table tr').forEach(row => {
-                if (!provinsiId || row.dataset.provinsi == provinsiId) {
+                const matchNegara = !negaraId || row.dataset.negara == negaraId;
+                const matchProvinsi = !provinsiId || row.dataset.provinsi == provinsiId;
+                
+                if (matchNegara && matchProvinsi) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
@@ -1262,14 +1301,77 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
         }
         
         function filterRantingTable() {
+            const negaraId = document.getElementById('filter-ranting-negara').value;
+            const provinsiId = document.getElementById('filter-ranting-provinsi').value;
             const kotaId = document.getElementById('filter-ranting-kota').value;
+            
             document.querySelectorAll('#ranting-table tr').forEach(row => {
-                if (!kotaId || row.dataset.kota == kotaId) {
+                const matchNegara = !negaraId || row.dataset.negara == negaraId;
+                const matchProvinsi = !provinsiId || row.dataset.provinsi == provinsiId;
+                const matchKota = !kotaId || row.dataset.kota == kotaId;
+                
+                if (matchNegara && matchProvinsi && matchKota) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
                 }
             });
+        }
+
+        // Cascade logics
+        function cascadeKotaNegara() {
+            const negaraId = document.getElementById('filter-kota-negara').value;
+            const provSelect = document.getElementById('filter-kota-provinsi');
+            
+            provSelect.value = '';
+            if (negaraId) {
+                provSelect.disabled = false;
+                Array.from(provSelect.options).forEach(opt => {
+                    if (opt.value === "") return;
+                    opt.style.display = opt.dataset.negara == negaraId ? '' : 'none';
+                });
+            } else {
+                provSelect.disabled = true;
+            }
+            filterKotaTable();
+        }
+
+        function cascadeRantingNegara() {
+            const negaraId = document.getElementById('filter-ranting-negara').value;
+            const provSelect = document.getElementById('filter-ranting-provinsi');
+            const kotaSelect = document.getElementById('filter-ranting-kota');
+            
+            provSelect.value = '';
+            kotaSelect.value = '';
+            kotaSelect.disabled = true;
+            
+            if (negaraId) {
+                provSelect.disabled = false;
+                Array.from(provSelect.options).forEach(opt => {
+                    if (opt.value === "") return;
+                    opt.style.display = opt.dataset.negara == negaraId ? '' : 'none';
+                });
+            } else {
+                provSelect.disabled = true;
+            }
+            filterRantingTable();
+        }
+
+        function cascadeRantingProvinsi() {
+            const provId = document.getElementById('filter-ranting-provinsi').value;
+            const kotaSelect = document.getElementById('filter-ranting-kota');
+            
+            kotaSelect.value = '';
+            if (provId) {
+                kotaSelect.disabled = false;
+                Array.from(kotaSelect.options).forEach(opt => {
+                    if (opt.value === "") return;
+                    opt.style.display = opt.dataset.provinsi == provId ? '' : 'none';
+                });
+            } else {
+                kotaSelect.disabled = true;
+            }
+            filterRantingTable();
         }
         
         // Tab functions
@@ -1329,10 +1431,12 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
             document.getElementById('modal-' + type).classList.remove('active');
         }
         
-        function editTingkat(id, nama, urutan) {
+        function editTingkat(id, nama, singkatan, urutan, waktu) {
             document.getElementById('tingkatan_id').value = id;
             document.getElementById('tingkatan_nama').value = nama;
+            document.getElementById('tingkatan_singkatan').value = singkatan || '';
             document.getElementById('tingkatan_urutan').value = urutan;
+            document.getElementById('tingkatan_waktu').value = waktu || 0;
             document.getElementById('form-tingkatan').querySelector('input[name="action"]').value = 'update';
             document.getElementById('modal-tingkatan').classList.add('active');
         }

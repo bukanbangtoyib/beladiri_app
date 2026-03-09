@@ -604,6 +604,30 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
         .prestasi-item.template {
             display: none;
         }
+        
+        .suggestions-box {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: 100%;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .suggestions-box.show { display: block; }
+        
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .suggestion-item:hover { background: #f5f5f5; }
+        .suggestion-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -672,14 +696,8 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                     
                     <div class="form-group">
                         <label>Unit/Ranting Saat Ini <span class="required">*</span></label>
-                        <select name="ranting_saat_ini_id" id="ranting_saat_ini_id" required onchange="updateRantingKode()">
+                        <select name="ranting_saat_ini_id" id="ranting_saat_ini_id" required disabled onchange="updateRantingKode()">
                             <option value="">-- Pilih Ranting --</option>
-                            <?php 
-                            $ranting_result->data_seek(0);
-                            while ($row = $ranting_result->fetch_assoc()): 
-                            ?>
-                                <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama_ranting']); ?></option>
-                            <?php endwhile; ?>
                         </select>
                     </div>
                     
@@ -703,17 +721,11 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                         </div>
                     </div>
                     
-                    <div id="ranting_awal_select" class="form-group">
-                        <select name="ranting_awal_id">
-                            <option value="">-- Pilih Unit/Ranting --</option>
-                            <?php 
-                            $ranting_result->data_seek(0);
-                            while ($row = $ranting_result->fetch_assoc()): 
-                            ?>
-                                <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama_ranting']); ?></option>
-                            <?php endwhile; ?>
-                        </select>
-                        <div class="form-hint">Pilih Unit/Ranting yang tersedia di database</div>
+                    <div id="ranting_awal_select" class="form-group" style="position: relative;">
+                        <input type="text" id="ranting_awal_search" placeholder="Ketik kode atau nama ranting..." autocomplete="off">
+                        <input type="hidden" id="ranting_awal_id" name="ranting_awal_id">
+                        <div id="ranting_awal_suggestions" class="suggestions-box"></div>
+                        <div class="form-hint">Ketik untuk mencari Unit/Ranting yang tersedia di database</div>
                     </div>
                     
                     <div id="ranting_awal_manual" class="conditional-field">
@@ -775,7 +787,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                 <div class="form-row">
                     <div class="form-group">
                         <label>No Anggota <span class="required">*</span></label>
-                        <input type="text" id="no_anggota_display" readonly style="background-color: #e0e0e0;" placeholder="Otomatis生成">
+                        <input type="text" id="no_anggota_display" readonly style="background-color: #e0e0e0;" placeholder="Contoh lengkap : ID002001.001-2024001">
                         <input type="hidden" name="no_anggota" id="no_anggota">
                         <div class="form-hint">No Anggota akan otomatis dibuat setelah memilih Unit/Ranting dan Tahun Bergabung. Format mengikuti pengaturan sistem.</div>
                     </div>
@@ -995,6 +1007,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
             rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
             if (rantingSaatIniSelect) {
                 rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
+                rantingSaatIniSelect.disabled = true;
             }
             
             // Reset kode displays
@@ -1036,6 +1049,11 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                                 rantingSaatIniSelect.appendChild(option2);
                             }
                         });
+                        
+                        // Enable ranting dropdown after data is loaded
+                        if (rantingSaatIniSelect && data.data.length > 0) {
+                            rantingSaatIniSelect.disabled = false;
+                        }
                         
                         // Trigger generate no anggota after options are populated
                         if (typeof generateNoAnggota === 'function') {
@@ -1223,6 +1241,58 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                 });
             });
         });
+        
+        // Ranting Awal Search functionality
+        const rantingAwalSearch = document.getElementById('ranting_awal_search');
+        const rantingAwalId = document.getElementById('ranting_awal_id');
+        const rantingAwalSuggestions = document.getElementById('ranting_awal_suggestions');
+        let rantingAwalTimeout = null;
+        
+        if (rantingAwalSearch) {
+            rantingAwalSearch.addEventListener('input', function() {
+                clearTimeout(rantingAwalTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    rantingAwalSuggestions.classList.remove('show');
+                    rantingAwalSuggestions.innerHTML = '';
+                    rantingAwalId.value = '';
+                    return;
+                }
+                
+                rantingAwalTimeout = setTimeout(() => {
+                    fetch('../../api/get_ranting.php?q=' + encodeURIComponent(query))
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.data.length > 0) {
+                                rantingAwalSuggestions.innerHTML = data.data.map(item => 
+                                    '<div class="suggestion-item" data-id="' + item.id + '" data-kode="' + item.kode + '" data-nama="' + item.nama_ranting + '">' + 
+                                    item.display + '</div>'
+                                ).join('');
+                                rantingAwalSuggestions.classList.add('show');
+                            } else {
+                                rantingAwalSuggestions.innerHTML = '<div class="suggestion-item">Tidak ada hasil</div>';
+                                rantingAwalSuggestions.classList.add('show');
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                }, 300);
+            });
+            
+            rantingAwalSuggestions.addEventListener('click', function(e) {
+                if (e.target.classList.contains('suggestion-item') && e.target.dataset.id) {
+                    rantingAwalSearch.value = e.target.dataset.kode + ' - ' + e.target.dataset.nama;
+                    rantingAwalId.value = e.target.dataset.id;
+                    rantingAwalSuggestions.classList.remove('show');
+                }
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (!rantingAwalSearch.contains(e.target) && !rantingAwalSuggestions.contains(e.target)) {
+                    rantingAwalSuggestions.classList.remove('show');
+                }
+            });
+        }
     </script>
 </body>
 </html>

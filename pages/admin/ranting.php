@@ -27,11 +27,94 @@ if (!$permission_manager->can('anggota_read')) {
     die("❌ Akses ditolak!");
 }
 
-$search = isset($_GET['search']) ? $_GET['search'] : '';
+// Handle AJAX request untuk filter
+if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
+    header('Content-Type: application/json');
+    
+    // Get user info for role-based filtering
+    $user_role = $_SESSION['role'] ?? '';
+    $user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+    
+    $search = isset($_GET['search']) ? $conn->real_escape_string(trim($_GET['search'])) : '';
+    $filter_jenis = isset($_GET['filter_jenis']) ? $conn->real_escape_string($_GET['filter_jenis']) : '';
+    $filter_negara = isset($_GET['filter_negara']) ? (int)$_GET['filter_negara'] : 0;
+    $filter_provinsi = isset($_GET['filter_provinsi']) ? (int)$_GET['filter_provinsi'] : 0;
+    $filter_kota = isset($_GET['filter_kota']) ? (int)$_GET['filter_kota'] : 0;
+    
+    // Build where clause for AJAX
+    // Search and jenis filters apply globally to all data (not restricted by role hierarchy)
+    $where_clause = "1=1";
+    
+    // Only apply role-based restrictions if NOT filtering by search or jenis
+    // Search and jenis filters work globally across all regional data
+    if (empty($search) && empty($filter_jenis)) {
+        if ($user_role === 'negara') {
+            $where_clause .= " AND k.provinsi_id IN (SELECT id FROM provinsi WHERE negara_id = " . (int)$user_pengurus_id . ")";
+        } elseif ($user_role === 'pengprov') {
+            $where_clause .= " AND k.provinsi_id = " . (int)$user_pengurus_id;
+        } elseif ($user_role === 'pengkot') {
+            $where_clause .= " AND r.kota_id = " . (int)$user_pengurus_id;
+        } elseif ($user_role === 'unit' || $user_role === 'ranting' || $user_role === 'tamu') {
+            $user_ranting_id = $_SESSION['ranting_id'] ?? 0;
+            if ($user_ranting_id > 0) {
+                $where_clause .= " AND r.id = " . (int)$user_ranting_id;
+            } else {
+                $where_clause .= " AND 1=0";
+            }
+        }
+    }
+
+    $sql = "SELECT r.*, k.nama as nama_kota, p.nama as nama_provinsi, n.nama as nama_negara
+            FROM ranting r
+            LEFT JOIN kota k ON r.kota_id = k.id
+            LEFT JOIN provinsi p ON k.provinsi_id = p.id
+            LEFT JOIN negara n ON p.negara_id = n.id
+            WHERE $where_clause";
+
+    if ($search) {
+        $sql .= " AND (r.nama_ranting LIKE '%$search%' OR r.kode LIKE '%$search%')";
+    }
+    if ($filter_jenis) {
+        $sql .= " AND r.jenis = '$filter_jenis'";
+    }
+    if ($filter_negara > 0) $sql .= " AND n.id = $filter_negara";
+    if ($filter_provinsi > 0) $sql .= " AND p.id = $filter_provinsi";
+    if ($filter_kota > 0) $sql .= " AND r.kota_id = $filter_kota";
+
+    $sql .= " ORDER BY r.nama_ranting ASC";
+    $res = $conn->query($sql);
+    
+    $rows = [];
+    while ($row = $res->fetch_assoc()) {
+        $rows[] = [
+            'id' => (int)$row['id'],
+            'nama_ranting' => htmlspecialchars($row['nama_ranting']),
+            'jenis' => $row['jenis'],
+            'ketua_nama' => htmlspecialchars($row['ketua_nama'] ?? '-'),
+            'alamat' => htmlspecialchars(substr($row['alamat'] ?? '-', 0, 40)),
+            'no_kontak' => htmlspecialchars($row['no_kontak'] ?? '-'),
+            'nama_kota' => htmlspecialchars($row['nama_kota'] ?? '-')
+        ];
+    }
+    
+    echo json_encode(['success' => true, 'data' => $rows]);
+    exit();
+}
+
+$filter_ranting = isset($_GET['filter_ranting']) ? (int)$_GET['filter_ranting'] : 0;
 $filter_jenis = isset($_GET['filter_jenis']) ? $_GET['filter_jenis'] : '';
 $filter_negara = isset($_GET['filter_negara']) ? (int)$_GET['filter_negara'] : 0;
 $filter_provinsi = isset($_GET['filter_provinsi']) ? (int)$_GET['filter_provinsi'] : 0;
 $filter_kota = isset($_GET['filter_kota']) ? (int)$_GET['filter_kota'] : 0;
+
+// Get selected ranting name for display
+$selected_ranting_nama = '';
+if ($filter_ranting > 0) {
+    $ranting_query = $conn->query("SELECT nama_ranting FROM ranting WHERE id = " . intval($filter_ranting));
+    if ($ranting_row = $ranting_query->fetch_assoc()) {
+        $selected_ranting_nama = $ranting_row['nama_ranting'];
+    }
+}
 
 $sql = "SELECT r.*, k.nama as nama_kota, p.nama as nama_provinsi, n.nama as nama_negara 
         FROM ranting r 
@@ -40,9 +123,8 @@ $sql = "SELECT r.*, k.nama as nama_kota, p.nama as nama_provinsi, n.nama as nama
         LEFT JOIN negara n ON p.negara_id = n.id
         WHERE 1=1";
 
-if ($search) {
-    $search = $conn->real_escape_string($search);
-    $sql .= " AND (r.nama_ranting LIKE '%" . $search . "%' OR r.alamat LIKE '%" . $search . "%')";
+if ($filter_ranting > 0) {
+    $sql .= " AND r.id = " . intval($filter_ranting);
 }
 
 if ($filter_jenis) {
@@ -80,7 +162,49 @@ if ($filter_provinsi > 0) {
     $kota_result = $conn->query("SELECT id, nama FROM kota WHERE provinsi_id = " . intval($filter_provinsi) . " ORDER BY nama");
 }
 
-$is_readonly = $_SESSION['role'] == 'user';
+// Apply role-based filtering
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+
+// Build WHERE clause based on role
+$where_clause = "1=1";
+$filter_kota = isset($_GET['filter_kota']) ? (int)$_GET['filter_kota'] : 0;
+
+if ($user_role === 'negara') {
+    // Negara can see all ranting in their country
+    $where_clause .= " AND k.provinsi_id IN (SELECT id FROM provinsi WHERE negara_id = " . (int)$user_pengurus_id . ")";
+} elseif ($user_role === 'pengprov') {
+    // Pengprov can see all ranting in their province
+    $where_clause .= " AND k.provinsi_id = " . (int)$user_pengurus_id;
+} elseif ($user_role === 'pengkot') {
+    // Pengkot can see all ranting in their city
+    $where_clause .= " AND r.kota_id = " . (int)$user_pengurus_id;
+} elseif ($user_role === 'unit' || $user_role === 'ranting' || $user_role === 'tamu') {
+    // Unit/Tamu can only see their own ranting
+    $user_ranting_id = $_SESSION['ranting_id'] ?? 0;
+    if ($user_ranting_id > 0) {
+        $where_clause .= " AND r.id = " . (int)$user_ranting_id;
+    } else {
+        $where_clause .= " AND 1=0";
+    }
+}
+
+if ($filter_kota > 0) {
+    $where_clause .= " AND r.kota_id = " . $filter_kota;
+}
+
+// Show all regional filters for all roles
+$show_negara_filter = true;
+$show_provinsi_filter = true;
+$show_kota_filter = true;
+
+$can_add = ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov');
+$can_edit = ($user_role !== 'tamu' && $user_role !== 'pengkot');
+$can_delete = ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov');
+$is_readonly = !$can_add;
+
+// Get user's ranting_id for ownership checking (for ranting/unit roles)
+$user_ranting_id = $_SESSION['ranting_id'] ?? 0;
 
 // Handle print mode
 $print_mode = filter_input(INPUT_GET, 'print', FILTER_VALIDATE_BOOLEAN);
@@ -188,6 +312,7 @@ if ($print_mode) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manajemen Unit / Ranting - Kelatnas Indonesia Perisai Diri</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; }
@@ -217,6 +342,7 @@ if ($print_mode) {
             font-size: 14px;
             font-weight: 600;
             transition: all 0.3s;
+            text-align: center;
         }
         
         .btn-primary { background: #667eea; color: white; }
@@ -224,6 +350,9 @@ if ($print_mode) {
         .btn-success { background: #28a745; color: white; }
         .btn-success:hover { background: #218838; }
         .btn-print { background: #6c757d; color: white; }
+        .btn-print:hover { background: #5a6268; }   
+        .btn-reset { background: #6c757d; color: white; }
+        .btn-reset:hover { background: #5a6268; }
         
         .search-filter {
             background: white;
@@ -334,6 +463,38 @@ if ($print_mode) {
             padding: 40px;
             color: #999;
         }
+        
+        .select2-container--default .select2-selection--single {
+            height: 42px;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 30px;
+            padding-left: 0;
+        }
+        
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px;
+        }
+        
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #999;
+        }
+
+        /* Height alignment for ranting.php */
+        .select2-container--default .select2-selection--single {
+            height: 38px !important;
+            padding: 4px 10px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 28px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px !important;
+        }
     </style>
     <link rel="stylesheet" href="../../styles/print.css">
 </head>
@@ -344,37 +505,42 @@ if ($print_mode) {
         <div class="header">
             <div>
                 <h1>Daftar Unit / Ranting</h1>
-                <p style="color: #666; margin-top: 5px;">Total: <strong><?php echo $total_ranting; ?></strong></p>
+                <p style="color: #666; margin-top: 5px;">Total: <strong id="total-count"><?php echo $total_ranting; ?></strong></p>
             </div>
             <div class="button-group">
-                <?php if (!$is_readonly): ?>
+                <?php if ($can_add): ?>
                 <a href="ranting_tambah.php" class="btn btn-primary">+ Tambah Unit / Ranting</a>
                 <a href="ranting_import.php" class="btn btn-success">⬆️ Impor CSV</a>
                 <?php endif; ?>
-                <button onclick="window.location.href='ranting.php?print=true'" class="btn btn-print">🖨️ Cetak</button>
+                <button onclick="window.location.href='ranting.php?print=true' + getFilterParams()" class="btn btn-print">🖨️ Cetak</button>
             </div>
         </div>
         
         <!-- Filter Cascade -->
         <div class="search-filter">
-            <form method="GET" action="" id="rantingForm">
+            <form method="GET" action="" id="rantingForm" onsubmit="return false;">
                 <div class="filter-section-title">🔍 Pencarian & Filter</div>
                 <div class="filter-row">
-                    <input type="text" name="search" placeholder="Cari nama atau alamat..." value="<?php echo htmlspecialchars($search); ?>">
+                    <div>
+                        <input type="text" id="search_name" placeholder="Cari nama unit/ranting..." autocomplete="off">
+                    </div>
                     
-                    <select name="filter_jenis">
-                        <option value="">-- Semua Jenis --</option>
-                        <option value="ukm" <?php echo $filter_jenis == 'ukm' ? 'selected' : ''; ?>>UKM</option>
-                        <option value="ranting" <?php echo $filter_jenis == 'ranting' ? 'selected' : ''; ?>>Ranting</option>
-                        <option value="unit" <?php echo $filter_jenis == 'unit' ? 'selected' : ''; ?>>Unit</option>
-                    </select>
+                    <div>
+                        <select name="filter_jenis" id="filter_jenis" onchange="applyFilters()">
+                            <option value="">-- Semua Jenis --</option>
+                            <option value="ukm" <?php echo $filter_jenis == 'ukm' ? 'selected' : ''; ?>>UKM</option>
+                            <option value="ranting" <?php echo $filter_jenis == 'ranting' ? 'selected' : ''; ?>>Ranting</option>
+                            <option value="unit" <?php echo $filter_jenis == 'unit' ? 'selected' : ''; ?>>Unit</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="filter-section-title">📋 Filter Regional (Cascade)</div>
                 <div class="filter-row">
+                    <?php if ($show_negara_filter): ?>
                     <div>
                         <select name="filter_negara" id="filter_negara" onchange="updateProvinsiKota()">
-                            <option value="">-- Semua Negara --</option>
+                             <option value="">-- Semua Negara --</option>
                             <?php 
                             $negara_result->data_seek(0);
                             while ($row = $negara_result->fetch_assoc()): 
@@ -385,14 +551,16 @@ if ($print_mode) {
                             <?php endwhile; ?>
                         </select>
                     </div>
+                    <?php endif; ?>
 
+                    <?php if ($show_provinsi_filter): ?>
                     <div>
-                        <select name="filter_provinsi" id="filter_provinsi" onchange="updateKota()">
+                        <select name="filter_provinsi" id="filter_provinsi" onchange="updateKota()" <?php echo $filter_negara > 0 ? '' : 'disabled'; ?>>
                             <option value="">-- Semua Provinsi --</option>
-                            <?php 
+                            <?php
                             if ($provinsi_result) {
                                 $provinsi_result->data_seek(0);
-                                while ($row = $provinsi_result->fetch_assoc()): 
+                                while ($row = $provinsi_result->fetch_assoc()):
                                 ?>
                                     <option value="<?php echo $row['id']; ?>" <?php echo $filter_provinsi == $row['id'] ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($row['nama']); ?>
@@ -402,14 +570,16 @@ if ($print_mode) {
                             ?>
                         </select>
                     </div>
+                    <?php endif; ?>
 
+                    <?php if ($show_kota_filter): ?>
                     <div>
-                        <select name="filter_kota" id="filter_kota" onchange="this.form.submit()">
+                        <select name="filter_kota" id="filter_kota" onchange="applyFilters()" <?php echo $filter_provinsi > 0 ? '' : 'disabled'; ?>>
                             <option value="">-- Semua Kota --</option>
-                            <?php 
+                            <?php
                             if ($kota_result) {
                                 $kota_result->data_seek(0);
-                                while ($row = $kota_result->fetch_assoc()): 
+                                while ($row = $kota_result->fetch_assoc()):
                                 ?>
                                     <option value="<?php echo $row['id']; ?>" <?php echo $filter_kota == $row['id'] ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($row['nama']); ?>
@@ -419,11 +589,11 @@ if ($print_mode) {
                             ?>
                         </select>
                     </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="filter-row" style="margin-top: 15px;">
-                    <button type="submit" class="btn btn-primary">🔍 Filter</button>
-                    <a href="ranting.php" class="btn" style="background: #6c757d; color: white;">Reset</a>
+                    <a href="ranting.php" class="btn btn-reset">Reset</a>
                 </div>
             </form>
         </div>
@@ -443,7 +613,7 @@ if ($print_mode) {
                         <th>Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="ranting-tbody">
                     <?php while ($row = $result->fetch_assoc()): ?>
                     <tr>
                         <td><strong><?php echo htmlspecialchars($row['nama_ranting']); ?></strong></td>
@@ -451,13 +621,22 @@ if ($print_mode) {
                         <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
                         <td><?php echo htmlspecialchars(substr($row['alamat'] ?? '-', 0, 40)); ?></td>
                         <td><?php echo htmlspecialchars($row['no_kontak'] ?? '-'); ?></td>
-                        <td><?php echo htmlspecialchars($row['nama_pengurus'] ?? '-'); ?></td>
+                        <td><?php echo htmlspecialchars($row['nama_kota'] ?? '-'); ?></td>
                         <td>
                             <div class="action-icons">
                                 <a href="ranting_detail.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-view" title="Lihat">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <?php if (!$is_readonly): ?>
+                                <?php
+                                // Show edit for those with permission
+                                // For ranting/unit role, only show if it's their own ranting
+                                $show_actions = $can_edit;
+                                if (($user_role === 'ranting' || $user_role === 'unit') && $show_actions) {
+                                    $show_actions = ($row['id'] == $user_ranting_id);
+                                }
+                                
+                                if ($show_actions):
+                                ?>
                                 <a href="ranting_edit.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-edit" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
@@ -477,7 +656,138 @@ if ($print_mode) {
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
+        console.log('JavaScript loaded');
+        
+        $(document).ready(function() {
+            console.log('Document ready');
+            
+            // Check if search element exists
+            const searchEl = document.getElementById('search_name');
+            console.log('Search element:', searchEl);
+            
+            // Live search debounce - using vanilla JS
+            if (searchEl) {
+                let debounceTimer;
+                searchEl.addEventListener('input', function() {
+                    console.log('Input event fired, value:', this.value);
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        applyFilters();
+                    }, 300);
+                });
+            }
+            
+            // Bind jenis filter
+            const jenisEl = document.getElementById('filter_jenis');
+            if (jenisEl) {
+                jenisEl.addEventListener('change', function() {
+                    console.log('Jenis changed:', this.value);
+                    applyFilters();
+                });
+            }
+        });
+
+        function getFilterParams() {
+            const search = $('#search_name').val();
+            const jenis = $('#filter_jenis').val();
+            const negara = $('#filter_negara').val();
+            const provinsi = $('#filter_provinsi').val();
+            const kota = $('#filter_kota').val();
+            
+            let params = '';
+            if (search) params += `&search=${encodeURIComponent(search)}`;
+            if (jenis) params += `&filter_jenis=${jenis}`;
+            if (negara) params += `&filter_negara=${negara}`;
+            if (provinsi) params += `&filter_provinsi=${provinsi}`;
+            if (kota) params += `&filter_kota=${kota}`;
+            return params;
+        }
+
+        function applyFilters() {
+            const params = getFilterParams();
+            const url = '?ajax=1' + params;
+            
+            console.log('Applying filters:', url);
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Response:', data);
+                    if (data.success) {
+                        updateTable(data.data);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('ranting-tbody');
+            const totalCount = document.getElementById('total-count');
+            const isReadonly = <?php echo $is_readonly ? 'true' : 'false'; ?>;
+            const userRole = '<?php echo $user_role; ?>';
+            const userRantingId = <?php echo (int)$user_ranting_id; ?>;
+            
+            if (!tbody) return;
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">🔍 Tidak ada data unit / ranting</td></tr>';
+                if (totalCount) totalCount.textContent = '0';
+                return;
+            }
+
+            if (totalCount) totalCount.textContent = data.length;
+
+            let html = '';
+            data.forEach(row => {
+                let badgeClass = 'badge-' + row.jenis;
+                let actions = `
+                    <div class="action-icons">
+                        <a href="ranting_detail.php?id=${row.id}" class="icon-btn icon-view" title="Lihat">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                `;
+                const canEdit = <?php echo $can_edit ? 'true' : 'false'; ?>;
+                const canDelete = <?php echo $can_delete ? 'true' : 'false'; ?>;
+                
+                if (canEdit) {
+                    // For ranting/unit role, only show edit/delete for their own ranting
+                    const showActions = (userRole !== 'ranting' && userRole !== 'unit') || (row.id === userRantingId);
+                    if (showActions) {
+                        actions += `
+                            <a href="ranting_edit.php?id=${row.id}" class="icon-btn icon-edit" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        `;
+                    }
+                }
+                
+                if (canDelete) {
+                    actions += `
+                        <a href="ranting_hapus.php?id=${row.id}" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    `;
+                }
+                actions += '</div>';
+
+                html += `
+                    <tr>
+                        <td><strong>${row.nama_ranting}</strong></td>
+                        <td><span class="badge ${badgeClass}">${row.jenis.toUpperCase()}</span></td>
+                        <td>${row.ketua_nama}</td>
+                        <td>${row.alamat}</td>
+                        <td>${row.no_kontak}</td>
+                        <td>${row.nama_kota}</td>
+                        <td>${actions}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
         function updateProvinsiKota() {
             const negaraSelect = document.getElementById('filter_negara');
             const provinsiSelect = document.getElementById('filter_provinsi');
@@ -492,6 +802,7 @@ if ($print_mode) {
             kotaSelect.disabled = true;
             
             if (negaraId === '') {
+                applyFilters();
                 return;
             }
             
@@ -510,8 +821,7 @@ if ($print_mode) {
                 })
                 .catch(error => console.error('Error:', error));
             
-            // Submit form
-            document.getElementById('rantingForm').submit();
+            applyFilters();
         }
         
         function updateKota() {
@@ -525,7 +835,7 @@ if ($print_mode) {
             kotaSelect.disabled = true;
             
             if (provinsiId === '') {
-                document.getElementById('rantingForm').submit();
+                applyFilters();
                 return;
             }
             
@@ -544,8 +854,7 @@ if ($print_mode) {
                 })
                 .catch(error => console.error('Error:', error));
             
-            // Submit form
-            document.getElementById('rantingForm').submit();
+            applyFilters();
         }
     </script>
 </body>
