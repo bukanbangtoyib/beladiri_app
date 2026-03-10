@@ -44,7 +44,11 @@ $default_settings = [
     'alamat' => 'Jl. Contoh No. 123',
     'no_telp' => '(031) 123-4567',
     'email' => 'info@beladiri.com',
-    'tahun_berdiri' => '2020'
+    'tahun_berdiri' => '2020',
+    'info_box_dashboard' => 'Data di bawah ini diperbarui secara real-time dari database.',
+    'footer_text' => 'Sistem Informasi & Manajemen Perisai Diri',
+    'footer_creator' => 'Developed by Your Name',
+    'footer_tahun' => '2024'
 ];
 
 $default_nomor_settings = [
@@ -79,6 +83,10 @@ if (isset($_POST['save_org'])) {
     $settings['no_telp'] = $_POST['no_telp'];
     $settings['email'] = $_POST['email'];
     $settings['tahun_berdiri'] = $_POST['tahun_berdiri'];
+    $settings['info_box_dashboard'] = $_POST['info_box_dashboard'] ?? '';
+    $settings['footer_text'] = $_POST['footer_text'] ?? '';
+    $settings['footer_creator'] = $_POST['footer_creator'] ?? '';
+    $settings['footer_tahun'] = $_POST['footer_tahun'] ?? '';
     
     // Handle logo delete
     if (isset($_POST['delete_logo']) && $_POST['delete_logo'] == '1') {
@@ -297,6 +305,42 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
             margin-top: 5px;
             font-size: 12px;
             color: #888;
+        }
+        
+        .rich-text-editor {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .rich-text-buttons {
+            background: #f5f5f5;
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .rich-text-buttons button {
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .rich-text-buttons button:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .rich-text-editor textarea {
+            border: none;
+            border-radius: 0;
+            width: 100%;
         }
         
         input:focus, textarea:focus, select:focus {
@@ -693,6 +737,37 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                     <div class="form-group">
                         <label>Tahun Berdiri</label>
                         <input type="text" name="tahun_berdiri" value="<?php echo htmlspecialchars($settings['tahun_berdiri']); ?>" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Pesan Info-Box Dashboard</label>
+                        <div class="rich-text-editor">
+                            <div class="rich-text-buttons">
+                                <button type="button" onmousedown="event.preventDefault(); insertTag('info_box_dashboard', '<b>', '</b>')" title="Tebal"><b>B</b></button>
+                                <button type="button" onmousedown="event.preventDefault(); insertTag('info_box_dashboard', '<i>', '</i>')" title="Miring"><i>I</i></button>
+                                <button type="button" onmousedown="event.preventDefault(); insertTag('info_box_dashboard', '<u>', '</u>')" title="Garis Bawah"><u>U</u></button>
+                                <button type="button" onmousedown="event.preventDefault(); insertAtCursor('info_box_dashboard', '<br>')" title="Baris Baru">↵</button>
+                                <button type="button" onmousedown="event.preventDefault(); insertLink('info_box_dashboard')" title="Link">🔗</button>
+                            </div>
+                            <textarea name="info_box_dashboard" id="info_box_dashboard" rows="3"><?php echo htmlspecialchars($settings['info_box_dashboard'] ?? ''); ?></textarea>
+                        </div>
+                        <div class="form-hint">Pesan yang akan ditampilkan di kotak info pada halaman dashboard (index.php). Gunakan tombol di atas untuk format: <b>Tebal</b>, <i>Miring</i>, <u>Garis Bawah</u>, <br>Baris Baru, <a>Link</a></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Footer - Nama Aplikasi/Sistem</label>
+                        <input type="text" name="footer_text" value="<?php echo htmlspecialchars($settings['footer_text'] ?? ''); ?>">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Footer - Pembuat/Developer</label>
+                            <input type="text" name="footer_creator" value="<?php echo htmlspecialchars($settings['footer_creator'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Footer - Tahun Pembuatan</label>
+                            <input type="text" name="footer_tahun" value="<?php echo htmlspecialchars($settings['footer_tahun'] ?? ''); ?>">
+                        </div>
                     </div>
                     
                     <div class="button-group">
@@ -1253,6 +1328,54 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
     </div>           
     
     <script>
+        // Rich text editor functions
+        function insertAtCursor(textareaId, insertText) {
+            const textarea = document.getElementById(textareaId);
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            
+            const newText = text.substring(0, start) + insertText + text.substring(end);
+            textarea.value = newText;
+            
+            // Set cursor position after the inserted text
+            const newPos = start + insertText.length;
+            textarea.setSelectionRange(newPos, newPos);
+            textarea.focus();
+        }
+        
+        function insertTag(textareaId, openTag, closeTag) {
+            const textarea = document.getElementById(textareaId);
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            const selectedText = text.substring(start, end);
+            
+            if (selectedText) {
+                // Wrap selected text with tags
+                const newText = text.substring(0, start) + openTag + selectedText + closeTag + text.substring(end);
+                textarea.value = newText;
+                // Set cursor position after the inserted text
+                const newPos = start + openTag.length + selectedText.length + closeTag.length;
+                textarea.setSelectionRange(newPos, newPos);
+            } else {
+                // Insert tags at cursor position
+                const newText = text.substring(0, start) + openTag + closeTag + text.substring(end);
+                textarea.value = newText;
+                // Set cursor position between the tags
+                const newPos = start + openTag.length;
+                textarea.setSelectionRange(newPos, newPos);
+            }
+            textarea.focus();
+        }
+        
+        function insertLink(textareaId) {
+            const url = prompt('Masukkan URL:');
+            if (url) {
+                insertTag(textareaId, '<a href="' + url + '">', '</a>');
+            }
+        }
+        
         // Kode management functions
         function showKodeTab(tabName, btnElement) {
             // Remove active class from all tabs and contents

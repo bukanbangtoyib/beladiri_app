@@ -9,11 +9,26 @@ if (!isset($_SESSION['user_id'])) {
 include 'config/database.php';
 include 'helpers/navbar.php';
 
-// Load settings for logo
+// Fungsi untuk sanitasi HTML yang mengizinkan tag aman saja
+function sanitizeHtml($html) {
+    $allowed_tags = ['<b>', '<i>', '<u>', '<a>', '</b>', '</i>', '</u>', '</a>', '<br>'];
+    $html = strip_tags($html, '<b><i><u><a><br>');
+    return $html;
+}
+
+// Load settings for logo and info-box message
 $logo_path = '';
+$info_box_message = 'Data di bawah ini diperbarui secara real-time dari database.';
+$footer_text = '';
+$footer_creator = '';
+$footer_tahun = '';
 if (file_exists('config/settings.php')) {
     include 'config/settings.php';
     $logo_path = $settings['logo'] ?? '';
+    $info_box_message = $settings['info_box_dashboard'] ?? 'Data di bawah ini diperbarui secara real-time dari database.';
+    $footer_text = $settings['footer_text'] ?? '';
+    $footer_creator = $settings['footer_creator'] ?? '';
+    $footer_tahun = $settings['footer_tahun'] ?? '';
 }
 
 // Hitung total anggota
@@ -231,14 +246,29 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
         
         .info-box {
             background: #f0f7ff;
-            border-left: 4px solid #667eea;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 30px;
+            border-left: 3px solid #667eea;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: #333;
         }
         
         .info-box strong {
             color: #667eea;
+        }
+        
+        .footer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            text-align: center;
+            font-size: 13px;
+        }
+        
+        .footer a {
+            color: #fff;
+            text-decoration: underline;
         }
         
         @media (max-width: 768px) {
@@ -309,7 +339,8 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
             <p class="subtitle">Ringkasan Informasi Organisasi Perisai Diri</p>
             
             <div class="info-box">
-                <strong>ℹ️ Informasi:</strong> Data di bawah ini diperbarui secara real-time dari database.
+                <p><strong>ℹ️ Informasi : </strong></p>
+                <p align="left" style="margin-left: 25px;"><?php echo nl2br(sanitizeHtml($info_box_message)); ?></p>
             </div>
             
             <div class="dashboard-grid">
@@ -383,5 +414,13 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
             </div>
         </div>
     </div>
+    
+    <?php if ($footer_text || $footer_creator || $footer_tahun): ?>
+    <div class="footer">
+        <?php echo nl2br(sanitizeHtml($footer_text)); ?>
+        <?php if ($footer_creator): ?><br><?php echo htmlspecialchars($footer_creator); ?><?php endif; ?>
+        <?php if ($footer_tahun): ?> - <?php echo htmlspecialchars($footer_tahun); ?><?php endif; ?>
+    </div>
+    <?php endif; ?>
 </body>
 </html>

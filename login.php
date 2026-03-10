@@ -197,6 +197,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             <button type="submit">Login</button>
         </form>
+        <div class="info">
+            &copy; <?php echo date("Y"); ?> Perisai Diri - Tripl3D. All rights reserved.
+        </div>
     </div>
 </body>
 </html>
