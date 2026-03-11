@@ -235,7 +235,7 @@ $ranting_result = $conn->query("
     FROM ranting r 
     LEFT JOIN kota k ON r.kota_id = k.id
     LEFT JOIN provinsi p ON k.provinsi_id = p.id
-    ORDER BY k.nama ASC, r.nama_ranting ASC
+    ORDER BY r.kode ASC
 ");
 $ranting_list = [];
 while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }

@@ -38,10 +38,9 @@ if (isset($_GET['download']) && $_GET['download'] === 'kerohanian') {
     
     $output = fopen('php://output', 'w');
     // Header
-    fputcsv($output, ['anggota_id', 'tanggal_pembukaan', 'lokasi', 'pembuka_nama', 'penyelenggara', 'tingkat_pembuka_id', 'tingkat_id']);
+    fputcsv($output, ['anggota_id', 'tanggal_pembukaan', 'lokasi', 'pembuka_nama', 'penyelenggara', 'tingkat_pembuka_id', 'tingkat_id'], ';');
     // Examples
-    fputcsv($output, ['1', '2024-08-15', 'Gedung Olahraga Surabaya', 'Bapak Ahmad', 'Ranting Tenggilis', '3', '5']);
-    fputcsv($output, ['2', '2024-08-20', 'Lapangan Terbuka Malang', 'Ibu Siti', 'Ranting Lowokwaru', '4', '6']);
+    fputcsv($output, ['ID001001.002-2017003', '2024-08-15', 'Gedung Olahraga Surabaya', 'Bapak Ahmad', 'Ranting Tenggilis', '3', '5'], ';');
     
     fclose($output);
     exit();
@@ -77,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
         $error = "Hanya format CSV yang didukung!";
     } else {
         $handle = fopen($file['tmp_name'], 'r');
-        $header = fgetcsv($handle);
+        $header = fgetcsv($handle, 0, ';');
 
         if ($header === false) {
             $error = "File CSV kosong!";
@@ -115,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
             if ($pembuka_nama_col === null)  $missing[] = 'pembuka_nama';
 
             if (!empty($missing)) {
-                $error = "CSV harus memiliki kolom: " . implode(', ', $missing);
+                $error = "CSV harus memiliki kolom: " . implode(', ', $missing) . ". Pastikan pembatas adalah titik koma (;)";
                 fclose($handle);
             } else {
                 $row_num = 1;
@@ -131,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                      VALUES (?, ?, ?, ?, ?, ?, ?)"
                 );
 
-                while ($row = fgetcsv($handle)) {
+                while ($row = fgetcsv($handle, 0, ';')) {
                     $row_num++;
                     if (empty($row[0])) continue;
 

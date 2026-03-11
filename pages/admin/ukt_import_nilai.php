@@ -72,7 +72,7 @@ if (isset($_GET['download']) && $_GET['download'] === 'template') {
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     
     $output = fopen('php://output', 'w');
-    fputcsv($output, ['No Anggota', 'Nilai A', 'Nilai B', 'Nilai C', 'Nilai D', 'Nilai E', 'Nilai F', 'Nilai G', 'Nilai H', 'Nilai I', 'Nilai J']);
+    fputcsv($output, ['No Anggota', 'Nilai A', 'Nilai B', 'Nilai C', 'Nilai D', 'Nilai E', 'Nilai F', 'Nilai G', 'Nilai H', 'Nilai I', 'Nilai J'], ';');
     fclose($output);
     exit();
 }
@@ -93,10 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
         $handle = fopen($file['tmp_name'], 'r');
         
         // Baca header
-        $header = fgetcsv($handle);
+        $header = fgetcsv($handle, 0, ';');
         
         if ($header === false || count($header) < 11) {
-            $error = "Format CSV tidak valid! Harus memiliki minimal 11 kolom (No Anggota + Nilai A-J)";
+            $error = "Format CSV tidak valid! Harus memiliki minimal 11 kolom (No Anggota + Nilai A-J). Pastikan pembatas adalah titik koma (;)";
             fclose($handle);
         } else {
             // Sanitasi header
@@ -124,14 +124,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
             }
             
             if ($no_anggota_col === null || count($nilai_cols) < 10) {
-                $error = "CSV harus memiliki kolom 'No Anggota' dan minimal 10 kolom nilai (A-J)";
+                $error = "CSV harus memiliki kolom 'No Anggota' dan minimal 10 kolom nilai (A-J). Pastikan pembatas adalah titik koma (;)";
                 fclose($handle);
             } else {
                 $row_num = 1;
                 $imported = 0;
                 $skipped = 0;
                 
-                while ($row = fgetcsv($handle)) {
+                while ($row = fgetcsv($handle, 0, ';')) {
                     $row_num++;
                     
                     if (empty($row[0])) {

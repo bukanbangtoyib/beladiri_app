@@ -83,22 +83,14 @@ if (isset($_GET['download'])) {
     $output = fopen('php://output', 'w');
 
     if ($template === 'negara') {
-        fputcsv($output, ['kode', 'nama', 'ketua_nama', 'sk_kepengurusan', 'periode_mulai', 'periode_akhir', 'alamat_sekretariat']);
-        fputcsv($output, ['ID', 'Indonesia', 'Budi Santoso', 'SK/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 123, Jakarta']);
-        fputcsv($output, ['MY', 'Malaysia', 'Ahmad Faisal', 'SK/002/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 456, Kuala Lumpur']);
-        fputcsv($output, ['SG', 'Singapura', 'Lim Wei Ming', '', '', '', '']);
+        fputcsv($output, ['kode', 'nama', 'ketua_nama', 'sk_kepengurusan', 'periode_mulai', 'periode_akhir', 'alamat_sekretariat'], ';');
+        fputcsv($output, ['ID', 'Indonesia', 'Budi Santoso', 'SK/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 123, Jakarta'], ';');
     } elseif ($template === 'provinsi') {
-        fputcsv($output, ['negara_kode', 'nama', 'ketua_nama', 'sk_kepengurusan', 'periode_mulai', 'periode_akhir', 'alamat_sekretariat']);
-        fputcsv($output, ['ID', 'Jawa Timur', 'H. Suparno', 'SK/JTM/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 1, Surabaya']);
-        fputcsv($output, ['ID', 'Jawa Barat', 'Drs. H. Dedi', 'SK/JBR/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 2, Bandung']);
-        fputcsv($output, ['ID', 'DKI Jakarta', 'H. Anis', '', '', '', '']);
-        fputcsv($output, ['MY', 'Selangor', 'Tuan Ahmad', '', '', '', '']);
+        fputcsv($output, ['negara_kode', 'nama', 'ketua_nama', 'sk_kepengurusan', 'periode_mulai', 'periode_akhir', 'alamat_sekretariat'], ';');
+        fputcsv($output, ['ID', 'Jawa Timur', 'H. Suparno', 'SK/JTM/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 1, Surabaya'], ';');
     } elseif ($template === 'kota') {
-        fputcsv($output, ['negara_kode', 'provinsi_kode', 'nama', 'ketua_nama', 'sk_kepengurusan', 'periode_mulai', 'periode_akhir', 'alamat_sekretariat']);
-        fputcsv($output, ['ID', '001', 'Surabaya', 'H. Marjuki', 'SK/SBY/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 1, Surabaya']);
-        fputcsv($output, ['ID', '001', 'Malang', 'Bpk. HM. Sidik', '', '', '', '']);
-        fputcsv($output, ['ID', '001', 'Gresik', 'H. M. Najib', '', '', '', '']);
-        fputcsv($output, ['ID', '002', 'Bandung', 'Ir. H. Oded', '', '', '', '']);
+        fputcsv($output, ['negara_kode', 'provinsi_kode', 'nama', 'ketua_nama', 'sk_kepengurusan', 'periode_mulai', 'periode_akhir', 'alamat_sekretariat'], ';');
+        fputcsv($output, ['ID', '001', 'Surabaya', 'H. Marjuki', 'SK/SBY/001/2024', '01/01/2024', '31/12/2027', 'Jl. Contoh No. 1, Surabaya'], ';');
     }
 
     fclose($output);
@@ -116,10 +108,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
         $handle = fopen($file['tmp_name'], 'r');
         
         // Baca header
-        $header = fgetcsv($handle);
+        $header = fgetcsv($handle, 0, ';');
         
         if ($header === false || count($header) < 2) {
-            $error = "Format CSV tidak valid! Harus memiliki minimal 2 kolom";
+            $error = "Format CSV tidak valid! Harus memiliki minimal 2 kolom. Pastikan pembatas adalah titik koma (;)";
             fclose($handle);
         } else {
             // Sanitasi header
@@ -147,14 +139,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
             }
             
             if ($kode_col === null || $nama_col === null || $ketua_nama_col === null) {
-                $error = "CSV harus memiliki kolom: kode, nama, ketua_nama";
+                $error = "CSV harus memiliki kolom: kode, nama, ketua_nama. Pastikan pembatas adalah titik koma (;)";
                 fclose($handle);
             } else {
                 $row_num = 1;
                 $imported = 0;
                 $skipped = 0;
                 
-                while ($row = fgetcsv($handle)) {
+                while ($row = fgetcsv($handle, 0, ';')) {
                     $row_num++;
                     
                     if (empty($row[0])) {
@@ -188,10 +180,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     // Parse tanggal
                     $mulai_parsed = parse_date($mulai);
                     $akhir_parsed = parse_date($akhir);
-                    
-                    // Get count to generate kode
-                    $count = $conn->query("SELECT COUNT(*) as cnt FROM negara")->fetch_assoc();
-                    $urutan = ($count['cnt'] ?? 0) + 1;
                     
                     // Insert negara
                     $insert_sql = "INSERT INTO negara (kode, nama, ketua_nama, sk_kepengurusan, periode_mulai, periode_akhir, alamat_sekretariat, aktif) 
@@ -228,10 +216,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
         $handle = fopen($file['tmp_name'], 'r');
         
         // Baca header
-        $header = fgetcsv($handle);
+        $header = fgetcsv($handle, 0, ';');
         
         if ($header === false || count($header) < 2) {
-            $error = "Format CSV tidak valid! Harus memiliki minimal 2 kolom";
+            $error = "Format CSV tidak valid! Harus memiliki minimal 2 kolom. Pastikan pembatas adalah titik koma (;)";
             fclose($handle);
         } else {
             // Sanitasi header
@@ -259,14 +247,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
             }
             
             if ($negara_kode_col === null || $nama_col === null || $ketua_nama_col === null) {
-                $error = "CSV harus memiliki kolom: negara_kode, nama, ketua_nama";
+                $error = "CSV harus memiliki kolom: negara_kode, nama, ketua_nama. Pastikan pembatas adalah titik koma (;)";
                 fclose($handle);
             } else {
                 $row_num = 1;
                 $imported = 0;
                 $skipped = 0;
                 
-                while ($row = fgetcsv($handle)) {
+                while ($row = fgetcsv($handle, 0, ';')) {
                     $row_num++;
                     
                     if (empty($row[0])) {
@@ -343,10 +331,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
         $handle = fopen($file['tmp_name'], 'r');
         
         // Baca header
-        $header = fgetcsv($handle);
+        $header = fgetcsv($handle, 0, ';');
         
         if ($header === false || count($header) < 3) {
-            $error = "Format CSV tidak valid! Harus memiliki minimal 3 kolom";
+            $error = "Format CSV tidak valid! Harus memiliki minimal 3 kolom. Pastikan pembatas adalah titik koma (;)";
             fclose($handle);
         } else {
             // Sanitasi header
@@ -376,14 +364,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
             }
             
             if ($negara_kode_col === null || $provinsi_kode_col === null || $nama_col === null || $ketua_nama_col === null) {
-                $error = "CSV harus memiliki kolom: negara_kode, provinsi_kode, nama, ketua_nama";
+                $error = "CSV harus memiliki kolom: negara_kode, provinsi_kode, nama, ketua_nama. Pastikan pembatas adalah titik koma (;)";
                 fclose($handle);
             } else {
                 $row_num = 1;
                 $imported = 0;
                 $skipped = 0;
                 
-                while ($row = fgetcsv($handle)) {
+                while ($row = fgetcsv($handle, 0, ';')) {
                     $row_num++;
                     
                     if (empty($row[0])) {
@@ -546,7 +534,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
         }
         
         .info-box h4 { color: #667eea; margin-bottom: 10px; }
-        .info-box p { font-size: 13px; color: #333; margin-bottom: 8px; font-family: monospace; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
+        .info-box p { font-size: 13px; color: #333; margin-bottom: 8px; }
         
         .template-link {
             display: inline-block;
@@ -580,7 +568,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
         .template-table th {
             background: #f0f7ff;
             font-weight: 600;
-            font-family: monospace;
         }
         
         .btn {
@@ -687,7 +674,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     <p class="required-note">* Kode negara diisi MANUAL (2 karakter)</p>
                     <p><strong>Kolom yang diperlukan:</strong></p>
                     <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
-                        <li style="margin-bottom: 6px;"><strong>Kode</strong> - 2 karakter (contoh: ID, MY, SG) ></li>
+                        <li style="margin-bottom: 6px;"><strong>Kode</strong> - 2 karakter (contoh: ID, MY, SG)</li>
                         <li style="margin-bottom: 6px;"><strong>Nama</strong> - Nama negara</li>
                         <li style="margin-bottom: 6px;"><strong>Nama Ketua</strong> - Nama ketua negara</li>
                         <li style="margin-bottom: 6px;"><strong>SK Kepengurusan</strong></li>
