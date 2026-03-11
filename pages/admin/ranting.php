@@ -635,14 +635,22 @@ if ($print_mode) {
                                     $show_actions = ($row['id'] == $user_ranting_id);
                                 }
                                 
+                                // Untuk ranting/unit role, tidak boleh hapus
+                                $can_delete_row = $can_delete;
+                                if ($user_role === 'ranting' || $user_role === 'unit') {
+                                    $can_delete_row = false;
+                                }
+                                
                                 if ($show_actions):
                                 ?>
                                 <a href="ranting_edit.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-edit" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                <?php if ($can_delete_row): ?>
                                 <a href="ranting_hapus.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus?')">
                                     <i class="fas fa-trash"></i>
                                 </a>
+                                <?php endif; ?>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -753,7 +761,7 @@ if ($print_mode) {
                 const canDelete = <?php echo $can_delete ? 'true' : 'false'; ?>;
                 
                 if (canEdit) {
-                    // For ranting/unit role, only show edit/delete for their own ranting
+                    // For ranting/unit role, only show edit for their own ranting
                     const showActions = (userRole !== 'ranting' && userRole !== 'unit') || (row.id === userRantingId);
                     if (showActions) {
                         actions += `
@@ -764,7 +772,10 @@ if ($print_mode) {
                     }
                 }
                 
-                if (canDelete) {
+                // Untuk ranting/unit role, tidak boleh hapus
+                const canDeleteRow = canDelete && (userRole !== 'ranting' && userRole !== 'unit');
+                
+                if (canDeleteRow) {
                     actions += `
                         <a href="ranting_hapus.php?id=${row.id}" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus?')">
                             <i class="fas fa-trash"></i>

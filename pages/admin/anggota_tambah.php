@@ -6,10 +6,6 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-if ($_SESSION['role'] != 'admin') {
-    die("Akses ditolak!");
-}
-
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
@@ -30,6 +26,48 @@ $GLOBALS['permission_manager'] = $permission_manager;
 // Check permission untuk action ini
 if (!$permission_manager->can('anggota_read')) {
     die("❌ Akses ditolak!");
+}
+
+// Check permission untuk membuat anggota
+if (!$permission_manager->can('anggota_create')) {
+    die("❌ Anda tidak memiliki权限 untuk menambah anggota!");
+}
+
+// Check jika role adalah unit/ranting - ambil data regional dari ranting_id
+$is_ranting_role = ($_SESSION['role'] === 'unit');
+$ranting_data = null;
+$ranting_negara_id = '';
+$ranting_provinsi_id = '';
+$ranting_kota_id = '';
+$ranting_kota_kode = '';
+$ranting_id = '';
+$ranting_kode = '';
+$ranting_nama = '';
+
+if ($is_ranting_role && !empty($_SESSION['ranting_id'])) {
+    // Ambil data ranting lengkap dengan informasi regional
+    $ranting_id = (int)$_SESSION['ranting_id'];
+    $rantingQuery = $conn->query("
+        SELECT r.id, r.nama_ranting, r.kode, r.kota_id, 
+               k.nama as kota_nama, k.kode as kota_kode,
+               p.id as provinsi_id, p.nama as provinsi_nama, p.kode as provinsi_kode,
+               n.id as negara_id, n.nama as negara_nama, n.kode as negara_kode
+        FROM ranting r
+        LEFT JOIN kota k ON r.kota_id = k.id
+        LEFT JOIN provinsi p ON k.provinsi_id = p.id
+        LEFT JOIN negara n ON p.negara_id = n.id
+        WHERE r.id = $ranting_id
+    ");
+    
+    if ($rantingQuery && $ranting = $rantingQuery->fetch_assoc()) {
+        $ranting_data = $ranting;
+        $ranting_negara_id = $ranting['negara_id'];
+        $ranting_provinsi_id = $ranting['provinsi_id'];
+        $ranting_kota_id = $ranting['kota_id'];
+        $ranting_kota_kode = $ranting['kota_kode'];
+        $ranting_kode = $ranting['kode'];
+        $ranting_nama = $ranting['nama_ranting'];
+    }
 }
 
 $error = '';
@@ -646,7 +684,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                 <div class="alert alert-success">✓ <?php echo $success; ?></div>
             <?php endif; ?>
             
-            <form method="POST" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data" onsubmit="return enableRantingBeforeSubmit()">
                 <!-- Bagian 1: Data Organisasi -->
                 <h3>🏢 Data Organisasi</h3>
                 
@@ -654,56 +692,76 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                 <div class="form-row">
                     <div class="form-group">
                         <label>Negara</label>
-                        <select name="filter_negara" id="filter_negara" onchange="updateProvinsiForm()">
-                            <option value="">-- Pilih Negara --</option>
-                            <?php 
-                            $negara_result->data_seek(0);
-                            while ($row = $negara_result->fetch_assoc()): 
-                            ?>
-                                <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama']); ?></option>
-                            <?php endwhile; ?>
-                        </select>
+                        <?php if ($is_ranting_role && !empty($ranting_negara_id)): ?>
+                            <input type="text" value="Indonesia" readonly>
+                            <input type="hidden" name="filter_negara" id="filter_negara" value="<?php echo $ranting_negara_id; ?>">
+                        <?php else: ?>
+                            <select name="filter_negara" id="filter_negara" onchange="updateProvinsiForm()">
+                                <option value="">-- Pilih Negara --</option>
+                                <?php 
+                                $negara_result->data_seek(0);
+                                while ($row = $negara_result->fetch_assoc()): 
+                                ?>
+                                    <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama']); ?></option>
+                                <?php endwhile; ?>
+                            </select>
+                        <?php endif; ?>
                     </div>
                     
                     <div class="form-group">
                         <label>Kode Negara</label>
-                        <input type="text" id="kode_negara_display" readonly placeholder="-">
+                        <input type="text" id="kode_negara_display" readonly placeholder="-" value="<?php echo $ranting_data['negara_kode'] ?? ''; ?>">
                     </div>
                     
                     <div class="form-group">
                         <label>Provinsi</label>
-                        <select name="filter_provinsi" id="filter_provinsi" onchange="updateKotaForm()" disabled>
-                            <option value="">-- Pilih Provinsi --</option>
-                        </select>
+                        <?php if ($is_ranting_role && !empty($ranting_provinsi_id)): ?>
+                            <input type="text" value="<?php echo htmlspecialchars($ranting_data['provinsi_nama'] ?? ''); ?>" readonly>
+                            <input type="hidden" name="filter_provinsi" id="filter_provinsi" value="<?php echo $ranting_provinsi_id; ?>">
+                        <?php else: ?>
+                            <select name="filter_provinsi" id="filter_provinsi" onchange="updateKotaForm()" disabled>
+                                <option value="">-- Pilih Provinsi --</option>
+                            </select>
+                        <?php endif; ?>
                     </div>
                     
                     <div class="form-group">
                         <label>Kode Provinsi</label>
-                        <input type="text" id="kode_provinsi_display" readonly placeholder="-">
+                        <input type="text" id="kode_provinsi_display" readonly placeholder="-" value="<?php echo $ranting_data['provinsi_kode'] ?? ''; ?>">
                     </div>
                     
                     <div class="form-group">
                         <label>Kota/Kabupaten</label>
-                        <select name="filter_kota" id="filter_kota" onchange="updateRantingForm()" disabled>
-                            <option value="">-- Pilih Kota --</option>
-                        </select>
+                        <?php if ($is_ranting_role && !empty($ranting_kota_id)): ?>
+                            <input type="text" value="<?php echo htmlspecialchars($ranting_data['kota_nama'] ?? ''); ?>" readonly>
+                            <input type="hidden" name="filter_kota" id="filter_kota" value="<?php echo $ranting_kota_id; ?>">
+                        <?php else: ?>
+                            <select name="filter_kota" id="filter_kota" onchange="updateRantingForm()" disabled>
+                                <option value="">-- Pilih Kota --</option>
+                            </select>
+                        <?php endif; ?>
                     </div>
                     
                     <div class="form-group">
                         <label>Kode Kota</label>
-                        <input type="text" id="kode_kota_display" readonly placeholder="-">
+                        <input type="text" id="kode_kota_display" readonly placeholder="-" value="<?php echo $ranting_kota_kode; ?>">
                     </div>
                     
                     <div class="form-group">
                         <label>Unit/Ranting Saat Ini <span class="required">*</span></label>
-                        <select name="ranting_saat_ini_id" id="ranting_saat_ini_id" required disabled onchange="updateRantingKode()">
-                            <option value="">-- Pilih Ranting --</option>
-                        </select>
+                        <?php if ($is_ranting_role && !empty($ranting_id)): ?>
+                            <input type="text" value="<?php echo htmlspecialchars($ranting_kode . ' - ' . $ranting_nama); ?>" readonly>
+                            <input type="hidden" name="ranting_saat_ini_id" id="ranting_saat_ini_id" value="<?php echo $ranting_id; ?>">
+                        <?php else: ?>
+                            <select name="ranting_saat_ini_id" id="ranting_saat_ini_id" required disabled onchange="updateRantingKode()">
+                                <option value="">-- Pilih Ranting --</option>
+                            </select>
+                        <?php endif; ?>
                     </div>
                     
                     <div class="form-group">
                         <label>Kode Ranting</label>
-                        <input type="text" id="kode_ranting_display" readonly placeholder="-">
+                        <input type="text" id="kode_ranting_display" readonly placeholder="-" value="<?php echo $ranting_kode; ?>">
                     </div>
                 </div>
                 
@@ -898,7 +956,6 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
             const negaraSelect = document.getElementById('filter_negara');
             const provinsiSelect = document.getElementById('filter_provinsi');
             const kotaSelect = document.getElementById('filter_kota');
-            const rantingSelect = document.getElementById('ranting_awal_select').querySelector('select');
             const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id');
             
             const negaraId = negaraSelect.value;
@@ -913,9 +970,11 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
             document.getElementById('kode_kota_display').value = '';
             document.getElementById('kode_ranting_display').value = '';
             
-            // Reset ranting dropdowns
-            if (rantingSelect) rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
-            if (rantingSaatIniSelect) rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
+            // Reset ranting saat ini dropdown
+            if (rantingSaatIniSelect) {
+                rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
+                rantingSaatIniSelect.disabled = true;
+            }
             
             if (negaraId === '') {
                 provinsiSelect.disabled = true;
@@ -950,7 +1009,6 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
         function updateKotaForm() {
             const provinsiSelect = document.getElementById('filter_provinsi');
             const kotaSelect = document.getElementById('filter_kota');
-            const rantingSelect = document.getElementById('ranting_awal_select').querySelector('select');
             const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id');
             
             const provinsiId = provinsiSelect.value;
@@ -963,9 +1021,11 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
             document.getElementById('kode_kota_display').value = '';
             document.getElementById('kode_ranting_display').value = '';
             
-            // Reset ranting dropdowns
-            if (rantingSelect) rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
-            if (rantingSaatIniSelect) rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
+            // Reset ranting saat ini dropdown
+            if (rantingSaatIniSelect) {
+                rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
+                rantingSaatIniSelect.disabled = true;
+            }
             
             if (provinsiId === '') {
                 kotaSelect.disabled = true;
@@ -998,13 +1058,11 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
         
         function updateRantingForm() {
             const kotaSelect = document.getElementById('filter_kota');
-            const rantingSelect = document.getElementById('ranting_awal_select').querySelector('select');
             const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id');
             
             const kotaId = kotaSelect.value;
             
-            // Reset ranting dropdowns
-            rantingSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting --</option>';
+            // Reset ranting saat ini dropdown
             if (rantingSaatIniSelect) {
                 rantingSaatIniSelect.innerHTML = '<option value="">-- Pilih Unit/Ranting Saat Ini --</option>';
                 rantingSaatIniSelect.disabled = true;
@@ -1034,12 +1092,6 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                         data.data.forEach(ranting => {
                             const rantingKode = ranting.kode || '001';
                             const rantingText = rantingKode + ' - ' + ranting.nama_ranting;
-                            
-                            const option1 = document.createElement('option');
-                            option1.value = ranting.id;
-                            option1.textContent = rantingText;
-                            option1.setAttribute('data-kode', rantingKode);
-                            rantingSelect.appendChild(option1);
                             
                             if (rantingSaatIniSelect) {
                                 const option2 = document.createElement('option');
@@ -1089,7 +1141,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
             const negaraSelect = document.getElementById('filter_negara');
             const provinsiSelect = document.getElementById('filter_provinsi');
             const kotaSelect = document.getElementById('filter_kota');
-            const rantingSelect = document.getElementById('ranting_awal_select').querySelector('select');
+            const rantingAwalIdInput = document.getElementById('ranting_awal_id');
             const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id');
             const tahunInput = document.querySelector('input[name="tahun_bergabung"]');
             const noAnggotaInput = document.getElementById('no_anggota');
@@ -1098,8 +1150,8 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
             const provinsiId = provinsiSelect ? provinsiSelect.value : '';
             const kotaId = kotaSelect ? kotaSelect.value : '';
             
-            // Use ranting_awal_id if selected, otherwise use ranting_saat_ini_id
-            let rantingId = rantingSelect ? rantingSelect.value : '';
+            // Use ranting_awal_id hidden input if has value, otherwise use ranting_saat_ini_id
+            let rantingId = rantingAwalIdInput ? rantingAwalIdInput.value : '';
             if (!rantingId && rantingSaatIniSelect) {
                 rantingId = rantingSaatIniSelect.value;
             }
@@ -1137,12 +1189,12 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
         
         // Add event listener to ranting dropdown after it's loaded
         function setupRantingListener() {
-            const rantingSelect = document.getElementById('ranting_awal_select').querySelector('select');
+            const rantingAwalIdInput = document.getElementById('ranting_awal_id');
             const rantingSaatIniSelect = document.getElementById('ranting_saat_ini_id');
             const tahunInput = document.querySelector('input[name="tahun_bergabung"]');
             
-            if (rantingSelect) {
-                rantingSelect.addEventListener('change', generateNoAnggota);
+            if (rantingAwalIdInput) {
+                rantingAwalIdInput.addEventListener('change', generateNoAnggota);
             }
             
             if (rantingSaatIniSelect) {
@@ -1169,6 +1221,15 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
         // Setup listeners on page load
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(setupRantingListener, 500);
+            
+            // Untuk ranting role, trigger generateNoAnggota karena nilai sudah di-set
+            <?php if ($is_ranting_role && !empty($ranting_id)): ?>
+            setTimeout(function() {
+                if (typeof generateNoAnggota === 'function') {
+                    generateNoAnggota();
+                }
+            }, 600);
+            <?php endif; ?>
         });
         
         function toggleRantingAwal() {
@@ -1185,6 +1246,21 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                 manualField.classList.add('show');
                 document.querySelector('select[name="ranting_awal_id"]').value = '';
             }
+        }
+        
+        // Enable ranting dropdown before form submission
+        function enableRantingBeforeSubmit() {
+            const rantingSaatIni = document.getElementById('ranting_saat_ini_id');
+            if (rantingSaatIni && rantingSaatIni.disabled) {
+                // Check if there's a selected value
+                if (rantingSaatIni.value) {
+                    rantingSaatIni.disabled = false;
+                } else {
+                    alert('Mohon pilih Unit/Ranting terlebih dahulu!');
+                    return false;
+                }
+            }
+            return true;
         }
         
         // Fungsi untuk tambah prestasi [BARU]
@@ -1284,6 +1360,10 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                     rantingAwalSearch.value = e.target.dataset.kode + ' - ' + e.target.dataset.nama;
                     rantingAwalId.value = e.target.dataset.id;
                     rantingAwalSuggestions.classList.remove('show');
+                    // Trigger generate no anggota after selecting ranting
+                    if (typeof generateNoAnggota === 'function') {
+                        generateNoAnggota();
+                    }
                 }
             });
             
