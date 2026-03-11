@@ -379,6 +379,14 @@ $tingkat_list = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY ur
                 placeholder: '-- Pilih Penyelenggara --',
                 allowClear: false,
                 width: '100%'
+            }).on('select2:open', function() {
+                // Robust auto-focus search field on open
+                setTimeout(function() {
+                    const searchField = document.querySelector('.select2-container--open .select2-search__field');
+                    if (searchField) {
+                        searchField.focus();
+                    }
+                }, 50);
             });
         });
         <?php endif; ?>

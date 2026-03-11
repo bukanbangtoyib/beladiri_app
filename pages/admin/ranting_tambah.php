@@ -52,6 +52,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $kota_data = $kota_result ? $kota_result->fetch_assoc() : null;
         $kota_name = $kota_data && isset($kota_data['nama']) ? preg_replace("/[^a-z0-9 -]/i", "_", $kota_data['nama']) : 'Unknown';
         
+        // Generate kode ranting if not provided
+        $kode_ranting = $_POST['kode_ranting'] ?? '';
+        if (empty($kode_ranting)) {
+            $count_ranting = $conn->query("SELECT COUNT(*) as cnt FROM ranting WHERE kota_id = " . (int)$kota_id)->fetch_assoc();
+            $sequence = (int)$count_ranting['cnt'] + 1;
+            $kode_ranting = str_pad($sequence, 3, '0', STR_PAD_LEFT);
+        }
+        
         // Handle SK file upload
         if (isset($_FILES['sk_pembentukan']) && $_FILES['sk_pembentukan']['size'] > 0) {
             $file = $_FILES['sk_pembentukan'];
@@ -79,13 +87,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         if (!$error) {
-            $sql = "INSERT INTO ranting (nama_ranting, jenis, tanggal_sk_pembentukan, no_sk_pembentukan,
+            $sql = "INSERT INTO ranting (kode, nama_ranting, jenis, tanggal_sk_pembentukan, no_sk_pembentukan,
                     alamat, ketua_nama, penanggung_jawab_teknik, no_kontak, kota_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ssssssssi",
-                $nama_ranting, $jenis, $tanggal_sk, $no_sk_pembentukan,
+            $stmt->bind_param("sssssssssi",
+                $kode_ranting, $nama_ranting, $jenis, $tanggal_sk, $no_sk_pembentukan,
                 $alamat, $ketua_nama, $penanggung_jawab,
                 $no_kontak, $kota_id
             );
@@ -341,12 +349,7 @@ $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
             <form method="POST" enctype="multipart/form-data">
                 <h3>📋 Informasi Dasar</h3>
                 
-                <div class="form-row">                    
-                    <div class="form-group">
-                        <label>Nama Unit/Ranting <span class="required">*</span></label>
-                        <input type="text" name="nama_ranting" required placeholder="Contoh: Ranting Tenggilis">
-                    </div>
-
+                <div class="form-row">
                     <div class="form-group">
                         <label>Jenis <span class="required">*</span></label>
                         <select name="jenis" required>
@@ -404,8 +407,22 @@ $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
                     </div>
                     
                     <div class="form-group">
-                        <label>Kode</label>
+                        <label>Kode Kota</label>
                         <input type="text" id="kode_kota_display" readonly placeholder="-">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nama Unit/Ranting <span class="required">*</span></label>
+                        <input type="text" name="nama_ranting" required placeholder="Contoh: Ranting Tenggilis">
+                    </div>
+
+                    
+                    <div class="form-group">
+                        <label>Kode Ranting</label>
+                        <input type="text" id="kode_ranting_display" readonly placeholder="Auto">
+                        <input type="hidden" name="kode_ranting" id="kode_ranting">
                     </div>
                 </div>
                 
@@ -713,6 +730,34 @@ $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
             const kotaOption = this.options[this.selectedIndex];
             const kotaKode = kotaOption.dataset.kode || '';
             document.getElementById('kode_kota_display').value = kotaKode;
+            
+            // Generate ranting kode based on city
+            const kotaId = this.value;
+            if (kotaId) {
+                // Fetch ranting count for this kota and generate next kode
+                fetch('../../api/get_ranting.php?kota_id=' + kotaId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const count = data.data.length;
+                            const nextNumber = count + 1;
+                            const kodeRanting = String(nextNumber).padStart(3, '0');
+                            document.getElementById('kode_ranting_display').value = kodeRanting;
+                            document.getElementById('kode_ranting').value = kodeRanting;
+                        } else {
+                            document.getElementById('kode_ranting_display').value = '001';
+                            document.getElementById('kode_ranting').value = '001';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('kode_ranting_display').value = '001';
+                        document.getElementById('kode_ranting').value = '001';
+                    });
+            } else {
+                document.getElementById('kode_ranting_display').value = '';
+                document.getElementById('kode_ranting').value = '';
+            }
         });
     </script>
 </body>

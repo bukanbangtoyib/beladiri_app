@@ -364,6 +364,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tambah Anggota - Sistem Beladiri</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         * {
             margin: 0;
@@ -666,6 +667,25 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
         
         .suggestion-item:hover { background: #f5f5f5; }
         .suggestion-item:last-child { border-bottom: none; }
+
+        /* Select2 styling to match other inputs */
+        .select2-container--default .select2-selection--single {
+            height: 42px !important;
+            border: 1px solid #ddd !important;
+            border-radius: 6px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 42px !important;
+            padding-left: 14px !important;
+            font-size: 14px !important;
+            color: #333 !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #999 !important;
+        }
     </style>
 </head>
 <body>
@@ -696,7 +716,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                             <input type="text" value="Indonesia" readonly>
                             <input type="hidden" name="filter_negara" id="filter_negara" value="<?php echo $ranting_negara_id; ?>">
                         <?php else: ?>
-                            <select name="filter_negara" id="filter_negara" onchange="updateProvinsiForm()">
+                            <select name="filter_negara" id="filter_negara" onchange="updateProvinsiForm()" class="select2-searchable">
                                 <option value="">-- Pilih Negara --</option>
                                 <?php 
                                 $negara_result->data_seek(0);
@@ -719,7 +739,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                             <input type="text" value="<?php echo htmlspecialchars($ranting_data['provinsi_nama'] ?? ''); ?>" readonly>
                             <input type="hidden" name="filter_provinsi" id="filter_provinsi" value="<?php echo $ranting_provinsi_id; ?>">
                         <?php else: ?>
-                            <select name="filter_provinsi" id="filter_provinsi" onchange="updateKotaForm()" disabled>
+                            <select name="filter_provinsi" id="filter_provinsi" onchange="updateKotaForm()" disabled class="select2-searchable">
                                 <option value="">-- Pilih Provinsi --</option>
                             </select>
                         <?php endif; ?>
@@ -736,7 +756,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                             <input type="text" value="<?php echo htmlspecialchars($ranting_data['kota_nama'] ?? ''); ?>" readonly>
                             <input type="hidden" name="filter_kota" id="filter_kota" value="<?php echo $ranting_kota_id; ?>">
                         <?php else: ?>
-                            <select name="filter_kota" id="filter_kota" onchange="updateRantingForm()" disabled>
+                            <select name="filter_kota" id="filter_kota" onchange="updateRantingForm()" disabled class="select2-searchable">
                                 <option value="">-- Pilih Kota --</option>
                             </select>
                         <?php endif; ?>
@@ -753,7 +773,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                             <input type="text" value="<?php echo htmlspecialchars($ranting_kode . ' - ' . $ranting_nama); ?>" readonly>
                             <input type="hidden" name="ranting_saat_ini_id" id="ranting_saat_ini_id" value="<?php echo $ranting_id; ?>">
                         <?php else: ?>
-                            <select name="ranting_saat_ini_id" id="ranting_saat_ini_id" required disabled onchange="updateRantingKode()">
+                            <select name="ranting_saat_ini_id" id="ranting_saat_ini_id" required disabled onchange="updateRantingKode()" class="select2-searchable">
                                 <option value="">-- Pilih Ranting --</option>
                             </select>
                         <?php endif; ?>
@@ -779,11 +799,11 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                         </div>
                     </div>
                     
-                    <div id="ranting_awal_select" class="form-group" style="position: relative;">
-                        <input type="text" id="ranting_awal_search" placeholder="Ketik kode atau nama ranting..." autocomplete="off">
-                        <input type="hidden" id="ranting_awal_id" name="ranting_awal_id">
-                        <div id="ranting_awal_suggestions" class="suggestions-box"></div>
-                        <div class="form-hint">Ketik untuk mencari Unit/Ranting yang tersedia di database</div>
+                    <div id="ranting_awal_select_container" class="form-group">
+                        <select name="ranting_awal_id" id="ranting_awal_id" class="select2-searchable" style="width: 100%;">
+                            <option value="">-- Pilih Unit/Ranting Awal --</option>
+                        </select>
+                        <div class="form-hint">Cari Unit/Ranting yang tersedia di database (Menampilkan semua ranting)</div>
                     </div>
                     
                     <div id="ranting_awal_manual" class="conditional-field">
@@ -950,6 +970,8 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
         </div>
     </div>
     
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         // Cascade functions for Negara -> Provinsi -> Kota -> Ranting
         function updateProvinsiForm() {
@@ -1001,6 +1023,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                             option.setAttribute('data-kode', prov.kode || '000');
                             provinsiSelect.appendChild(option);
                         });
+                        $(provinsiSelect).trigger('change');
                     }
                 })
                 .catch(error => console.error('Error:', error));
@@ -1051,6 +1074,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                             option.setAttribute('data-kode', kota.kode || '000');
                             kotaSelect.appendChild(option);
                         });
+                        $(kotaSelect).trigger('change');
                     }
                 })
                 .catch(error => console.error('Error:', error));
@@ -1105,6 +1129,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                         // Enable ranting dropdown after data is loaded
                         if (rantingSaatIniSelect && data.data.length > 0) {
                             rantingSaatIniSelect.disabled = false;
+                            $(rantingSaatIniSelect).trigger('change');
                         }
                         
                         // Trigger generate no anggota after options are populated
@@ -1220,6 +1245,55 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
         
         // Setup listeners on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Select2 for all searchable dropdowns
+            $('.select2-searchable').each(function() {
+                const element = $(this);
+                const isRantingAwal = element.attr('id') === 'ranting_awal_id';
+                
+                const select2Config = {
+                    placeholder: element.find('option:first').text(),
+                    allowClear: true,
+                    width: '100%'
+                };
+                
+                if (isRantingAwal) {
+                    select2Config.ajax = {
+                        url: '../../api/get_ranting.php',
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                q: params.term
+                            };
+                        },
+                        processResults: function (data) {
+                            return {
+                                results: data.data.map(function(item) {
+                                    return {
+                                        id: item.id,
+                                        text: item.display
+                                    };
+                                })
+                            };
+                        },
+                        cache: true
+                    };
+                    select2Config.minimumInputLength = 0;
+                }
+                
+                element.select2(select2Config);
+            });
+            
+            // Apply robust auto-focus for Select2
+            $(document).on('select2:open', '.select2-searchable', function() {
+                setTimeout(function() {
+                    const searchField = document.querySelector('.select2-container--open .select2-search__field');
+                    if (searchField) {
+                        searchField.focus();
+                    }
+                }, 50);
+            });
+            
             setTimeout(setupRantingListener, 500);
             
             // Untuk ranting role, trigger generateNoAnggota karena nilai sudah di-set
@@ -1234,17 +1308,17 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
         
         function toggleRantingAwal() {
             const databaseOption = document.getElementById('ranting_database');
-            const selectField = document.getElementById('ranting_awal_select');
+            const selectContainer = document.getElementById('ranting_awal_select_container');
             const manualField = document.getElementById('ranting_awal_manual');
             
             if (databaseOption.checked) {
-                selectField.style.display = 'block';
+                selectContainer.style.display = 'block';
                 manualField.classList.remove('show');
                 document.querySelector('input[name="ranting_awal_manual"]').value = '';
             } else {
-                selectField.style.display = 'none';
+                selectContainer.style.display = 'none';
                 manualField.classList.add('show');
-                document.querySelector('select[name="ranting_awal_id"]').value = '';
+                $('#ranting_awal_id').val(null).trigger('change');
             }
         }
         
@@ -1318,61 +1392,6 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
             });
         });
         
-        // Ranting Awal Search functionality
-        const rantingAwalSearch = document.getElementById('ranting_awal_search');
-        const rantingAwalId = document.getElementById('ranting_awal_id');
-        const rantingAwalSuggestions = document.getElementById('ranting_awal_suggestions');
-        let rantingAwalTimeout = null;
-        
-        if (rantingAwalSearch) {
-            rantingAwalSearch.addEventListener('input', function() {
-                clearTimeout(rantingAwalTimeout);
-                const query = this.value.trim();
-                
-                if (query.length < 2) {
-                    rantingAwalSuggestions.classList.remove('show');
-                    rantingAwalSuggestions.innerHTML = '';
-                    rantingAwalId.value = '';
-                    return;
-                }
-                
-                rantingAwalTimeout = setTimeout(() => {
-                    fetch('../../api/get_ranting.php?q=' + encodeURIComponent(query))
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success && data.data.length > 0) {
-                                rantingAwalSuggestions.innerHTML = data.data.map(item => 
-                                    '<div class="suggestion-item" data-id="' + item.id + '" data-kode="' + item.kode + '" data-nama="' + item.nama_ranting + '">' + 
-                                    item.display + '</div>'
-                                ).join('');
-                                rantingAwalSuggestions.classList.add('show');
-                            } else {
-                                rantingAwalSuggestions.innerHTML = '<div class="suggestion-item">Tidak ada hasil</div>';
-                                rantingAwalSuggestions.classList.add('show');
-                            }
-                        })
-                        .catch(error => console.error('Error:', error));
-                }, 300);
-            });
-            
-            rantingAwalSuggestions.addEventListener('click', function(e) {
-                if (e.target.classList.contains('suggestion-item') && e.target.dataset.id) {
-                    rantingAwalSearch.value = e.target.dataset.kode + ' - ' + e.target.dataset.nama;
-                    rantingAwalId.value = e.target.dataset.id;
-                    rantingAwalSuggestions.classList.remove('show');
-                    // Trigger generate no anggota after selecting ranting
-                    if (typeof generateNoAnggota === 'function') {
-                        generateNoAnggota();
-                    }
-                }
-            });
-            
-            document.addEventListener('click', function(e) {
-                if (!rantingAwalSearch.contains(e.target) && !rantingAwalSuggestions.contains(e.target)) {
-                    rantingAwalSuggestions.classList.remove('show');
-                }
-            });
-        }
     </script>
 </body>
 </html>
