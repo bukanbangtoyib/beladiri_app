@@ -304,11 +304,16 @@ if ($user_role === 'admin') {
     $is_readonly = false;
     $can_add = true;
     $can_import = true;
-} elseif ($user_role === 'negara' || $user_role === 'pengprov' || $user_role === 'pengkot') {
-    // Negara, pengprov, pengkot can only view (read-only)
+} elseif ($user_role === 'negara' || $user_role === 'pengprov') {
+    // Negara, pengprov can only view (read-only)
     $is_readonly = true;
     $can_add = false;
     $can_import = false;
+} elseif ($user_role === 'pengkot') {
+    // Pengkot can add/edit/delete members in their hierarchy
+    $is_readonly = false;
+    $can_add = true;
+    $can_import = true;
 } elseif ($user_role === 'unit' || $user_role === 'ranting') {
     // Unit/Ranting can edit/delete their own members, but add is controlled separately
     $is_readonly = false;

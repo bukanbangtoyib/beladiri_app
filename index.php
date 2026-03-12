@@ -326,7 +326,12 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
             <?php endif; ?>
             <a href="pages/admin/kerohanian.php">🙏 Kerohanian</a>                        
             <a href="pages/admin/jadwal_latihan.php">⏰ Jadwal Latihan</a>
-            
+             
+            <?php if (in_array($_SESSION['role'], ['negara', 'pengprov', 'pengkot', 'unit'])): ?>
+            <hr>
+            <a href="akun_saya.php">👤 Akun Saya</a>
+            <?php endif; ?>
+             
             <?php if ($_SESSION['role'] == 'admin'): ?>
             <hr>
             <a href="pages/admin/settings.php">⚙️ Settings</a>
