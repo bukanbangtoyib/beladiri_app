@@ -221,7 +221,7 @@ $pelatih_list_existing = [];
 $p_result = $conn->query("SELECT rp.*, a.nama_lengkap, a.no_anggota, t.nama_tingkat 
                           FROM ranting_pelatih rp
                           JOIN anggota a ON rp.anggota_id = a.id
-                          LEFT JOIN tingkatan t ON a.tingkat_id = t.id
+                          LEFT JOIN tingkatan t ON a.tingkat_id = t.urutan
                           WHERE rp.ranting_id = $id");
 while ($row = $p_result->fetch_assoc()) {
     $pelatih_list_existing[] = $row;

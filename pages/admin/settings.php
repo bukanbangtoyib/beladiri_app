@@ -159,7 +159,7 @@ if (isset($_POST['save_nomor'])) {
 $tingkatan_result = $conn->query("SELECT id, nama_tingkat, singkatan, urutan, waktu_ukt, created_at FROM tingkatan ORDER BY urutan ASC");
 $tingkatan_list = [];
 while ($row = $tingkatan_result->fetch_assoc()) {
-    $count = $conn->query("SELECT COUNT(*) as cnt FROM anggota WHERE tingkat_id = " . $row['id'])->fetch_assoc();
+    $count = $conn->query("SELECT COUNT(*) as cnt FROM anggota WHERE tingkat_id = " . $row['urutan'])->fetch_assoc();
     $row['jumlah_anggota'] = $count['cnt'];
     $tingkatan_list[] = $row;
 }

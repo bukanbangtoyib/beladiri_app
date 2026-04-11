@@ -331,6 +331,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <p><strong>ℹ️ Informasi : </strong>Username dan role tidak dapat diubah. Untuk mengubah nama lengkap atau password, silakan isi formulir di bawah ini.</p>
         </div>
         
+        <div class="info-box">
+            <p><strong>Detail Akun:</strong> 
+                <a href="<?php echo $detail_link . $detail_params; ?>" class="link-nav">Lihat Detail Akun</a>
+            </p>
+        </div>
+        
         <div class="form-card">
             <form method="POST" action="">
                 <div class="form-group">
@@ -363,12 +369,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <a href="index.php" class="btn btn-secondary">Kembali ke Dashboard</a>
                 </div>
             </form>
-        </div>
-        
-        <div class="info-box">
-            <p><strong>Detail Akun:</strong> 
-                <a href="<?php echo $detail_link . $detail_params; ?>" class="link-nav">Lihat Detail Akun</a>
-            </p>
         </div>
     </div>
     

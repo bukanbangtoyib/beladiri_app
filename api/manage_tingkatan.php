@@ -42,7 +42,7 @@ switch ($action) {
         $data = [];
         while ($row = $result->fetch_assoc()) {
             // Hitung jumlah anggota pada tingkat ini
-            $count = $conn->query("SELECT COUNT(*) as cnt FROM anggota WHERE tingkat_id = " . $row['id'])->fetch_assoc();
+            $count = $conn->query("SELECT COUNT(*) as cnt FROM anggota WHERE tingkat_id = " . $row['urutan'])->fetch_assoc();
             $row['jumlah_anggota'] = $count['cnt'];
             $data[] = $row;
         }
@@ -73,7 +73,7 @@ switch ($action) {
         $id = (int)$_POST['id'];
         
         // Cek apakah ada anggota pada tingkat ini
-        $check = $conn->query("SELECT COUNT(*) as cnt FROM anggota WHERE tingkat_id = $id");
+        $check = $conn->query("SELECT COUNT(*) as cnt FROM anggota WHERE tingkat_id = (SELECT urutan FROM tingkatan WHERE id = $id)");
         $count = $check->fetch_assoc();
         
         if ($count['cnt'] > 0) {

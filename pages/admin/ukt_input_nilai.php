@@ -140,23 +140,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 
                 // Get tingkat_id saat ini
                 $anggota_data = $conn->query("SELECT tingkat_id FROM anggota WHERE id = $anggota_id")->fetch_assoc();
-                $current_tingkat = $anggota_data['tingkat_id'];
+                $current_tingkat = $anggota_data['tingkat_id'];  // Ini sekarang URUTAN (1-13), bukan ID
                 
                 if (!empty($current_tingkat)) {
-                    // Cari tingkat berikutnya
+                    // Cari tingkat berikutnya berdasarkan urutan
+                    // PENTING: current_tingkat sekarang adalah urutan, bukan id!
                     $next_tingkat_query = $conn->query("
-                        SELECT t2.id FROM tingkatan t1
+                        SELECT t2.urutan FROM tingkatan t1
                         JOIN tingkatan t2 ON t2.urutan = t1.urutan + 1
-                        WHERE t1.id = $current_tingkat
+                        WHERE t1.urutan = $current_tingkat
                         LIMIT 1
                     ");
                     
                     if ($next_tingkat_query->num_rows > 0) {
                         $next_tingkat = $next_tingkat_query->fetch_assoc();
-                        $next_tingkat_id = $next_tingkat['id'];
+                        $next_tingkat_urutan = $next_tingkat['urutan'];  // Ambil urutan, bukan id
                         
-                        // Update tingkat anggota
-                        $conn->query("UPDATE anggota SET tingkat_id = $next_tingkat_id WHERE id = $anggota_id");
+                        // Update tingkat anggota dengan urutan
+                        $conn->query("UPDATE anggota SET tingkat_id = $next_tingkat_urutan WHERE id = $anggota_id");
                     }
                 }
             }

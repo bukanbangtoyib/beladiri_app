@@ -29,8 +29,10 @@ if (!$permission_manager->can('anggota_read')) {
 }
 
 // Check permission untuk membuat anggota
-if (!$permission_manager->can('anggota_create')) {
-    die("❌ Anda tidak memiliki权限 untuk menambah anggota!");
+$user_role = $_SESSION['role'] ?? '';
+$allowed_roles = ['admin', 'pengkot', 'unit'];
+if (!in_array($user_role, $allowed_roles)) {
+    die("❌ Akses ditolak!");
 }
 
 // Check jika role adalah unit/ranting - ambil data regional dari ranting_id
@@ -188,7 +190,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $ranting_awal_id = !empty($_POST['ranting_awal_id']) ? (int)$_POST['ranting_awal_id'] : NULL;
     $ranting_awal_manual = $conn->real_escape_string($_POST['ranting_awal_manual'] ?? '');
     $ranting_saat_ini_id = !empty($_POST['ranting_saat_ini_id']) ? (int)$_POST['ranting_saat_ini_id'] : NULL;
-    $tingkat_id = !empty($_POST['tingkat_id']) ? (int)$_POST['tingkat_id'] : NULL;
+    $tingkat_id = !empty($_POST['tingkat_id']) ? (int)trim($_POST['tingkat_id']) : NULL;
+    if (!empty($tingkat_id)) {
+        $tingkat_check = $conn->query("SELECT urutan FROM tingkatan WHERE urutan = $tingkat_id");
+        if (!$tingkat_check || $tingkat_check->num_rows == 0) {
+            $error = "Tingkat dengan urutan '$tingkat_id' tidak ditemukan!";
+            $tingkat_id = NULL;
+        }
+    }
     $jenis_anggota = $_POST['jenis_anggota'];
     $tahun_bergabung = !empty($_POST['tahun_bergabung']) ? (int)$_POST['tahun_bergabung'] : NULL;
     $no_handphone = $conn->real_escape_string($_POST['no_handphone'] ?? '');
@@ -349,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 $ranting_result = $conn->query("SELECT id, nama_ranting, kode FROM ranting ORDER BY nama_ranting");
-$tingkatan_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY urutan");
+$tingkatan_result = $conn->query("SELECT id, urutan, nama_tingkat FROM tingkatan ORDER BY urutan");
 
 // Get data for cascade filter
 $negara_result = $conn->query("SELECT id, nama, kode FROM negara ORDER BY nama");
@@ -818,7 +827,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                         <select name="tingkat_id" required>
                             <option value="">-- Pilih Tingkat --</option>
                             <?php while ($row = $tingkatan_result->fetch_assoc()): ?>
-                                <option value="<?php echo $row['id']; ?>">
+                                <option value="<?php echo $row['urutan']; ?>">
                                     <?php echo htmlspecialchars($row['nama_tingkat']); ?>
                                 </option>
                             <?php endwhile; ?>

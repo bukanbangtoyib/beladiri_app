@@ -111,7 +111,7 @@ $id = (int)$_GET['id'];
 $sql = "SELECT a.*, t.nama_tingkat, t.urutan as urutan_tingkat, r.nama_ranting, ra.nama_ranting as nama_ranting_awal,
         n.nama as nama_negara, p.nama as nama_provinsi, k.nama as nama_kota
         FROM anggota a 
-        LEFT JOIN tingkatan t ON a.tingkat_id = t.id 
+        LEFT JOIN tingkatan t ON a.tingkat_id = t.urutan 
         LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id 
         LEFT JOIN ranting ra ON a.ranting_awal_id = ra.id 
         LEFT JOIN kota k ON r.kota_id = k.id

@@ -123,7 +123,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     $sql = "SELECT a.*, t.nama_tingkat, t.singkatan, t.urutan, r.nama_ranting, r.kode as ranting_kode,
                    k.nama as kota_nama, p.nama as provinsi_nama, n.nama as negara_nama
             FROM anggota a 
-            LEFT JOIN tingkatan t ON a.tingkat_id = t.id 
+            LEFT JOIN tingkatan t ON a.tingkat_id = t.urutan 
             LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id 
             LEFT JOIN kota k ON r.kota_id = k.id
             LEFT JOIN provinsi p ON k.provinsi_id = p.id
@@ -134,7 +134,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
         $sql .= " AND (a.nama_lengkap LIKE '%$search%' OR a.no_anggota LIKE '%$search%')";
     }
     if ($filter_tingkat > 0) {
-        $sql .= " AND a.tingkat_id = $filter_tingkat";
+        $sql .= " AND t.urutan = $filter_tingkat";
     }
     if ($filter_negara > 0) $sql .= " AND n.id = $filter_negara";
     if ($filter_provinsi > 0) $sql .= " AND p.id = $filter_provinsi";
@@ -217,7 +217,7 @@ function singkatanTingkat($nama_tingkat, $singkatan_db = null) {
 $sql = "SELECT a.*, t.nama_tingkat, t.singkatan, t.urutan, r.nama_ranting, r.kode as ranting_kode,
                k.nama as kota_nama, p.nama as provinsi_nama, n.nama as negara_nama
         FROM anggota a 
-        LEFT JOIN tingkatan t ON a.tingkat_id = t.id 
+        LEFT JOIN tingkatan t ON a.tingkat_id = t.urutan 
         LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id 
         LEFT JOIN kota k ON r.kota_id = k.id
         LEFT JOIN provinsi p ON k.provinsi_id = p.id
@@ -231,7 +231,7 @@ if ($search) {
 
 if ($filter_tingkat) {
     $filter_tingkat = (int)$filter_tingkat;
-    $sql .= " AND a.tingkat_id = $filter_tingkat";
+    $sql .= " AND t.urutan = $filter_tingkat";
 }
 
 if ($filter_negara > 0) {
@@ -833,7 +833,7 @@ if ($print_mode) {
                         <?php 
                         foreach ($filter_tingkatan as $ting): 
                         ?>
-                            <option value="<?php echo $ting['id']; ?>" <?php echo $filter_tingkat == $ting['id'] ? 'selected' : ''; ?>>
+                            <option value="<?php echo $ting['urutan']; ?>" <?php echo $filter_tingkat == $ting['urutan'] ? 'selected' : ''; ?>>
                                 <?php echo !empty($ting['singkatan']) ? $ting['singkatan'] : $ting['nama_tingkat']; ?> (<?php echo $ting['nama_tingkat']; ?>)
                             </option>
                         <?php endforeach; ?>
@@ -974,6 +974,34 @@ if ($print_mode) {
                     .catch(error => console.error('Error:', error));
                 
                 // Submit form untuk update tabel
+                document.getElementById('filterForm').submit();
+            }
+            
+            // Reset Filter function
+            function resetFilters() {
+                document.getElementById('anggota_search').value = '';
+                document.getElementById('search_hidden').value = '';
+                document.getElementById('filter_tingkat').value = '';
+                document.getElementById('filter_negara').value = '';
+                document.getElementById('filter_provinsi').value = '';
+                document.getElementById('filter_kota').value = '';
+                document.getElementById('filter_ranting').value = '';
+                document.getElementById('filter_layak_ukt').value = '';
+                document.getElementById('filter_kerohanian').value = '';
+                
+                // Reset regional dropdowns
+                const provinsiSelect = document.getElementById('filter_provinsi');
+                const kotaSelect = document.getElementById('filter_kota');
+                const rantingSelect = document.getElementById('filter_ranting');
+                
+                provinsiSelect.innerHTML = '<option value="">-- Semua Provinsi --</option>';
+                kotaSelect.innerHTML = '<option value="">-- Semua Kota --</option>';
+                rantingSelect.innerHTML = '<option value="">-- Semua Ranting --</option>';
+                provinsiSelect.disabled = true;
+                kotaSelect.disabled = true;
+                rantingSelect.disabled = true;
+                
+                // Submit form untuk reset
                 document.getElementById('filterForm').submit();
             }
             

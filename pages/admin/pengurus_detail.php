@@ -165,6 +165,83 @@ if ($jenis == 'kota') {
     $ranting_result = $conn->query("SELECT id, nama_ranting, jenis, ketua_nama FROM ranting WHERE kota_id = $id ORDER BY nama_ranting");
 }
 
+// Stats untuk header card
+$header_stats = [];
+$tingkatan_map = [];
+$tingkat_stats = [];
+
+// Ambil data tingkatan untuk mapping urutan ke nama
+$tk_result = $conn->query("SELECT urutan, nama_tingkat FROM tingkatan ORDER BY urutan");
+while ($tk = $tk_result->fetch_assoc()) {
+    $tingkatan_map[$tk['urutan']] = $tk['nama_tingkat'];
+}
+
+if ($jenis == 'pusat') {
+    // Negara: hitung stats untuk setiap tingkatan
+    $jml_prov = $conn->query("SELECT COUNT(*) as cnt FROM provinsi WHERE negara_id = $id")->fetch_assoc()['cnt'];
+    $jml_kota = $conn->query("SELECT COUNT(*) as cnt FROM kota k JOIN provinsi p ON k.provinsi_id = p.id WHERE p.negara_id = $id")->fetch_assoc()['cnt'];
+    
+    // Hitung anggota per tingkat
+    foreach ($tingkatan_map as $urutan => $nama) {
+        $tingkat_stats[$urutan] = $conn->query(
+            "SELECT COUNT(*) as cnt FROM anggota a 
+             JOIN ranting r ON a.ranting_saat_ini_id = r.id 
+             JOIN kota k ON r.kota_id = k.id 
+             JOIN provinsi p ON k.provinsi_id = p.id 
+             WHERE p.negara_id = $id AND a.tingkat_id = $urutan"
+        )->fetch_assoc()['cnt'];
+    }
+    
+    $header_stats = [
+        'ketua' => $pengurus['ketua_nama'] ?? '-',
+        'jml_prov' => $jml_prov,
+        'jml_kota' => $jml_kota,
+        'total_anggota' => array_sum($tingkat_stats)
+    ];
+} elseif ($jenis == 'provinsi') {
+    // Provinsi: hitung stats untuk setiap tingkatan
+    $jml_kota = $conn->query("SELECT COUNT(*) as cnt FROM kota WHERE provinsi_id = $id")->fetch_assoc()['cnt'];
+    $jml_ranting = $conn->query("SELECT COUNT(*) as cnt FROM ranting r JOIN kota k ON r.kota_id = k.id WHERE k.provinsi_id = $id")->fetch_assoc()['cnt'];
+    
+    // Hitung anggota per tingkat
+    foreach ($tingkatan_map as $urutan => $nama) {
+        $tingkat_stats[$urutan] = $conn->query(
+            "SELECT COUNT(*) as cnt FROM anggota a 
+             JOIN ranting r ON a.ranting_saat_ini_id = r.id 
+             JOIN kota k ON r.kota_id = k.id 
+             WHERE k.provinsi_id = $id AND a.tingkat_id = $urutan"
+        )->fetch_assoc()['cnt'];
+    }
+    
+    $header_stats = [
+        'ketua' => $pengurus['ketua_nama'] ?? '-',
+        'jml_kota' => $jml_kota,
+        'jml_ranting' => $jml_ranting,
+        'total_anggota' => array_sum($tingkat_stats)
+    ];
+} elseif ($jenis == 'kota') {
+    // Kota: Statistik tingkat anggota
+    $ketua = $pengurus['ketua_nama'] ?? '-';
+    
+    // Hitung anggota berdasarkan tingkat_id (yang sekarang adalah urutan)
+    $tingkat_stats = [];
+    
+    // Untuk setiap urutan, hitung jumlah anggota
+    foreach ($tingkatan_map as $urutan => $nama) {
+        $tingkat_stats[$urutan] = $conn->query(
+            "SELECT COUNT(*) as cnt FROM anggota WHERE ranting_saat_ini_id IN (SELECT id FROM ranting WHERE kota_id = $id) AND tingkat_id = $urutan"
+        )->fetch_assoc()['cnt'];
+    }
+    
+    $header_stats = [
+        'ketua' => $ketua,
+        'total_anggota' => array_sum($tingkat_stats),
+        'ranting_count' => $ranting_count,
+        'tingkatan_map' => $tingkatan_map,
+        'tingkat_stats' => $tingkat_stats,
+    ];
+}
+
 // Status aktif
 $status = (strtotime($pengurus['periode_akhir']) >= strtotime(date('Y-m-d'))) ? 'Aktif' : 'Tidak Aktif';
 $status_class = $status == 'Aktif' ? 'status-aktif' : 'status-tidak';
@@ -253,6 +330,16 @@ function getRevisionNumber($filename) {
             color: #666;
             margin-bottom: 15px;
             font-size: 14px;
+        }
+        
+        .header-info {
+            flex: 1;
+        }
+        
+        .stat-value.chairman {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
         }
         
         .badge {
@@ -512,6 +599,80 @@ function getRevisionNumber($filename) {
         @media print {
             .navbar, .button-group, .sk-upload-form, .btn { display: none; }
         }
+        
+        /* Header Stats Grid */
+        .header-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .header-stats-grid.cols-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .header-stats-grid.cols-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .header-stats-grid.cols-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .header-stats-grid.cols-4-kota {
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, auto);
+            gap: 10px;
+        }
+        
+        .header-stats-grid.tingkat-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .stat-value.ketua {
+            font-size: 14px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -536,18 +697,100 @@ function getRevisionNumber($filename) {
         <div class="header-card">
             <div class="header-info">
                 <h1><?php echo htmlspecialchars($pengurus['nama']); ?></h1>
-                <p style="margin-bottom: 15px;">
-                    <span class="badge"><?php echo $label_jenis; ?></span>
-                    <span class="<?php echo $status_class; ?>">● <?php echo $status; ?></span>
-                </p>
-                <p><strong>Ketua:</strong> <?php echo htmlspecialchars($pengurus['ketua_nama'] ?? '-'); ?></p>
-            </div>
+                <div class="header-stats-grid cols-2">                 
+                    <div>
+                        <span class="badge"><?php echo $label_jenis; ?></span>
+                        <span class="<?php echo $status_class; ?>">● <?php echo $status; ?></span>
+                    </div>
+                    <div>    
+                        <?php if ($_SESSION['role'] == 'admin'): ?>
+                        <a href="pengurus_edit.php?id=<?php echo $id; ?>" class="btn btn-warning" style="float: right;">✏️ Edit</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
             
-            <?php if ($_SESSION['role'] == 'admin'): ?>
-            <div>
-                <a href="pengurus_edit.php?id=<?php echo $id; ?>" class="btn btn-warning">✏️ Edit Data</a>
+                
+                <?php if ($jenis == 'pusat'): // Negara ?>
+                <div class="header-stats-grid cols-4">
+                    <div class="stat-item">
+                        <div class="stat-label">Nama Ketua</div>
+                        <div class="stat-value chairman"><?php echo htmlspecialchars($header_stats['ketua']); ?></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Jumlah Provinsi</div>
+                        <div class="stat-value"><?php echo $header_stats['jml_prov']; ?></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Jumlah Kota</div>
+                        <div class="stat-value"><?php echo $header_stats['jml_kota']; ?></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Total Anggota</div>
+                        <div class="stat-value"><?php echo $header_stats['total_anggota']; ?></div>
+                    </div>
+                </div>
+                <div class="header-stats-grid tingkat-grid">
+                    <?php foreach ($tingkatan_map as $urutan => $nama_tingkat): ?>
+                    <div class="stat-item">
+                        <div class="stat-label"><?php echo htmlspecialchars($nama_tingkat); ?></div>
+                        <div class="stat-value"><?php echo $tingkat_stats[$urutan] ?? 0; ?></div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                
+                <?php elseif ($jenis == 'provinsi'): // Provinsi ?>
+                <div class="header-stats-grid cols-4">
+                    <div class="stat-item">
+                        <div class="stat-label">Nama Ketua</div>
+                        <div class="stat-value chairman"><?php echo htmlspecialchars($header_stats['ketua']); ?></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Jumlah Kota</div>
+                        <div class="stat-value"><?php echo $header_stats['jml_kota']; ?></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Jumlah Unit/Ranting</div>
+                        <div class="stat-value"><?php echo $header_stats['jml_ranting']; ?></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Total Anggota</div>
+                        <div class="stat-value"><?php echo $header_stats['total_anggota']; ?></div>
+                    </div>
+                </div>
+                <div class="header-stats-grid tingkat-grid">
+                    <?php foreach ($tingkatan_map as $urutan => $nama_tingkat): ?>
+                    <div class="stat-item">
+                        <div class="stat-label"><?php echo htmlspecialchars($nama_tingkat); ?></div>
+                        <div class="stat-value"><?php echo $tingkat_stats[$urutan] ?? 0; ?></div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                
+                <?php elseif ($jenis == 'kota'): // Kota ?>
+                <div class="header-stats-grid cols-3">
+                    <div class="stat-item">
+                        <div class="stat-label">Nama Ketua</div>
+                        <div class="stat-value chairman"><?php echo htmlspecialchars($header_stats['ketua']); ?></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Jumlah Unit/Ranting</div>
+                        <div class="stat-value"><?php echo $header_stats['ranting_count']; ?></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Total Anggota</div>
+                        <div class="stat-value"><?php echo $header_stats['total_anggota']; ?></div>
+                    </div>
+                </div>
+                <div class="header-stats-grid tingkat-grid">
+                    <?php foreach ($tingkatan_map as $urutan => $nama_tingkat): ?>
+                    <div class="stat-item">
+                        <div class="stat-label"><?php echo htmlspecialchars($nama_tingkat); ?></div>
+                        <div class="stat-value"><?php echo $tingkat_stats[$urutan] ?? 0; ?></div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
             </div>
-            <?php endif; ?>
         </div>
         
         <!-- Informasi Dasar -->

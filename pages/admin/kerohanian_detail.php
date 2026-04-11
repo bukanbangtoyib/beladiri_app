@@ -66,8 +66,8 @@ $sql = "SELECT k.*, a.nama_lengkap, a.no_anggota, a.tanggal_lahir, a.jenis_kelam
         FROM kerohanian k
         JOIN anggota a ON k.anggota_id = a.id
         LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id
-        LEFT JOIN tingkatan t ON k.tingkat_id = t.id
-        LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.id
+        LEFT JOIN tingkatan t ON k.tingkat_id = t.urutan
+        LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.urutan
         WHERE k.id = $id";
 
 $result = $conn->query($sql);

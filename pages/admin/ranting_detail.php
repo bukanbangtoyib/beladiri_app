@@ -141,7 +141,7 @@ $jadwal_result = $conn->query($jadwal_sql);
 $pelatih_sql = "SELECT a.id, a.nama_lengkap, a.no_anggota, t.nama_tingkat, rp.keterangan 
                 FROM ranting_pelatih rp 
                 JOIN anggota a ON rp.anggota_id = a.id 
-                LEFT JOIN tingkatan t ON a.tingkat_id = t.id 
+                LEFT JOIN tingkatan t ON a.tingkat_id = t.urutan 
                 WHERE rp.ranting_id = $id";
 $pelatih_result = $conn->query($pelatih_sql);
 
@@ -522,13 +522,13 @@ function get_revision_number($filename) {
                         >
                             <option value="">-- Semua Tingkat --</option>
                             <?php 
-                            $tingkat_query = $conn->query("SELECT DISTINCT t.id, t.nama_tingkat FROM tingkatan t 
-                                                        INNER JOIN anggota a ON t.id = a.tingkat_id 
+                            $tingkat_query = $conn->query("SELECT DISTINCT t.urutan, t.nama_tingkat FROM tingkatan t 
+                                                        INNER JOIN anggota a ON t.urutan = a.tingkat_id 
                                                         WHERE a.ranting_saat_ini_id = $id 
                                                         ORDER BY t.urutan");
                             while ($t = $tingkat_query->fetch_assoc()): 
                             ?>
-                                <option value="<?php echo $t['id']; ?>"><?php echo htmlspecialchars($t['nama_tingkat']); ?></option>
+                                <option value="<?php echo $t['urutan']; ?>"><?php echo htmlspecialchars($t['nama_tingkat']); ?></option>
                             <?php endwhile; ?>
                         </select>
                     </div>
@@ -689,7 +689,7 @@ function get_revision_number($filename) {
                 $members_sql = "SELECT a.id, a.no_anggota, a.nama_lengkap, a.tingkat_id, 
                                     t.nama_tingkat" . ($has_is_active ? ", a.is_active" : ", 1 as is_active") . "
                                 FROM anggota a
-                                LEFT JOIN tingkatan t ON a.tingkat_id = t.id
+                                LEFT JOIN tingkatan t ON a.tingkat_id = t.urutan
                                 WHERE a.ranting_saat_ini_id = $id
                                 ORDER BY a.nama_lengkap";
                 $members_result = $conn->query($members_sql);

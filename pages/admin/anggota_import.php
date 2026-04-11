@@ -155,7 +155,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_excel'])) {
                     $jenis_kelamin = isset($jenis_kelamin_col) ? strtoupper(trim($row[$jenis_kelamin_col] ?? '')) : '';
                     $no_handphone = isset($no_handphone_col) ? trim($row[$no_handphone_col] ?? '') : '';
                     $jenis_anggota = isset($jenis_anggota_col) ? trim($row[$jenis_anggota_col] ?? '') : '';
-                    $tingkat_id = isset($tingkat_id_col) ? (int)($row[$tingkat_id_col] ?? 0) : 0;
+                    $tingkat_urutan = isset($tingkat_id_col) ? trim($row[$tingkat_id_col] ?? '') : '';
+$tingkat_id = 1; // default to first level
+if (!empty($tingkat_urutan)) {
+    $tingkat_result = $conn->query("SELECT id FROM tingkatan WHERE urutan = '" . $conn->real_escape_string($tingkat_urutan) . "'");
+    if ($tingkat_result && $tingkat_result->num_rows > 0) {
+        $tingkat_row = $tingkat_result->fetch_assoc();
+        $tingkat_id = $tingkat_row['id'];
+    } else {
+        log_import_anggota($row_num, "Tingkat dengan urutan '$tingkat_urutan' tidak ditemukan, menggunakan tingkat default (ID=1)", 'warning');
+    }
+} else {
+    log_import_anggota($row_num, "Tingkat kosong, menggunakan tingkat default (ID=1)", 'warning');
+}
                     $tahun_bergabung = isset($tahun_bergabung_col) ? (int)($row[$tahun_bergabung_col] ?? date('Y')) : date('Y');
                     $ranting_awal_manual = isset($ranting_awal_manual_col) ? trim($row[$ranting_awal_manual_col] ?? '') : '';
                     

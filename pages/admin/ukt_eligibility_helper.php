@@ -46,7 +46,7 @@ function checkUKTEligibility($conn, $anggota_id) {
     $anggota = $conn->query(
         "SELECT a.tingkat_id, a.ukt_terakhir, t.urutan 
          FROM anggota a
-         LEFT JOIN tingkatan t ON a.tingkat_id = t.id
+         LEFT JOIN tingkatan t ON a.tingkat_id = t.urutan
          WHERE a.id = $anggota_id"
     )->fetch_assoc();
     

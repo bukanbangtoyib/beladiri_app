@@ -79,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['anggota_id'])) {
     // Ambil tingkat anggota langsung dari tabel anggota (kolom 'Tingkat' di form dihapus)
     $anggota_row = $conn->query("SELECT tingkat_id FROM anggota WHERE id = $anggota_id")->fetch_assoc();
     $tingkat_dari_id = isset($anggota_row['tingkat_id']) ? (int)$anggota_row['tingkat_id'] : 0;
+    // PENTING: tingkat_dari_id sekarang adalah URUTAN (1-13), bukan ID!
     
     // Cek apakah anggota sudah terdaftar di UKT ini
     $check = $conn->query("SELECT id FROM ukt_peserta WHERE ukt_id = $id AND anggota_id = $anggota_id");
@@ -86,14 +87,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['anggota_id'])) {
         $error = "Anggota sudah terdaftar di UKT ini!";
     } else {
         // Cari tingkat ke (next level)
-        $current_tingkat = $conn->query("SELECT urutan FROM tingkatan WHERE id = $tingkat_dari_id")->fetch_assoc();
+        // PENTING: tingkat_dari_id adalah urutan, bukan id!
+        $current_tingkat = $conn->query("SELECT urutan FROM tingkatan WHERE urutan = $tingkat_dari_id")->fetch_assoc();
         $tingkat_ke_id = null;
         
         if ($current_tingkat) {
-            $next_tingkat = $conn->query("SELECT id FROM tingkatan WHERE urutan = " . ($current_tingkat['urutan'] + 1) . " LIMIT 1");
+            $next_tingkat = $conn->query("SELECT urutan FROM tingkatan WHERE urutan = " . ($current_tingkat['urutan'] + 1) . " LIMIT 1");
             if ($next_tingkat->num_rows > 0) {
                 $next_data = $next_tingkat->fetch_assoc();
-                $tingkat_ke_id = $next_data['id'];
+                $tingkat_ke_id = $next_data['urutan'];  // Ambil urutan, bukan id
             }
         }
         

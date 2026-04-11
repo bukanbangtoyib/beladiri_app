@@ -18,7 +18,8 @@ if ($tingkat_id == 0) {
 }
 
 // Get current tingkat urutan
-$current = $conn->query("SELECT urutan FROM tingkatan WHERE id = $tingkat_id");
+// PENTING: tingkat_id sekarang menyimpan urutan langsung, bukan id!
+$current = $conn->query("SELECT urutan FROM tingkatan WHERE urutan = $tingkat_id");
 
 if ($current->num_rows == 0) {
     header('Content-Type: application/json');

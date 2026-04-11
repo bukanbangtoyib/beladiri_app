@@ -18,7 +18,7 @@ if (isset($_GET['id'])) {
 
     $sql = "SELECT a.*, t.nama_tingkat 
             FROM anggota a
-            LEFT JOIN tingkatan t ON a.tingkat_id = t.id
+            LEFT JOIN tingkatan t ON a.tingkat_id = t.urutan
             WHERE a.id = ?";
 
     $stmt = $conn->prepare($sql);
@@ -46,7 +46,7 @@ $peny_id = isset($_GET['peny_id']) ? (int)$_GET['peny_id'] : 0;
 $sql = "SELECT a.id, a.no_anggota, a.nama_lengkap, r.nama_ranting, t.nama_tingkat, t.urutan 
         FROM anggota a
         LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id
-        LEFT JOIN tingkatan t ON a.tingkat_id = t.id";
+        LEFT JOIN tingkatan t ON a.tingkat_id = t.urutan";
 
 if ($jenis_peny == 'provinsi') {
     $sql .= " LEFT JOIN kota k ON r.kota_id = k.id";

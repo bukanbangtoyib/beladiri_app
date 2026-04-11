@@ -205,7 +205,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $ranting_awal_manual = $conn->real_escape_string($_POST['ranting_awal_manual_edit'] ?? '');
     
     $ranting_saat_ini_id = $_POST['ranting_saat_ini_id'] ?: NULL;
-    $tingkat_id = $_POST['tingkat_id'] ?: NULL;
+    $tingkat_id = !empty($_POST['tingkat_id']) ? (int)trim($_POST['tingkat_id']) : NULL;
+    if (!empty($tingkat_id)) {
+        $tingkat_check = $conn->query("SELECT urutan FROM tingkatan WHERE urutan = $tingkat_id");
+        if (!$tingkat_check || $tingkat_check->num_rows == 0) {
+            $error = "Tingkat dengan urutan '$tingkat_id' tidak ditemukan!";
+            $tingkat_id = NULL;
+        }
+    }
     $jenis_anggota = $_POST['jenis_anggota'];
     $tahun_bergabung = !empty($_POST['tahun_bergabung']) ? (int)$_POST['tahun_bergabung'] : NULL;
     $no_handphone = $conn->real_escape_string($_POST['no_handphone'] ?? '');
@@ -380,7 +387,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 $ranting_result = $conn->query("SELECT id, nama_ranting, kode FROM ranting ORDER BY nama_ranting");
-$tingkatan_result = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY urutan");
+$tingkatan_result = $conn->query("SELECT id, urutan, nama_tingkat FROM tingkatan ORDER BY urutan");
 $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY id");
 $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id ORDER BY tanggal_pelaksanaan DESC");
 ?>
@@ -391,6 +398,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Anggota - Sistem Beladiri</title>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         * {
             margin: 0;
@@ -730,6 +738,25 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
         
         .suggestion-item:hover { background: #f5f5f5; }
         .suggestion-item:last-child { border-bottom: none; }
+
+        /* Select2 styling to match other inputs */
+        .select2-container--default .select2-selection--single {
+            height: 42px !important;
+            border: 1px solid #ddd !important;
+            border-radius: 6px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 42px !important;
+            padding-left: 14px !important;
+            font-size: 14px !important;
+            color: #333 !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #999 !important;
+        }
     </style>
 </head>
 <body>
@@ -780,7 +807,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                 <div class="form-row">
                     <div class="form-group">
                         <label>Negara</label>
-                        <select name="filter_negara_edit" id="filter_negara_edit" onchange="updateProvinsiFormEdit()">
+                        <select name="filter_negara_edit" id="filter_negara_edit" onchange="updateProvinsiFormEdit()" class="select2-searchable">
                             <option value="">-- Pilih Negara --</option>
                             <?php
                             // Get all negara
@@ -801,7 +828,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     
                     <div class="form-group">
                         <label>Provinsi</label>
-                        <select name="filter_provinsi_edit" id="filter_provinsi_edit" onchange="updateKotaFormEdit()" <?php echo empty($anggota['kota_negara_id']) ? 'disabled' : ''; ?>>
+                        <select name="filter_provinsi_edit" id="filter_provinsi_edit" onchange="updateKotaFormEdit()" <?php echo empty($anggota['kota_negara_id']) ? 'disabled' : ''; ?> class="select2-searchable">
                             <option value="">-- Pilih Provinsi --</option>
                             <?php
                             // Get provinces for the current negara
@@ -826,7 +853,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     
                     <div class="form-group">
                         <label>Kota/Kabupaten</label>
-                        <select name="filter_kota_edit" id="filter_kota_edit" onchange="updateRantingFormEdit()" <?php echo empty($anggota['kota_provinsi_id']) ? 'disabled' : ''; ?>>
+                        <select name="filter_kota_edit" id="filter_kota_edit" onchange="updateRantingFormEdit()" <?php echo empty($anggota['kota_provinsi_id']) ? 'disabled' : ''; ?> class="select2-searchable">
                             <option value="">-- Pilih Kota --</option>
                             <?php
                             // Get kota for the current provinsi
@@ -851,7 +878,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     
                     <div class="form-group">
                         <label>Unit/Ranting Saat Ini <span class="required">*</span></label>
-                        <select name="ranting_saat_ini_id" id="ranting_saat_ini_id_edit" required onchange="updateRantingKodeEdit()">
+                        <select name="ranting_saat_ini_id" id="ranting_saat_ini_id_edit" required onchange="updateRantingKodeEdit()" class="select2-searchable">
                             <option value="">-- Pilih Ranting --</option>
                             <?php
                             // Filter ranting berdasarkan kota yang sama dengan ranting saat ini
@@ -893,23 +920,24 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     </div>
                     
                     <div id="ranting_awal_select_edit" class="form-group" style="position: relative; <?php echo !empty($anggota['ranting_awal_manual']) ? 'display:none;' : ''; ?>">
-                        <?php 
-                        // Get current ranting awal info
-                        $current_ranting_awal = '';
-                        $current_ranting_awal_kode = '';
-                        if (!empty($anggota['ranting_awal_id'])) {
-                            $ranting_awal_query = $conn->query("SELECT id, kode, nama_ranting FROM ranting WHERE id = " . (int)$anggota['ranting_awal_id']);
-                            if ($ranting_awal_query && $ranting_awal_query->num_rows > 0) {
-                                $ranting_awal_data = $ranting_awal_query->fetch_assoc();
-                                $current_ranting_awal = $ranting_awal_data['kode'] . ' - ' . $ranting_awal_data['nama_ranting'];
-                                $current_ranting_awal_kode = $ranting_awal_data['kode'];
-                            }
-                        }
-                        ?>
-                        <input type="text" id="ranting_awal_search_edit" placeholder="Ketik kode atau nama ranting..." autocomplete="off" value="<?php echo htmlspecialchars($current_ranting_awal); ?>">
-                        <input type="hidden" id="ranting_awal_id_edit" name="ranting_awal_id_edit" value="<?php echo $anggota['ranting_awal_id'] ?? ''; ?>">
-                        <div id="ranting_awal_suggestions_edit" class="suggestions-box"></div>
-                        <div class="form-hint">Ketik untuk mencari Unit/Ranting yang tersedia di database</div>
+                        <select name="ranting_awal_id_edit" id="ranting_awal_id_edit" class="select2-searchable" style="width: 100%;">
+                            <option value="">-- Pilih Unit/Ranting Awal --</option>
+                            <?php 
+                            // Get all ranting for initial load
+                            $ranting_all = $conn->query("SELECT id, kode, nama_ranting FROM ranting ORDER BY nama_ranting");
+                            if ($ranting_all && $ranting_all->num_rows > 0):
+                                while ($r = $ranting_all->fetch_assoc()):
+                                    $selected = ($anggota['ranting_awal_id'] ?? '') == $r['id'] ? 'selected' : '';
+                            ?>
+                                <option value="<?php echo $r['id']; ?>" data-kode="<?php echo $r['kode']; ?>" <?php echo $selected; ?>>
+                                    <?php echo htmlspecialchars($r['kode'] . ' - ' . $r['nama_ranting']); ?>
+                                </option>
+                            <?php 
+                                endwhile;
+                            endif;
+                            ?>
+                        </select>
+                        <div class="form-hint">Cari Unit/Ranting yang tersedia di database (Menampilkan semua ranting)</div>
                     </div>
                     
                     <div id="ranting_awal_manual_edit" class="conditional-field" style="<?php echo !empty($anggota['ranting_awal_manual']) ? 'display:block;' : 'display:none;'; ?>">
@@ -924,7 +952,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                         <select name="tingkat_id" required>
                             <option value="">-- Pilih Tingkat --</option>
                             <?php $tingkatan_result->data_seek(0); while ($row = $tingkatan_result->fetch_assoc()): ?>
-                                <option value="<?php echo $row['id']; ?>" <?php echo $anggota['tingkat_id'] == $row['id'] ? 'selected' : ''; ?>>
+                                <option value="<?php echo $row['urutan']; ?>" <?php echo $anggota['tingkat_id'] == $row['urutan'] ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($row['nama_tingkat']); ?>
                                 </option>
                             <?php endwhile; ?>
@@ -1123,6 +1151,8 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
         </div>
     </div>
     
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         let deletePrestasiIds = [];
         
@@ -1308,8 +1338,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                 selectField.style.display = 'none';
                 manualField.classList.add('show');
                 manualField.style.display = 'block';
-                document.getElementById('ranting_awal_id_edit').value = '';
-                document.getElementById('ranting_awal_search_edit').value = '';
+                $('#ranting_awal_id_edit').val(null).trigger('change');
             }
         }
         
@@ -1385,57 +1414,56 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
             });
         });
         
-        // Ranting Awal Search functionality for Edit
-        const rantingAwalSearchEdit = document.getElementById('ranting_awal_search_edit');
-        const rantingAwalIdEdit = document.getElementById('ranting_awal_id_edit');
-        const rantingAwalSuggestionsEdit = document.getElementById('ranting_awal_suggestions_edit');
-        let rantingAwalTimeoutEdit = null;
-        
-        if (rantingAwalSearchEdit) {
-            rantingAwalSearchEdit.addEventListener('input', function() {
-                clearTimeout(rantingAwalTimeoutEdit);
-                const query = this.value.trim();
+        // Initialize Select2 for searchable dropdowns
+        document.addEventListener('DOMContentLoaded', function() {
+            $('.select2-searchable').each(function() {
+                const element = $(this);
+                const isRantingAwal = element.attr('id') === 'ranting_awal_id_edit';
                 
-                if (query.length < 2) {
-                    rantingAwalSuggestionsEdit.classList.remove('show');
-                    rantingAwalSuggestionsEdit.innerHTML = '';
-                    rantingAwalIdEdit.value = '';
-                    return;
+                const select2Config = {
+                    placeholder: element.find('option:first').text(),
+                    allowClear: true,
+                    width: '100%'
+                };
+                
+                if (isRantingAwal) {
+                    select2Config.ajax = {
+                        url: '../../api/get_ranting.php',
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                q: params.term
+                            };
+                        },
+                        processResults: function (data) {
+                            return {
+                                results: data.data.map(function(item) {
+                                    return {
+                                        id: item.id,
+                                        text: item.display
+                                    };
+                                })
+                            };
+                        },
+                        cache: true
+                    };
+                    select2Config.minimumInputLength = 0;
                 }
                 
-                rantingAwalTimeoutEdit = setTimeout(() => {
-                    fetch('../../api/get_ranting.php?q=' + encodeURIComponent(query))
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success && data.data.length > 0) {
-                                rantingAwalSuggestionsEdit.innerHTML = data.data.map(item => 
-                                    '<div class="suggestion-item" data-id="' + item.id + '" data-kode="' + item.kode + '" data-nama="' + item.nama_ranting + '">' + 
-                                    item.display + '</div>'
-                                ).join('');
-                                rantingAwalSuggestionsEdit.classList.add('show');
-                            } else {
-                                rantingAwalSuggestionsEdit.innerHTML = '<div class="suggestion-item">Tidak ada hasil</div>';
-                                rantingAwalSuggestionsEdit.classList.add('show');
-                            }
-                        })
-                        .catch(error => console.error('Error:', error));
-                }, 300);
+                element.select2(select2Config);
             });
             
-            rantingAwalSuggestionsEdit.addEventListener('click', function(e) {
-                if (e.target.classList.contains('suggestion-item') && e.target.dataset.id) {
-                    rantingAwalSearchEdit.value = e.target.dataset.kode + ' - ' + e.target.dataset.nama;
-                    rantingAwalIdEdit.value = e.target.dataset.id;
-                    rantingAwalSuggestionsEdit.classList.remove('show');
-                }
+            // Apply robust auto-focus for Select2
+            $(document).on('select2:open', '.select2-searchable', function() {
+                setTimeout(function() {
+                    const searchField = document.querySelector('.select2-container--open .select2-search__field');
+                    if (searchField) {
+                        searchField.focus();
+                    }
+                }, 50);
             });
-            
-            document.addEventListener('click', function(e) {
-                if (!rantingAwalSearchEdit.contains(e.target) && !rantingAwalSuggestionsEdit.contains(e.target)) {
-                    rantingAwalSuggestionsEdit.classList.remove('show');
-                }
-            });
-        }
+        });
     </script>
 </body>
 </html>

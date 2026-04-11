@@ -38,8 +38,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                    a.nama_lengkap, a.no_anggota, t.nama_tingkat, t_pembuka.nama_tingkat as tingkat_pembuka_nama
             FROM kerohanian k
             JOIN anggota a ON k.anggota_id = a.id
-            LEFT JOIN tingkatan t ON k.tingkat_id = t.id
-            LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.id
+            LEFT JOIN tingkatan t ON k.tingkat_id = t.urutan
+            LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.urutan
             WHERE 1=1";
     
     if ($anggota) {
@@ -80,9 +80,9 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 $sql = "SELECT k.*, a.nama_lengkap, a.no_anggota, a.tingkat_id, t.nama_tingkat, r.nama_ranting, t_pembuka.nama_tingkat as tingkat_pembuka_nama
         FROM kerohanian k
         JOIN anggota a ON k.anggota_id = a.id
-        LEFT JOIN tingkatan t ON k.tingkat_id = t.id
+        LEFT JOIN tingkatan t ON k.tingkat_id = t.urutan
         LEFT JOIN ranting r ON a.ranting_saat_ini_id = r.id
-        LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.id
+        LEFT JOIN tingkatan t_pembuka ON k.tingkat_pembuka_id = t_pembuka.urutan
         ORDER BY k.tanggal_pembukaan DESC";
 
 $result = $conn->query($sql);
