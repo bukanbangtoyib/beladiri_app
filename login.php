@@ -20,35 +20,59 @@ if (file_exists('config/settings.php')) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     include 'config/database.php';
     
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-    
-    // Query cari user
-    $sql = "SELECT * FROM users WHERE username = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows == 1) {
-        $user = $result->fetch_assoc();
-        
-        // Cek password
-        if (password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['nama'] = $user['nama_lengkap'];
-            $_SESSION['role'] = $user['role'];
-            $_SESSION['pengurus_id'] = $user['pengurus_id'];  // ← Tambah
-            $_SESSION['ranting_id'] = $user['ranting_id'];    // ← Tambah
-            
-            header("Location: index.php");
-            exit();
-        } else {
-            $error = "Username atau password salah!";
-        }
+    // Validasi Turnstile token
+    $turnstile_token = $_POST['cf-turnstile-response'] ?? '';
+    if (empty($turnstile_token)) {
+        $error = "Validasi keamanan gagal. Silakan coba lagi.";
     } else {
-        $error = "Username tidak ditemukan!";
+        // Verify Turnstile token dengan Cloudflare
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://challenges.cloudflare.com/turnstile/v0/siteverify");
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+            'secret' => $settings['turnstile_secret_key'] ?? '',
+            'response' => $turnstile_token,
+            'remoteip' => $_SERVER['REMOTE_ADDR']
+        ]));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $turnstile_result = curl_exec($ch);
+        curl_close($ch);
+        
+        $turnstile_data = json_decode($turnstile_result, true);
+        if (!$turnstile_data['success']) {
+            $error = "Validasi keamanan gagal. Silakan coba lagi.";
+        } else {
+            $username = $_POST['username'];
+            $password = $_POST['password'];
+            
+            // Query cari user
+            $sql = "SELECT * FROM users WHERE username = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("s", $username);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows == 1) {
+                $user = $result->fetch_assoc();
+                
+                // Cek password
+                if (password_verify($password, $user['password'])) {
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['nama'] = $user['nama_lengkap'];
+                    $_SESSION['role'] = $user['role'];
+                    $_SESSION['pengurus_id'] = $user['pengurus_id'];
+                    $_SESSION['ranting_id'] = $user['ranting_id'];
+                    
+                    header("Location: index.php");
+                    exit();
+                } else {
+                    $error = "Username atau password salah!";
+                }
+            } else {
+                $error = "Username tidak ditemukan!";
+            }
+        }
     }
 }
 ?>
@@ -59,6 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Sistem Informasi & Manajemen Perisai DIri</title>
+    
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
         * {
             margin: 0;
@@ -193,6 +220,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
+            </div>
+            
+            <!-- Cloudflare Turnstile Widget -->
+            <div class="form-group">
+                <div class="cf-turnstile" data-sitekey="<?php echo $settings['turnstile_site_key'] ?? ''; ?>"></div>
             </div>
             
             <button type="submit">Login</button>

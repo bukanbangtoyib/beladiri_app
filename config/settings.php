@@ -11,6 +11,10 @@ Jika ada pertanyaan hubungi admin di <b>bangtoyib@gapulang.com</b>',
   'footer_text' => 'Sistem Informasi & Manajemen Perisai Diri',
   'footer_creator' => 'Developed by Your Name',
   'footer_tahun' => '2024',
+  // Cloudflare Turnstile Configuration
+  // Dapatkan key dari https://dash.cloudflare.com/
+  'turnstile_site_key' => '0x4AAAAAAC8zMkwAceJuFXlm',
+  'turnstile_secret_key' => '0x4AAAAAAC8zMpyENBkSUuZjDxZOangJ31E',
 );
 $pengaturan_nomor = array (
   'kode_negara' => true,

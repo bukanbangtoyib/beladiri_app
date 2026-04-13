@@ -974,7 +974,7 @@ function getRevisionNumber($filename) {
                     <?php while ($row = $ranting_result->fetch_assoc()): ?>
                     <tr>
                         <td><strong><?php echo htmlspecialchars($row['nama_ranting']); ?></strong></td>
-                        <td><?php echo ucfirst($row['jenis']); ?></td>
+                        <td><?php echo (strtolower($row['jenis']) === 'ukm') ? 'UKM' : ucfirst($row['jenis']); ?></td>
                         <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
                         <td>
                             <a href="ranting_detail.php?id=<?php echo $row['id']; ?>" class="link-nav">Lihat →</a>
