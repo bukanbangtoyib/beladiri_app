@@ -353,6 +353,18 @@ function getRevisionNumber($filename) {
             border: 1px solid #1976d2;
             margin-right: 10px;
         }
+
+        .badgejenis {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-ukm { background: #e3f2fd; color: #1976d2; }
+        .badge-ranting { background: #f3e5f5; color: #7b1fa2; }
+        .badge-unit { background: #fff3e0; color: #e65100; }
         
         .status-aktif {
             color: #27ae60;
@@ -974,7 +986,7 @@ function getRevisionNumber($filename) {
                     <?php while ($row = $ranting_result->fetch_assoc()): ?>
                     <tr>
                         <td><strong><?php echo htmlspecialchars($row['nama_ranting']); ?></strong></td>
-                        <td><?php echo (strtolower($row['jenis']) === 'ukm') ? 'UKM' : ucfirst($row['jenis']); ?></td>
+                        <td><span class="badge badge-<?php echo $row['jenis']; ?>"><?php echo strtoupper($row['jenis']); ?></span></td>
                         <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
                         <td>
                             <a href="ranting_detail.php?id=<?php echo $row['id']; ?>" class="link-nav">Lihat →</a>
