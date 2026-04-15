@@ -126,9 +126,15 @@ if ($result->num_rows == 0) {
 
 $pengurus = $result->fetch_assoc();
 
-// Ambil anak (child) data
-$anak_sql = "SELECT id, nama FROM $table_name WHERE " . ($jenis == 'pusat' ? '1=1' : ($jenis == 'provinsi' ? 'negara_id' : 'provinsi_id')) . " = $id ORDER BY nama";
-$anak_result = $conn->query($anak_sql);
+// Ambil anak (child) data - hanya untuk pusat dan provinsi
+$anak_result = NULL;
+if ($jenis == 'pusat') {
+    $anak_sql = "SELECT id, nama FROM provinsi WHERE negara_id = $id ORDER BY nama";
+    $anak_result = $conn->query($anak_sql);
+} elseif ($jenis == 'provinsi') {
+    $anak_sql = "SELECT id, nama FROM kota WHERE provinsi_id = $id ORDER BY nama";
+    $anak_result = $conn->query($anak_sql);
+}
 
 // Cari SK files
 $upload_dir = '../../uploads/sk_pengurus/';
@@ -909,7 +915,7 @@ function getRevisionNumber($filename) {
         </div>
         
         <!-- Struktur yang Dinaungi -->
-        <?php if ($anak_result->num_rows > 0): ?>
+        <?php if ($jenis != 'kota' && $anak_result && $anak_result->num_rows > 0): ?>
         <div class="info-card">
             <h3>📊 Struktur yang Dinaungi</h3>
             
@@ -942,14 +948,14 @@ function getRevisionNumber($filename) {
                     <?php 
                     $anak_result->data_seek(0);
                     while ($row = $anak_result->fetch_assoc()): 
-                        $child_table = ($jenis == 'pusat' ? 'negara' : ($jenis == 'provinsi' ? 'provinsi' : 'kota'));
-                        $child_detail = $conn->query("SELECT nama, kode FROM $child_table WHERE id = " . $row['id'])->fetch_assoc();
+                        $child_table = ($jenis == 'pusat' ? 'provinsi' : 'kota');
+                        $child_detail = $conn->query("SELECT nama, kode, ketua_nama, periode_mulai, periode_akhir FROM $child_table WHERE id = " . $row['id'])->fetch_assoc();
                     ?>
                     <tr>
                         <td><strong><?php echo htmlspecialchars($row['nama']); ?></strong></td>
                         <td><?php echo $label_jenis_text[$jenis]; ?></td>
-                        <td><?php echo htmlspecialchars($child_detail['kode'] ?? '-'); ?></td>
-                        <td><?php echo htmlspecialchars($child_detail['nama'] ?? '-'); ?></td>
+                        <td><?php echo htmlspecialchars($child_detail['ketua_nama'] ?? '-'); ?></td>
+                        <td><?php echo formatTanggal($child_detail['periode_mulai'] ?? ''); ?> - <?php echo formatTanggal($child_detail['periode_akhir'] ?? ''); ?></td>
                         <td>
                             <a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis == 'pusat' ? 'provinsi' : 'kota'; ?>" class="link-nav">Lihat →</a>
                         </td>
