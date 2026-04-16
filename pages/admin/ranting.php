@@ -198,13 +198,14 @@ $show_negara_filter = true;
 $show_provinsi_filter = true;
 $show_kota_filter = true;
 
-$can_add = ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov');
-$can_edit = ($user_role !== 'tamu' && $user_role !== 'pengkot');
-$can_delete = ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov');
+$can_add = ($user_role === 'admin');
+$can_edit = ($user_role === 'admin' || $user_role === 'pengkot' || $user_role === 'ranting' || $user_role === 'unit');
+$can_delete = ($user_role === 'admin' || $user_role === 'pengkot');
 $is_readonly = !$can_add;
 
 // Get user's ranting_id for ownership checking (for ranting/unit roles)
 $user_ranting_id = $_SESSION['ranting_id'] ?? 0;
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
 
 // Handle print mode
 $print_mode = filter_input(INPUT_GET, 'print', FILTER_VALIDATE_BOOLEAN);
@@ -629,16 +630,22 @@ if ($print_mode) {
                                 </a>
                                 <?php
                                 // Show edit for those with permission
-                                // For ranting/unit role, only show if it's their own ranting
-                                $show_actions = $can_edit;
-                                if (($user_role === 'ranting' || $user_role === 'unit') && $show_actions) {
-                                    $show_actions = ($row['id'] == $user_ranting_id);
-                                }
+                                // Hierarchy: admin > pengkot > ranting/unit
+                                // negara and pengprov cannot edit ranting
+                                $show_actions = false;
+                                $show_delete = false;
                                 
-                                // Untuk ranting/unit role, tidak boleh hapus
-                                $can_delete_row = $can_delete;
-                                if ($user_role === 'ranting' || $user_role === 'unit') {
-                                    $can_delete_row = false;
+                                if ($user_role === 'admin') {
+                                    $show_actions = true;
+                                    $show_delete = true;
+                                } elseif ($user_role === 'pengkot') {
+                                    // Pengkot can edit ranting in their city
+                                    $show_actions = ($row['kota_id'] ?? 0) == $user_pengurus_id;
+                                    $show_delete = ($row['kota_id'] ?? 0) == $user_pengurus_id;
+                                } elseif ($user_role === 'ranting' || $user_role === 'unit') {
+                                    // Ranting/unit can only edit their own ranting
+                                    $show_actions = ($row['id'] == $user_ranting_id);
+                                    $show_delete = false;
                                 }
                                 
                                 if ($show_actions):
@@ -646,7 +653,7 @@ if ($print_mode) {
                                 <a href="ranting_edit.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-edit" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <?php if ($can_delete_row): ?>
+                                <?php if ($show_delete): ?>
                                 <a href="ranting_hapus.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus?')">
                                     <i class="fas fa-trash"></i>
                                 </a>
@@ -737,6 +744,7 @@ if ($print_mode) {
             const isReadonly = <?php echo $is_readonly ? 'true' : 'false'; ?>;
             const userRole = '<?php echo $user_role; ?>';
             const userRantingId = <?php echo (int)$user_ranting_id; ?>;
+            const userPengurusId = <?php echo (int)$user_pengurus_id; ?>;
             
             if (!tbody) return;
 
@@ -757,25 +765,36 @@ if ($print_mode) {
                             <i class="fas fa-eye"></i>
                         </a>
                 `;
-                const canEdit = <?php echo $can_edit ? 'true' : 'false'; ?>;
-                const canDelete = <?php echo $can_delete ? 'true' : 'false'; ?>;
                 
-                if (canEdit) {
-                    // For ranting/unit role, only show edit for their own ranting
-                    const showActions = (userRole !== 'ranting' && userRole !== 'unit') || (row.id === userRantingId);
-                    if (showActions) {
-                        actions += `
-                            <a href="ranting_edit.php?id=${row.id}" class="icon-btn icon-edit" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                        `;
-                    }
+                // Permission logic matching PHP:
+                // admin: can edit & delete all
+                // pengkot: can edit/delete ranting in their kota
+                // ranting/unit: can edit their own ranting only, cannot delete
+                let showActions = false;
+                let showDelete = false;
+                
+                if (userRole === 'admin') {
+                    showActions = true;
+                    showDelete = true;
+                } else if (userRole === 'pengkot') {
+                    // Pengkot can edit/delete ranting in their city
+                    showActions = (row.kota_id == userPengurusId);
+                    showDelete = (row.kota_id == userPengurusId);
+                } else if (userRole === 'ranting' || userRole === 'unit') {
+                    // Ranting/unit can only edit their own ranting
+                    showActions = (row.id == userRantingId);
+                    showDelete = false;
                 }
                 
-                // Untuk ranting/unit role, tidak boleh hapus
-                const canDeleteRow = canDelete && (userRole !== 'ranting' && userRole !== 'unit');
+                if (showActions) {
+                    actions += `
+                        <a href="ranting_edit.php?id=${row.id}" class="icon-btn icon-edit" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    `;
+                }
                 
-                if (canDeleteRow) {
+                if (showDelete) {
                     actions += `
                         <a href="ranting_hapus.php?id=${row.id}" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus?')">
                             <i class="fas fa-trash"></i>

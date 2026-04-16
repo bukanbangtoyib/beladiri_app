@@ -720,11 +720,35 @@ function getRevisionNumber($filename) {
                         <span class="badge"><?php echo $label_jenis; ?></span>
                         <span class="<?php echo $status_class; ?>">● <?php echo $status; ?></span>
                     </div>
-                    <div>    
-                        <?php if ($_SESSION['role'] == 'admin'): ?>
-                        <a href="pengurus_edit.php?id=<?php echo $id; ?>" class="btn btn-warning" style="float: right;">✏️ Edit</a>
-                        <?php endif; ?>
-                    </div>
+                     <div>
+<?php
+                          // Check if user can edit this pengurus
+                          $can_edit = false;
+                          if ($_SESSION['role'] == 'admin') {
+                              $can_edit = true;
+                          } elseif ($_SESSION['role'] == 'pengprov' && $jenis == 'provinsi' && $id == $_SESSION['pengurus_id']) {
+                              $can_edit = true;
+                          } elseif ($_SESSION['role'] == 'pengkot' && $jenis == 'kota' && $id == $_SESSION['pengurus_id']) {
+                              $can_edit = true;
+                          } elseif ($_SESSION['role'] == 'negara') {
+                              // Negara can edit their own negara and provinces under them, but NOT kota
+                              if ($jenis == 'pusat' && $id == $_SESSION['pengurus_id']) {
+                                  $can_edit = true;
+                              } elseif ($jenis == 'provinsi') {
+                                  // Check if this province belongs to this negara
+                                  $prov = $conn->query("SELECT negara_id FROM provinsi WHERE id = $id")->fetch_assoc();
+                                  if ($prov && $prov['negara_id'] == $_SESSION['pengurus_id']) {
+                                      $can_edit = true;
+                                  }
+                              }
+                              // kota - cannot edit
+                          }
+
+                          if ($can_edit):
+                          ?>
+                         <a href="pengurus_edit.php?id=<?php echo $id; ?>&jenis=<?php echo $jenis; ?>" class="btn btn-warning" style="float: right;">✏️ Edit</a>
+                         <?php endif; ?>
+                     </div>
                 </div>
             
                 

@@ -55,6 +55,8 @@ $label_jenis = $table_info['label'];
 // Query from new tables - for kota, need to JOIN with provinces to get negara_id
 if ($jenis == 'kota') {
     $sql = "SELECT k.*, p.negara_id FROM kota k LEFT JOIN provinsi p ON k.provinsi_id = p.id WHERE 1=1";
+} elseif ($jenis == 'provinsi') {
+    $sql = "SELECT p.*, p.negara_id FROM provinsi p WHERE 1=1";
 } else {
     $sql = "SELECT * FROM $table WHERE 1=1";
 }
@@ -126,10 +128,11 @@ if ($user_role === 'admin') {
         $can_edit = true;
         $can_delete = true;
     } elseif ($jenis === 'kota') {
-        // Can see all cities, can add, edit/delete only their own
+        // Negara CANNOT edit kota - hanya bisa melihat
+        $is_readonly = true;
         $can_add = true;
-        $can_edit = true;
-        $can_delete = true;
+        $can_edit = false;
+        $can_delete = false;
     }
 } elseif ($user_role === 'pengprov') {
     // Pengprov can manage their own province and cities below
@@ -409,9 +412,9 @@ if ($user_role === 'admin') {
                                     $show_actions = ($row_negara_id == $user_pengurus_id);
                                     $show_delete = ($row_negara_id == $user_pengurus_id);
                                 } elseif ($jenis === 'kota') {
-                                    // Can edit/delete cities in their negara
-                                    $show_actions = ($row_negara_id == $user_pengurus_id);
-                                    $show_delete = ($row_negara_id == $user_pengurus_id);
+                                    // Negara CANNOT edit kota - hanya bisa melihat
+                                    $show_actions = false;
+                                    $show_delete = false;
                                 }
                             } elseif ($user_role === 'pengprov') {
                                 if ($jenis === 'provinsi') {

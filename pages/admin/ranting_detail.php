@@ -109,6 +109,9 @@ function formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) {
 $id = (int)$_GET['id'];
 
 $sql = "SELECT r.*, 
+        k.id as kota_id,
+        prov.id as provinsi_id,
+        n.id as negara_id,
         k.nama as nama_kota,
         k.kode as kode_kota,
         prov.nama as nama_provinsi,
@@ -132,6 +135,21 @@ $ranting = $result->fetch_assoc();
 // Ambil daftar anggota di ranting ini
 $anggota_sql = "SELECT COUNT(*) as count FROM anggota WHERE ranting_saat_ini_id = $id";
 $anggota_count = $conn->query($anggota_sql)->fetch_assoc();
+
+// Ambil data tingkatan untuk mapping urutan ke nama
+$tingkatan_map = [];
+$tingkat_stats = [];
+$tk_result = $conn->query("SELECT urutan, nama_tingkat FROM tingkatan ORDER BY urutan");
+while ($tk = $tk_result->fetch_assoc()) {
+    $tingkatan_map[$tk['urutan']] = $tk['nama_tingkat'];
+}
+
+// Hitung anggota per tingkat
+foreach ($tingkatan_map as $urutan => $nama) {
+    $tingkat_stats[$urutan] = $conn->query(
+        "SELECT COUNT(*) as cnt FROM anggota WHERE ranting_saat_ini_id = $id AND tingkat_id = $urutan"
+    )->fetch_assoc()['cnt'];
+}
 
 // Ambil jadwal latihan
 $jadwal_sql = "SELECT * FROM jadwal_latihan WHERE ranting_id = $id ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu')";
@@ -247,17 +265,29 @@ function get_revision_number($filename) {
         tr:hover { background: #f9f9f9; }
         
         .btn { 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            text-decoration: none; 
             display: inline-block;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 13px;
             font-weight: 600;
+            transition: all 0.3s;
         }
         
         .btn-primary { background: #667eea; color: white; }
-        .btn-warning { background: #ffc107; color: black; }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: black;
+        }
+        
+        .btn-warning:hover {
+            background: #ffb300;
+            transform: translateY(-2px);
+        }
+
         .btn-download { background: #28a745; color: white; padding: 10px 20px; font-size: 13px; }
         .btn-download:hover { background: #218838; }
         
@@ -310,24 +340,131 @@ function get_revision_number($filename) {
         
         .stat-number { font-size: 24px; font-weight: 700; color: #667eea; }
         .stat-label { font-size: 12px; color: #666; }
+        
+        .header-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+        
+        .header-info h1 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 28px;
+        }
+        
+        .header-stats-grid {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .header-stats-grid.cols-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .header-stats-grid.tingkat-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .stat-item .stat-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .stat-item .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .stat-item .stat-value.chairman {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-aktif { color: #27ae60; font-weight: 600; }
+        .status-tidak { color: #e74c3c; font-weight: 600; }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
     <?php renderNavbar('📋 Detail Unit/Ranting'); ?>
     
     <div class="container">
-        <div class="info-card">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div>
-                    <h1 style="color: #333; margin-bottom: 10px;"><?php echo htmlspecialchars($ranting['nama_ranting']); ?></h1>
-                    <div class="stat-card">
-                        <div class="stat-number"><?php echo $anggota_count['count']; ?></div>
-                        <div class="stat-label">Anggota Aktif</div>
+        <!-- Header Card -->
+        <div class="header-card">
+            <div class="header-info">
+                <h1><?php echo htmlspecialchars($ranting['nama_ranting']); ?></h1>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <span class="badge badge-<?php echo $ranting['jenis']; ?>"><?php echo strtoupper($ranting['jenis']); ?></span>
+                    <div class="header-actions">
+                        <?php 
+                        $can_edit = false;
+                        $user_role = $_SESSION['role'] ?? '';
+                        $user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+                        
+                        if ($user_role === 'admin') {
+                            $can_edit = true;
+                        } elseif ($user_role === 'pengkot') {
+                            // Pengkot can edit ranting in their city
+                            $can_edit = ($ranting['kota_id'] ?? 0) == $user_pengurus_id;
+                        } elseif (($user_role === 'ranting' || $user_role === 'unit') && isset($_SESSION['ranting_id']) && $_SESSION['ranting_id'] == $id) {
+                            $can_edit = true;
+                        }
+                        // catatan: negara dan pengprov tidak dapat mengedit ranting
+                        if ($can_edit): 
+                        ?>
+                        <a href="ranting_edit.php?id=<?php echo $id; ?>" class="btn btn-warning" style="margin-right: 10px;">✏️ Edit</a>
+                        <?php endif; ?>
+                        <button onclick="window.print()" class="btn btn-warning" style="background: #6c757d;">
+                            🖨️ Print
+                        </button>
                     </div>
                 </div>
-                <span class="badge badge-<?php echo $ranting['jenis']; ?>" style="margin-top: 10px;">
-                    <?php echo strtoupper($ranting['jenis']); ?>
-                </span>
+                
+                <div class="header-stats-grid cols-2">
+                    <div class="stat-item">
+                        <div class="stat-label">Nama Ketua</div>
+                        <div class="stat-value chairman"><?php echo htmlspecialchars($ranting['ketua_nama'] ?? '-'); ?></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Total Anggota</div>
+                        <div class="stat-value"><?php echo array_sum($tingkat_stats); ?></div>
+                    </div>
+                </div>
+                <div class="header-stats-grid tingkat-grid">
+                    <?php foreach ($tingkatan_map as $urutan => $nama_tingkat): ?>
+                    <div class="stat-item">
+                        <div class="stat-label"><?php echo htmlspecialchars($nama_tingkat); ?></div>
+                        <div class="stat-value"><?php echo $tingkat_stats[$urutan] ?? 0; ?></div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         </div>
         
@@ -942,16 +1079,7 @@ function get_revision_number($filename) {
                 renderTable();
                 enhanceTableWithData();
             }
-        </script>
-        
-        <?php if ($_SESSION['role'] == 'admin'): ?>
-        <div class="button-group">
-            <button onclick="window.print()" class="btn btn-warning" style="background: #6c757d;">
-                🖨️ Print Detail
-            </button>
-            <a href="ranting_edit.php?id=<?php echo $id; ?>" class="btn btn-warning">✏️ Edit Data</a>
-        </div>
-        <?php endif; ?>
+        </script>    
     </div>
 </body>
 </html>
