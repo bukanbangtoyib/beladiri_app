@@ -98,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Akun Saya - Sistem Informasi & Manajemen Perisai Diri</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -225,6 +226,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .password-field {
+            position: relative;
+        }
+        
+        .password-field input {
+            padding-right: 40px;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #666;
         }
         
         .form-group input:read-only {
@@ -356,12 +374,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 
                 <div class="form-group">
                     <label for="password_baru">Password Baru</label>
-                    <input type="password" id="password_baru" name="password_baru" placeholder="Isi jika ingin mengganti password">
+                    <div class="password-field">
+                        <input type="password" id="password_baru" name="password_baru" placeholder="Isi jika ingin mengganti password">
+                        <i class="fa fa-eye password-toggle" onclick="togglePassword('password_baru', this)"></i>
+                    </div>
                 </div>
                 
                 <div class="form-group">
                     <label for="konfirmasi_password">Konfirmasi Password Baru</label>
-                    <input type="password" id="konfirmasi_password" name="konfirmasi_password" placeholder="Isi ulang password baru">
+                    <div class="password-field">
+                        <input type="password" id="konfirmasi_password" name="konfirmasi_password" placeholder="Isi ulang password baru">
+                        <i class="fa fa-eye password-toggle" onclick="togglePassword('konfirmasi_password', this)"></i>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -375,5 +399,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <div class="footer">
         &copy; <?php echo date("Y"); ?> Perisai Diri - Tripl3D. All rights reserved.
     </div>
+
+    <script>
+        function togglePassword(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
 </body>
 </html>
