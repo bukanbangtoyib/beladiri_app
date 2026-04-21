@@ -13,13 +13,7 @@ include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
 
 // Initialize permission manager
-$permission_manager = new PermissionManager(
-    $conn,
-    $_SESSION['user_id'],
-    $_SESSION['role'],
-    $_SESSION['pengurus_id'] ?? null,
-    $_SESSION['ranting_id'] ?? null
-);
+$permission_manager = new PermissionManager($conn, $_SESSION['user_id'], $_SESSION['role'], $_SESSION['pengurus_id'] ?? null, $_SESSION['ranting_id'] ?? null, $_SESSION['no_anggota'] ?? null);
 
 $GLOBALS['permission_manager'] = $permission_manager;
 

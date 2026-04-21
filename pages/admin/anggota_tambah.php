@@ -10,15 +10,10 @@ include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
 include '../../config/settings.php';
+include '../../helpers/user_auto_creation.php';
 
 // Initialize permission manager
-$permission_manager = new PermissionManager(
-    $conn,
-    $_SESSION['user_id'],
-    $_SESSION['role'],
-    $_SESSION['pengurus_id'] ?? null,
-    $_SESSION['ranting_id'] ?? null
-);
+$permission_manager = new PermissionManager($conn, $_SESSION['user_id'], $_SESSION['role'], $_SESSION['pengurus_id'] ?? null, $_SESSION['ranting_id'] ?? null, $_SESSION['no_anggota'] ?? null);
 
 // Store untuk global use
 $GLOBALS['permission_manager'] = $permission_manager;
@@ -343,6 +338,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             }
                         }
                     }
+                    
+                    // Auto-create user for Anggota
+                    $pwd_tgl = (!empty($tanggal_lahir) && $tanggal_lahir !== '0000-00-00' && $tanggal_lahir !== '00-00-0000') ? date('dmY', strtotime($tanggal_lahir)) : '';
+                    createOrUpdateUser($conn, [
+                        'username' => $no_anggota,
+                        'password' => formatPwd($nama_lengkap) . $pwd_tgl,
+                        'nama_lengkap' => $nama_lengkap,
+                        'role' => 'anggota',
+                        'no_anggota' => $no_anggota
+                    ]);
                     
                     $success = "Anggota berhasil ditambahkan!";
                     header("refresh:2;url=anggota.php");

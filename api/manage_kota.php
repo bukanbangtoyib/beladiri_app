@@ -22,6 +22,7 @@ if (in_array($action, ['add', 'update', 'delete', 'reorder']) && !in_array($_SES
 }
 
 include dirname(dirname(__FILE__)) . '/config/database.php';
+include dirname(dirname(__FILE__)) . '/helpers/user_auto_creation.php';
 
 // Auto-update status based on periode_akhir
 $today = date('Y-m-d');
@@ -83,6 +84,17 @@ switch ($action) {
         
         $sql = "INSERT INTO kota (negara_id, provinsi_id, kode, nama) VALUES ($negara_id, $provinsi_id, '$kode', '$nama')";
         if ($conn->query($sql)) {
+            $kota_id = $conn->insert_id;
+            
+            // Auto-create user for Kota
+            createOrUpdateUser($conn, [
+                'username' => $nama,
+                'password' => formatPwd($nama) . '1955',
+                'nama_lengkap' => "Pengurus Kota / Kabupaten $nama",
+                'role' => 'pengkot',
+                'pengurus_id' => $kota_id
+            ]);
+            
             echo json_encode(['success' => true, 'message' => 'Kota berhasil ditambahkan!']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Gagal menambahkan kota: ' . $conn->error]);
@@ -118,6 +130,15 @@ switch ($action) {
         // Keep existing kode when updating
         $sql = "UPDATE kota SET negara_id = $negara_id, provinsi_id = $provinsi_id, nama = '$nama' WHERE id = $id";
         if ($conn->query($sql)) {
+            // Auto-update user for Kota
+            createOrUpdateUser($conn, [
+                'username' => $nama,
+                'password' => formatPwd($nama) . '1955',
+                'nama_lengkap' => "Pengurus Kota / Kabupaten $nama",
+                'role' => 'pengkot',
+                'pengurus_id' => $id
+            ]);
+            
             echo json_encode(['success' => true, 'message' => 'Kota berhasil diperbarui!']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Gagal memperbarui kota: ' . $conn->error]);

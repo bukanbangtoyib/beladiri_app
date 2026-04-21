@@ -14,6 +14,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
 }
 
 include dirname(dirname(__FILE__)) . '/config/database.php';
+include dirname(dirname(__FILE__)) . '/helpers/user_auto_creation.php';
 
 // Auto-update status based on periode_akhir
 $today = date('Y-m-d');
@@ -78,6 +79,17 @@ switch ($action) {
         
         $sql = "INSERT INTO negara (kode, nama, aktif) VALUES ('$kode', '$nama', 1)";
         if ($conn->query($sql)) {
+            $negara_id = $conn->insert_id;
+            
+            // Auto-create user for Negara
+            createOrUpdateUser($conn, [
+                'username' => $nama,
+                'password' => formatPwd($nama) . '1955',
+                'nama_lengkap' => "Pengurus Negara $nama",
+                'role' => 'negara',
+                'pengurus_id' => $negara_id
+            ]);
+            
             echo json_encode(['success' => true, 'message' => 'Negara berhasil ditambahkan!']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Gagal menambahkan negara: ' . $conn->error]);
@@ -108,6 +120,15 @@ switch ($action) {
         
         $sql = "UPDATE negara SET kode = '$kode', nama = '$nama' WHERE id = $id";
         if ($conn->query($sql)) {
+            // Auto-update user for Negara
+            createOrUpdateUser($conn, [
+                'username' => $nama,
+                'password' => formatPwd($nama) . '1955',
+                'nama_lengkap' => "Pengurus Negara $nama",
+                'role' => 'negara',
+                'pengurus_id' => $id
+            ]);
+            
             echo json_encode(['success' => true, 'message' => 'Negara berhasil diperbarui!']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Gagal memperbarui negara: ' . $conn->error]);

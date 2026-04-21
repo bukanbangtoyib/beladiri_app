@@ -163,6 +163,21 @@ $ROLES_CONFIG = [
             'ranting_read' => 'all',
             'jadwal_read' => 'all',
         ]
+    ],
+
+    'anggota' => [
+        'label' => 'Anggota',
+        'description' => 'Akses anggota - hanya bisa melihat dan mengedit data sendiri',
+        'permissions' => [
+            'view_dashboard' => true,
+            'anggota_read' => 'own',
+            'anggota_update' => 'own',
+            'ukt_read' => false,
+            'kerohanian_read' => 'all',
+            'pengurus_read' => 'all',
+            'ranting_read' => 'all',
+            'jadwal_read' => 'all',
+        ]
     ]
 ];
 

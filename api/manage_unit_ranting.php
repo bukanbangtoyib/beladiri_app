@@ -14,6 +14,7 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'nega
 }
 
 include dirname(dirname(__FILE__)) . '/config/database.php';
+include dirname(dirname(__FILE__)) . '/helpers/user_auto_creation.php';
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
@@ -73,6 +74,17 @@ switch ($action) {
         
         $sql = "INSERT INTO ranting (jenis, negara_id, id_kota, kode, nama, urutan) VALUES ('unit', $negara_id, $id_kota, '$kode', '$nama', $urutan)";
         if ($conn->query($sql)) {
+            $ranting_id = $conn->insert_id;
+            
+            // Auto-create user for Unit/Ranting
+            createOrUpdateUser($conn, [
+                'username' => $nama,
+                'password' => formatPwd($nama) . '1955',
+                'nama_lengkap' => "Pengurus Unit/Ranting $nama",
+                'role' => 'unit',
+                'ranting_id' => $ranting_id
+            ]);
+            
             echo json_encode(['success' => true, 'message' => 'Unit/Ranting berhasil ditambahkan!']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Gagal menambahkan unit/ranting: ' . $conn->error]);
@@ -112,6 +124,15 @@ switch ($action) {
         
         $sql = "UPDATE ranting SET negara_id = $negara_id, id_kota = $id_kota, kode = '$kode', nama = '$nama' WHERE id = $id";
         if ($conn->query($sql)) {
+            // Auto-update user for Unit/Ranting
+            createOrUpdateUser($conn, [
+                'username' => $nama,
+                'password' => formatPwd($nama) . '1955',
+                'nama_lengkap' => "Pengurus Unit/Ranting $nama",
+                'role' => 'unit',
+                'ranting_id' => $id
+            ]);
+            
             echo json_encode(['success' => true, 'message' => 'Unit/Ranting berhasil diperbarui!']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Gagal memperbarui unit/ranting: ' . $conn->error]);
@@ -135,6 +156,15 @@ switch ($action) {
         
         $sql = "UPDATE ranting SET id_kota = $id_kota, kode = '$kode', nama = '$nama' WHERE id = $id";
         if ($conn->query($sql)) {
+            // Auto-update user for Unit/Ranting
+            createOrUpdateUser($conn, [
+                'username' => $nama,
+                'password' => formatPwd($nama) . '1955',
+                'nama_lengkap' => "Pengurus Unit/Ranting $nama",
+                'role' => 'unit',
+                'ranting_id' => $id
+            ]);
+            
             echo json_encode(['success' => true, 'message' => 'Unit/Ranting berhasil diperbarui!']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Gagal memperbarui unit/ranting: ' . $conn->error]);

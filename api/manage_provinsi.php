@@ -26,6 +26,7 @@ if (in_array($action, ['add', 'update', 'delete']) && !in_array($user_role, ['ad
 }
 
 include dirname(dirname(__FILE__)) . '/config/database.php';
+include dirname(dirname(__FILE__)) . '/helpers/user_auto_creation.php';
 
 // Auto-update status based on periode_akhir
 $today = date('Y-m-d');
@@ -56,8 +57,22 @@ switch ($action) {
             exit();
         }
         
-        $conn->query("INSERT INTO provinsi (nama, negara_id, kode, aktif) VALUES ('$nama', $id_negara, '$kode', 1)");
-        echo json_encode(['success' => true, 'message' => 'Provinsi berhasil ditambahkan!']);
+        if ($conn->query("INSERT INTO provinsi (nama, negara_id, kode, aktif) VALUES ('$nama', $id_negara, '$kode', 1)")) {
+            $provinsi_id = $conn->insert_id;
+            
+            // Auto-create user for Provinsi
+            createOrUpdateUser($conn, [
+                'username' => $nama,
+                'password' => formatPwd($nama) . '1955',
+                'nama_lengkap' => "Pengurus Provinsi $nama",
+                'role' => 'pengprov',
+                'pengurus_id' => $provinsi_id
+            ]);
+            
+            echo json_encode(['success' => true, 'message' => 'Provinsi berhasil ditambahkan!']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Gagal menambahkan provinsi: ' . $conn->error]);
+        }
         break;
         
     case 'update':
@@ -71,8 +86,20 @@ switch ($action) {
             exit();
         }
         
-        $conn->query("UPDATE provinsi SET nama = '$nama', negara_id = $id_negara, kode = '$kode' WHERE id = $id");
-        echo json_encode(['success' => true, 'message' => 'Provinsi berhasil diperbarui!']);
+        if ($conn->query("UPDATE provinsi SET nama = '$nama', negara_id = $id_negara, kode = '$kode' WHERE id = $id")) {
+            // Auto-update user for Provinsi
+            createOrUpdateUser($conn, [
+                'username' => $nama,
+                'password' => formatPwd($nama) . '1955',
+                'nama_lengkap' => "Pengurus Provinsi $nama",
+                'role' => 'pengprov',
+                'pengurus_id' => $id
+            ]);
+            
+            echo json_encode(['success' => true, 'message' => 'Provinsi berhasil diperbarui!']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Gagal memperbarui provinsi: ' . $conn->error]);
+        }
         break;
         
     case 'delete':

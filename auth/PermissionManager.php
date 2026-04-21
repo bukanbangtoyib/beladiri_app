@@ -5,14 +5,16 @@ class PermissionManager {
     private $role;
     private $pengurus_id;
     private $ranting_id;
+    private $no_anggota;
     private $roles_config;
     
-    public function __construct($conn, $user_id, $role, $pengurus_id = null, $ranting_id = null) {
+    public function __construct($conn, $user_id, $role, $pengurus_id = null, $ranting_id = null, $no_anggota = null) {
         $this->conn = $conn;
         $this->user_id = $user_id;
         $this->role = $role;
         $this->pengurus_id = $pengurus_id;
         $this->ranting_id = $ranting_id;
+        $this->no_anggota = $no_anggota;
         
         include __DIR__ . '/../config/roles.php';
         $this->roles_config = $ROLES_CONFIG;
@@ -51,21 +53,26 @@ class PermissionManager {
         }
         
         // Jika permission adalah string, handle scope
-        return $this->checkScope($permission, $target_pengurus_id, $target_ranting_id);
+        return $this->checkScope($permission, $target_pengurus_id, $target_ranting_id, (func_num_args() > 3 ? func_get_arg(3) : null));
     }
     
     /**
      * Check scope-based permission
      */
-    private function checkScope($scope, $target_pengurus_id = null, $target_ranting_id = null) {
+    private function checkScope($scope, $target_pengurus_id = null, $target_ranting_id = null, $target_no_anggota = null) {
         // If no target specified, allow access for read operations
         // (the actual filtering will be done at the data query level)
-        $no_target = empty($target_pengurus_id) && empty($target_ranting_id);
+        $no_target = empty($target_pengurus_id) && empty($target_ranting_id) && empty($target_no_anggota);
         
         switch ($scope) {
             case 'own':
                 // Hanya dirinya sendiri
                 if ($no_target) return true; // Allow, will filter at query level
+                
+                if ($this->role === 'anggota') {
+                    return !empty($this->no_anggota) && $this->no_anggota === $target_no_anggota;
+                }
+                
                 return (int)$this->pengurus_id === (int)$target_pengurus_id &&
                        (int)$this->ranting_id === (int)$target_ranting_id;
             

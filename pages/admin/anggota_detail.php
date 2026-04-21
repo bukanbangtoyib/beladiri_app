@@ -12,13 +12,7 @@ include '../../helpers/navbar.php';
 include '../../config/settings.php';
 
 // Initialize permission manager
-$permission_manager = new PermissionManager(
-    $conn,
-    $_SESSION['user_id'],
-    $_SESSION['role'],
-    $_SESSION['pengurus_id'] ?? null,
-    $_SESSION['ranting_id'] ?? null
-);
+$permission_manager = new PermissionManager($conn, $_SESSION['user_id'], $_SESSION['role'], $_SESSION['pengurus_id'] ?? null, $_SESSION['ranting_id'] ?? null, $_SESSION['no_anggota'] ?? null);
 
 // Store untuk global use
 $GLOBALS['permission_manager'] = $permission_manager;
@@ -675,14 +669,15 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
                     </div>
                 </div>
                 
-                <?php if ($_SESSION['role'] == 'admin'): ?>
                 <div class="button-group">
+                    <?php if ($permission_manager->can('anggota_update', $anggota['pengurus_id'] ?? null, $anggota['ranting_saat_ini_id'] ?? null, $anggota['no_anggota'])): ?>
                     <a href="anggota_edit.php?id=<?php echo $anggota['id']; ?>" class="btn btn-warning">✏️ Edit Data</a>
+                    <?php endif; ?>
+                    
                     <button onclick="window.print()" class="btn btn-warning" style="background: #6c757d;">
                         🖨️ Print Detail
                     </button>
                 </div>
-                <?php endif; ?>
             </div>
         </div>
         

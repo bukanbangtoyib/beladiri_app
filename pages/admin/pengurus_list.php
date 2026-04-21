@@ -11,20 +11,14 @@ include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
 
 // Initialize permission manager
-$permission_manager = new PermissionManager(
-    $conn,
-    $_SESSION['user_id'],
-    $_SESSION['role'],
-    $_SESSION['pengurus_id'] ?? null,
-    $_SESSION['ranting_id'] ?? null
-);
+$permission_manager = new PermissionManager($conn, $_SESSION['user_id'], $_SESSION['role'], $_SESSION['pengurus_id'] ?? null, $_SESSION['ranting_id'] ?? null, $_SESSION['no_anggota'] ?? null);
 
 // Store untuk global use
 $GLOBALS['permission_manager'] = $permission_manager;
 
 // Check permission untuk action ini - allow all roles including tamu
 $user_role = $_SESSION['role'] ?? '';
-$allowed_roles = ['admin', 'negara', 'pengprov', 'pengkot', 'unit', 'tamu'];
+$allowed_roles = ['admin', 'negara', 'pengprov', 'pengkot', 'unit', 'tamu', 'anggota'];
 if (!in_array($user_role, $allowed_roles)) {
     die("❌ Akses ditolak!");
 }

@@ -9,8 +9,8 @@ if (!isset($_SESSION['user_id'])) {
 $user_role = $_SESSION['role'] ?? '';
 $user_ranting_id = $_SESSION['ranting_id'] ?? 0;
 
-// Allow admin, ranting, and unit roles
-if (!in_array($user_role, ['admin', 'ranting', 'unit'])) {
+// Allow admin, ranting, unit, and anggota roles
+if (!in_array($user_role, ['admin', 'ranting', 'unit', 'anggota'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -19,15 +19,10 @@ include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
 include '../../config/settings.php';
+include '../../helpers/user_auto_creation.php';
 
 // Initialize permission manager
-$permission_manager = new PermissionManager(
-    $conn,
-    $_SESSION['user_id'],
-    $_SESSION['role'],
-    $_SESSION['pengurus_id'] ?? null,
-    $_SESSION['ranting_id'] ?? null
-);
+$permission_manager = new PermissionManager($conn, $_SESSION['user_id'], $_SESSION['role'], $_SESSION['pengurus_id'] ?? null, $_SESSION['ranting_id'] ?? null, $_SESSION['no_anggota'] ?? null);
 
 // Store untuk global use
 $GLOBALS['permission_manager'] = $permission_manager;
@@ -177,11 +172,17 @@ if ($result->num_rows == 0) {
 }
 $anggota = $result->fetch_assoc();
 
-// Check ownership for ranting and unit roles
-if ($user_role === 'ranting' || $user_role === 'unit') {
-    $member_ranting_id = $anggota['ranting_saat_ini_id'] ?? 0;
-    if ($member_ranting_id != $user_ranting_id) {
-        die("❌ Anda hanya bisa mengedit anggota dari ranting Anda sendiri!");
+// Check ownership for ranting, unit, and anggota roles
+if ($user_role === 'ranting' || $user_role === 'unit' || $user_role === 'anggota') {
+    if ($user_role === 'anggota') {
+        if ($anggota['no_anggota'] !== $_SESSION['no_anggota']) {
+            die("❌ Anda hanya bisa mengedit data Anda sendiri!");
+        }
+    } else {
+        $member_ranting_id = $anggota['ranting_saat_ini_id'] ?? 0;
+        if ($member_ranting_id != $user_ranting_id) {
+            die("❌ Anda hanya bisa mengedit anggota dari ranting Anda sendiri!");
+        }
     }
 }
 
@@ -193,34 +194,35 @@ function sanitize_name($name) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $is_anggota = ($user_role === 'anggota');
+    
     // Use the full no_anggota from hidden field, not the formatted display
-    $no_anggota = $conn->real_escape_string($_POST['no_anggota_full'] ?? $_POST['no_anggota']);
+    $no_anggota = $is_anggota ? $anggota['no_anggota'] : $conn->real_escape_string($_POST['no_anggota_full'] ?? $_POST['no_anggota']);
     $nama_lengkap = $conn->real_escape_string($_POST['nama_lengkap']);
     $tempat_lahir = $conn->real_escape_string($_POST['tempat_lahir']);
     $tanggal_lahir = $_POST['tanggal_lahir'];
     $jenis_kelamin = $_POST['jenis_kelamin'];
     
     // Process ranting_awal - either from dropdown or manual input
-    $ranting_awal_id = !empty($_POST['ranting_awal_id_edit']) ? (int)$_POST['ranting_awal_id_edit'] : NULL;
-    $ranting_awal_manual = $conn->real_escape_string($_POST['ranting_awal_manual_edit'] ?? '');
+    $ranting_awal_id = $is_anggota ? ($anggota['ranting_awal_id'] ?? NULL) : (!empty($_POST['ranting_awal_id_edit']) ? (int)$_POST['ranting_awal_id_edit'] : NULL);
+    $ranting_awal_manual = $is_anggota ? ($anggota['ranting_awal_manual'] ?? '') : $conn->real_escape_string($_POST['ranting_awal_manual_edit'] ?? '');
     
-    $ranting_saat_ini_id = $_POST['ranting_saat_ini_id'] ?: NULL;
-    $tingkat_id = !empty($_POST['tingkat_id']) ? (int)trim($_POST['tingkat_id']) : NULL;
-    if (!empty($tingkat_id)) {
+    $ranting_saat_ini_id = $is_anggota ? ($anggota['ranting_saat_ini_id'] ?? NULL) : ($_POST['ranting_saat_ini_id'] ?: NULL);
+    $tingkat_id = $is_anggota ? ($anggota['tingkat_id'] ?? NULL) : (!empty($_POST['tingkat_id']) ? (int)trim($_POST['tingkat_id']) : NULL);
+    if (!$is_anggota && !empty($tingkat_id)) {
         $tingkat_check = $conn->query("SELECT urutan FROM tingkatan WHERE urutan = $tingkat_id");
         if (!$tingkat_check || $tingkat_check->num_rows == 0) {
             $error = "Tingkat dengan urutan '$tingkat_id' tidak ditemukan!";
             $tingkat_id = NULL;
         }
     }
-    $jenis_anggota = $_POST['jenis_anggota'];
-    $tahun_bergabung = !empty($_POST['tahun_bergabung']) ? (int)$_POST['tahun_bergabung'] : NULL;
+    $jenis_anggota = $is_anggota ? $anggota['jenis_anggota'] : $_POST['jenis_anggota'];
+    $tahun_bergabung = $is_anggota ? $anggota['tahun_bergabung'] : (!empty($_POST['tahun_bergabung']) ? (int)$_POST['tahun_bergabung'] : NULL);
     $no_handphone = $conn->real_escape_string($_POST['no_handphone'] ?? '');
     
-    // Process UKT format - if only year is entered, set to 02/07/YYYY
-    // Also convert dd/mm/yyyy to yyyy-mm-dd for MySQL
-    $ukt_terakhir = $_POST['ukt_terakhir'] ?? '';
-    if (!empty($ukt_terakhir)) {
+    // Process UKT format
+    $ukt_terakhir = $is_anggota ? $anggota['ukt_terakhir'] : ($_POST['ukt_terakhir'] ?? '');
+    if (!$is_anggota && !empty($ukt_terakhir)) {
         $ukt_terakhir = trim($ukt_terakhir);
         // If only year (4 digits), convert to 02/07/YYYY
         if (preg_match('/^\d{4}$/', $ukt_terakhir)) {
@@ -373,6 +375,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $conn->query("DELETE FROM prestasi WHERE id = $pid AND anggota_id = $id");
                     }
                 }
+                
+                // Auto-update user for Anggota
+                // Update user account
+                $pwd_tgl = (!empty($tanggal_lahir) && $tanggal_lahir !== '0000-00-00' && $tanggal_lahir !== '00-00-0000') ? date('dmY', strtotime($tanggal_lahir)) : '';
+                createOrUpdateUser($conn, [
+                    'username' => $no_anggota,
+                    'password' => formatPwd($nama_lengkap) . $pwd_tgl,
+                    'nama_lengkap' => $nama_lengkap,
+                    'role' => 'anggota',
+                    'no_anggota' => $no_anggota
+                ]);
                 
                 $success = "Data anggota berhasil diupdate!";
                 header("refresh:2;url=anggota_detail.php?id=$id");
@@ -800,6 +813,11 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                 
                 <hr>
                 
+                <?php 
+                $is_anggota = ($user_role === 'anggota');
+                $readonly_attr = $is_anggota ? 'disabled' : '';
+                ?>
+                
                 <!-- Data Organisasi -->
                 <h3>🏢 Data Organisasi</h3>
                 
@@ -807,7 +825,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                 <div class="form-row">
                     <div class="form-group">
                         <label>Negara</label>
-                        <select name="filter_negara_edit" id="filter_negara_edit" onchange="updateProvinsiFormEdit()" class="select2-searchable">
+                        <select name="filter_negara_edit" id="filter_negara_edit" onchange="updateProvinsiFormEdit()" class="select2-searchable" <?php echo $readonly_attr; ?>>
                             <option value="">-- Pilih Negara --</option>
                             <?php
                             // Get all negara
@@ -828,7 +846,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     
                     <div class="form-group">
                         <label>Provinsi</label>
-                        <select name="filter_provinsi_edit" id="filter_provinsi_edit" onchange="updateKotaFormEdit()" <?php echo empty($anggota['kota_negara_id']) ? 'disabled' : ''; ?> class="select2-searchable">
+                        <select name="filter_provinsi_edit" id="filter_provinsi_edit" onchange="updateKotaFormEdit()" <?php echo (empty($anggota['kota_negara_id']) || $is_anggota) ? 'disabled' : ''; ?> class="select2-searchable">
                             <option value="">-- Pilih Provinsi --</option>
                             <?php
                             // Get provinces for the current negara
@@ -853,7 +871,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     
                     <div class="form-group">
                         <label>Kota/Kabupaten</label>
-                        <select name="filter_kota_edit" id="filter_kota_edit" onchange="updateRantingFormEdit()" <?php echo empty($anggota['kota_provinsi_id']) ? 'disabled' : ''; ?> class="select2-searchable">
+                        <select name="filter_kota_edit" id="filter_kota_edit" onchange="updateRantingFormEdit()" <?php echo (empty($anggota['kota_provinsi_id']) || $is_anggota) ? 'disabled' : ''; ?> class="select2-searchable">
                             <option value="">-- Pilih Kota --</option>
                             <?php
                             // Get kota for the current provinsi
@@ -878,7 +896,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     
                     <div class="form-group">
                         <label>Unit/Ranting Saat Ini <span class="required">*</span></label>
-                        <select name="ranting_saat_ini_id" id="ranting_saat_ini_id_edit" required onchange="updateRantingKodeEdit()" class="select2-searchable">
+                        <select name="ranting_saat_ini_id" id="ranting_saat_ini_id_edit" required onchange="updateRantingKodeEdit()" class="select2-searchable" <?php echo $readonly_attr; ?>>
                             <option value="">-- Pilih Ranting --</option>
                             <?php
                             // Filter ranting berdasarkan kota yang sama dengan ranting saat ini
@@ -910,17 +928,17 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     
                     <div class="radio-group">
                         <div class="radio-option">
-                            <input type="radio" id="ranting_database_edit" name="ranting_awal_pilihan_edit" value="database" <?php echo (empty($anggota['ranting_awal_manual']) || !empty($anggota['ranting_awal_id'])) ? 'checked' : ''; ?> onchange="toggleRantingAwalEdit()">
+                            <input type="radio" id="ranting_database_edit" name="ranting_awal_pilihan_edit" value="database" <?php echo (empty($anggota['ranting_awal_manual']) || !empty($anggota['ranting_awal_id'])) ? 'checked' : ''; ?> onchange="toggleRantingAwalEdit()" <?php echo $readonly_attr; ?>>
                             <label for="ranting_database_edit">Pilih dari Database</label>
                         </div>
                         <div class="radio-option">
-                            <input type="radio" id="ranting_manual_edit" name="ranting_awal_pilihan_edit" value="manual" <?php echo !empty($anggota['ranting_awal_manual']) ? 'checked' : ''; ?> onchange="toggleRantingAwalEdit()">
+                            <input type="radio" id="ranting_manual_edit" name="ranting_awal_pilihan_edit" value="manual" <?php echo !empty($anggota['ranting_awal_manual']) ? 'checked' : ''; ?> onchange="toggleRantingAwalEdit()" <?php echo $readonly_attr; ?>>
                             <label for="ranting_manual_edit">Input Manual</label>
                         </div>
                     </div>
                     
                     <div id="ranting_awal_select_edit" class="form-group" style="position: relative; <?php echo !empty($anggota['ranting_awal_manual']) ? 'display:none;' : ''; ?>">
-                        <select name="ranting_awal_id_edit" id="ranting_awal_id_edit" class="select2-searchable" style="width: 100%;">
+                        <select name="ranting_awal_id_edit" id="ranting_awal_id_edit" class="select2-searchable" style="width: 100%;" <?php echo $readonly_attr; ?>>
                             <option value="">-- Pilih Unit/Ranting Awal --</option>
                             <?php 
                             // Get all ranting for initial load
@@ -941,7 +959,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     </div>
                     
                     <div id="ranting_awal_manual_edit" class="conditional-field" style="<?php echo !empty($anggota['ranting_awal_manual']) ? 'display:block;' : 'display:none;'; ?>">
-                        <input type="text" name="ranting_awal_manual_edit" value="<?php echo htmlspecialchars($anggota['ranting_awal_manual'] ?? ''); ?>" placeholder="Masukkan nama Unit/Ranting">
+                        <input type="text" name="ranting_awal_manual_edit" value="<?php echo htmlspecialchars($anggota['ranting_awal_manual'] ?? ''); ?>" placeholder="Masukkan nama Unit/Ranting" <?php echo $is_anggota ? 'readonly' : ''; ?>>
                         <div class="form-hint">Masukkan nama Unit/Ranting secara manual</div>
                     </div>
                 </div>
@@ -949,7 +967,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                 <div class="form-row">                                       
                     <div class="form-group">
                         <label>Tingkat <span class="required">*</span></label>
-                        <select name="tingkat_id" required>
+                        <select name="tingkat_id" required <?php echo $readonly_attr; ?>>
                             <option value="">-- Pilih Tingkat --</option>
                             <?php $tingkatan_result->data_seek(0); while ($row = $tingkatan_result->fetch_assoc()): ?>
                                 <option value="<?php echo $row['urutan']; ?>" <?php echo $anggota['tingkat_id'] == $row['urutan'] ? 'selected' : ''; ?>>
@@ -962,7 +980,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
 
                     <div class="form-group">
                         <label>Jenis Anggota <span class="required">*</span></label>
-                        <select name="jenis_anggota" required>
+                        <select name="jenis_anggota" required <?php echo $readonly_attr; ?>>
                             <option value="">-- Pilih Jenis Anggota --</option>
                             <?php
                             $current_jenis = isset($anggota['jenis_anggota']) ? $anggota['jenis_anggota'] : '';
@@ -984,7 +1002,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                         <label>Tahun Bergabung <span class="required">*</span></label>
                         <input type="number" name="tahun_bergabung" min="1900" max="2100" required 
                             value="<?php echo htmlspecialchars($anggota['tahun_bergabung'] ?? ''); ?>"
-                            placeholder="Contoh: 2024">
+                            placeholder="Contoh: 2024" <?php echo $is_anggota ? 'readonly' : ''; ?>>
                         <div class="form-hint">Tahun anggota bergabung</div>
                     </div>
 
@@ -992,7 +1010,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                         <label>UKT Terakhir</label>
                         <input type="text" name="ukt_terakhir" 
                             value="<?php echo isset($anggota) && !empty($anggota['ukt_terakhir']) && $anggota['ukt_terakhir'] != '0000-00-00' ? formatDateInput($anggota['ukt_terakhir']) : ''; ?>"
-                            placeholder="Format: dd/mm/yyyy atau yyyy">
+                            placeholder="Format: dd/mm/yyyy atau yyyy" <?php echo $is_anggota ? 'readonly' : ''; ?>>
                         <div class="form-hint">Format: 15/07/2024 atau 2024</div>
                     </div>
                 </div>

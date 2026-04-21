@@ -63,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $_SESSION['role'] = $user['role'];
                     $_SESSION['pengurus_id'] = $user['pengurus_id'];
                     $_SESSION['ranting_id'] = $user['ranting_id'];
+                    $_SESSION['no_anggota'] = $user['no_anggota'] ?? null;
                     
                     header("Location: index.php");
                     exit();

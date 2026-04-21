@@ -43,9 +43,21 @@ if (in_array($role, ['negara', 'pengprov', 'pengkot'])) {
         $detail_link = 'pages/admin/ranting_detail.php';
         $detail_params = "?id=" . $ranting_id;
     } else {
-        // Fallback to dashboard if ranting_id is not set
         $detail_link = 'index.php';
-        $detail_params = '';
+    }
+} elseif ($role === 'anggota') {
+    // For Anggota: use anggota_detail.php
+    $no_anggota = $_SESSION['no_anggota'] ?? '';
+    if ($no_anggota !== '') {
+        $res = $conn->query("SELECT id FROM anggota WHERE no_anggota = '$no_anggota'");
+        if ($row = $res->fetch_assoc()) {
+            $detail_link = 'pages/admin/anggota_detail.php';
+            $detail_params = "?id=" . $row['id'];
+        } else {
+            $detail_link = 'index.php';
+        }
+    } else {
+        $detail_link = 'index.php';
     }
 }
 
