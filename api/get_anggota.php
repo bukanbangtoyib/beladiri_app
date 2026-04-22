@@ -41,6 +41,26 @@ $search = trim($search);
 $exclude_kerohanian = isset($_GET['exclude_kerohanian']) ? (int)$_GET['exclude_kerohanian'] : 0;
 $jenis_peny = isset($_GET['jenis_peny']) ? $_GET['jenis_peny'] : '';
 $peny_id = isset($_GET['peny_id']) ? (int)$_GET['peny_id'] : 0;
+$list_all = isset($_GET['list']) ? (int)$_GET['list'] : 0;
+
+// List Mode: return all anggota (for dropdown)
+if ($list_all) {
+    $sql = "SELECT a.id, a.no_anggota, a.nama_lengkap 
+            FROM anggota a
+            ORDER BY a.nama_lengkap";
+    
+    $result = $conn->query($sql);
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $data[] = [
+            'id' => $row['id'],
+            'no_anggota' => $row['no_anggota'],
+            'nama_lengkap' => $row['nama_lengkap']
+        ];
+    }
+    echo json_encode(['success' => true, 'data' => $data]);
+    exit;
+}
 
 // Search anggota by name or no_anggota
 $sql = "SELECT a.id, a.no_anggota, a.nama_lengkap, r.nama_ranting, t.nama_tingkat, t.urutan 

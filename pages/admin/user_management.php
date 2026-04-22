@@ -94,6 +94,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type'])) {
             if ($check->num_rows === 0) $ranting_id = NULL;
         }
         
+        // Validate and set no_anggota for anggota role
+        $no_anggota = NULL;
+        if ($role === 'anggota') {
+            $no_anggota = $_POST['no_anggota'] ?? '';
+            if (empty($no_anggota)) {
+                $error = "Error: Untuk role Anggota, Anda harus memilih nomor anggota!";
+            } else {
+                // Check no_anggota exists
+                $check = $conn->query("SELECT id, nama_lengkap FROM anggota WHERE no_anggota = '$no_anggota'");
+                if ($check->num_rows === 0) {
+                    $error = "Error: Nomor anggota tidak valid!";
+                    $no_anggota = NULL;
+                } else {
+                    $anggota = $check->fetch_assoc();
+                    // Auto-fill nama_lengkap if empty
+                    if (empty($nama_lengkap)) {
+                        $nama_lengkap = $anggota['nama_lengkap'];
+                    }
+                    // Check if this anggota already has a user
+                    $check_user = $conn->query("SELECT id FROM users WHERE no_anggota = '$no_anggota'");
+                    if ($check_user->num_rows > 0) {
+                        $error = "Error: Anggota ini sudah memiliki user!";
+                        $no_anggota = NULL;
+                    }
+                }
+            }
+        }
+        
         // Check if organization already has a user (1 organisasi = 1 user)
         $org_user_error = '';
         if (in_array($role, ['negara', 'pengprov', 'pengkot']) && !empty($pengurus_id)) {
@@ -120,9 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type'])) {
                 // Skip insert if there was an error with organisasi selection
             } else {
                 $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-                $sql = "INSERT INTO users (username, password, nama_lengkap, role, pengurus_id, ranting_id) VALUES (?, ?, ?, ?, ?, ?)";
+                $sql = "INSERT INTO users (username, password, nama_lengkap, role, pengurus_id, ranting_id, no_anggota) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("ssssii", $username, $hashed_password, $nama_lengkap, $role, $pengurus_id, $ranting_id);
+                $stmt->bind_param("sssssis", $username, $hashed_password, $nama_lengkap, $role, $pengurus_id, $ranting_id, $no_anggota);
                 
                 if ($stmt->execute()) {
                     $success = "User berhasil ditambahkan!";
@@ -133,82 +161,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type'])) {
                 }
             }
         }
-        }
-    } elseif ($_POST['action_type'] == 'edit') {
-        $edit_id = (int)$_POST['user_id'];
-        $nama_lengkap = $_POST['nama_lengkap'];
-        $role = $_POST['role'];
-        $pengurus_id = NULL;
-        $ranting_id = NULL;
-        $edit_error = '';
-        
-        // Validate and set pengurus_id based on role - REQUIRED for negara/pengprov/pengkot
-        if (in_array($role, ['negara', 'pengprov', 'pengkot'])) {
-            if (empty($_POST['pengurus_id'])) {
-                $edit_error = "Error: Untuk role " . ucfirst($role) . ", Anda harus memilih organisasi dari dropdown!";
-            } else {
-                $pengurus_id = (int)$_POST['pengurus_id'];
-                
-                // Validate the pengurus_id exists in appropriate table
-                if ($role === 'negara') {
-                    $check = $conn->query("SELECT id FROM negara WHERE id = $pengurus_id");
-                    if ($check->num_rows === 0) {
-                        $edit_error = "Error: Negara yang dipilih tidak valid!";
-                        $pengurus_id = NULL;
-                    }
-                } elseif ($role === 'pengprov') {
-                    $check = $conn->query("SELECT id FROM provinsi WHERE id = $pengurus_id");
-                    if ($check->num_rows === 0) {
-                        $edit_error = "Error: Provinsi yang dipilih tidak valid!";
-                        $pengurus_id = NULL;
-                    }
-                } elseif ($role === 'pengkot') {
-                    $check = $conn->query("SELECT id FROM kota WHERE id = $pengurus_id");
-                    if ($check->num_rows === 0) {
-                        $edit_error = "Error: Kota yang dipilih tidak valid!";
-                        $pengurus_id = NULL;
-                    }
-                }
-            }
-        }
-        
-        // Validate and set ranting_id for unit role
-        if ($role === 'unit' && !empty($_POST['ranting_id'])) {
-            $ranting_id = (int)$_POST['ranting_id'];
-            $check = $conn->query("SELECT id FROM ranting WHERE id = $ranting_id");
-            if ($check->num_rows === 0) $ranting_id = NULL;
-        }
-        
-        if (!empty($edit_error)) {
-            $error = $edit_error;
-        } else {
-            $sql = "UPDATE users SET nama_lengkap = ?, role = ?, pengurus_id = ?, ranting_id = ? WHERE id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ssiii", $nama_lengkap, $role, $pengurus_id, $ranting_id, $edit_id);
-            
-            if ($stmt->execute()) {
-                $success = "User berhasil diupdate!";
-                header("Location: user_management.php");
-                exit();
-            } else {
-                $error = "Error: " . $stmt->error;
-            }
-        }
-    } elseif ($_POST['action_type'] == 'reset_password') {
-        $reset_id = (int)$_POST['user_id'];
-        $new_password = $_POST['password'];
-        $hashed = password_hash($new_password, PASSWORD_BCRYPT);
-        
-        $sql = "UPDATE users SET password = ? WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("si", $hashed, $reset_id);
-        
-        if ($stmt->execute()) {
-            $success = "Password berhasil direset!";
-            header("Location: user_management.php");
-            exit();
-        } else {
-            $error = "Error: " . $stmt->error;
         }
     }
 }
@@ -351,10 +303,11 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
         }
         
         .role-admin { background: #667eea; }
-        .role-negara { background: #764ba2; }
-        .role-pengprov { background: #f093fb; }
+        .role-negara { background: #c52d2d; }
+        .role-pengprov { background: #237e3e; }
         .role-pengkot { background: #4facfe; }
         .role-unit { background: #43e97b; }
+        .role-anggota { background: #d634d4; }
         .role-tamu { background: #6c757d; }
         
         .action-icons { display: flex; gap: 8px; }
@@ -453,6 +406,7 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                             <option value="pengprov">Pengurus Provinsi</option>
                             <option value="pengkot">Pengurus Kota / Kabupaten</option>
                             <option value="unit">Unit / Ranting</option>
+                            <option value="anggota">Anggota</option>
                             <option value="tamu">Tamu (Read Only)</option>
                         </select>
                     </div>
@@ -490,12 +444,75 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                     <div id="loading_ranting_add" class="loading-text" style="display:none;">Memuat data...</div>
                 </div>
                 
+                <div id="anggota_field_add" style="display: none;" class="form-group">
+                    <label>Nomor Anggota <span class="required">*</span></label>
+                    <select name="no_anggota" id="anggota_select_add" class="dynamic-select">
+                        <option value="">-- Pilih Anggota --</option>
+                    </select>
+                    <div id="loading_anggota_add" class="loading-text" style="display:none;">Memuat data...</div>
+                </div>
+                
                 <div class="button-group">
                     <button type="submit" class="btn btn-primary">➕ Tambah User</button>
                 </div>
             </form>
         </div>
         
+        <!-- Filter Section -->
+        <div class="form-container" style="margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #666;">
+                        🔍 Cari Username
+                    </label>
+                    <input 
+                        type="text" 
+                        id="userSearch" 
+                        placeholder="Ketik username..." 
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;"
+                    >
+                </div>
+
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #666;">
+                        👤 Cari Nama
+                    </label>
+                    <input 
+                        type="text" 
+                        id="nameSearch" 
+                        placeholder="Ketik nama lengkap..." 
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;"
+                    >
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #666;">
+                        👥 Filter Role
+                    </label>
+                    <select 
+                        id="roleFilter" 
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: white;"
+                    >
+                        <option value="">-- Semua Role --</option>
+                        <option value="admin">Admin</option>
+                        <option value="negara">Negara</option>
+                        <option value="pengprov">Provinsi</option>
+                        <option value="pengkot">Kota</option>
+                        <option value="unit">Unit/Ranting</option>
+                        <option value="anggota">Anggota</option>
+                        <option value="tamu">Tamu</option>
+                    </select>
+                </div>
+                
+                <button 
+                    onclick="resetFilters()" 
+                    style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; height: 38px;"
+                >
+                    🔄 Reset
+                </button>
+            </div>
+        </div>
+
         <!-- Daftar User -->
         <div class="table-container">
             <table>
@@ -506,7 +523,7 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                         <th>Role</th>
                         <th>Organisasi</th>
                         <th>Terdaftar</th>
-                        <th style="width: 120px;">Aksi</th>
+                        <th style="width: 80px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -527,8 +544,15 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                                 $pengurus_info = ($pengurus_info ? $pengurus_info . ' - ' : '') . $org['nama_ranting'];
                             }
                         }
+
+                        if ($row['no_anggota']) {
+                            $member_org = $conn->query("SELECT r.nama_ranting FROM anggota a JOIN ranting r ON a.ranting_saat_ini_id = r.id WHERE a.no_anggota = '" . $row['no_anggota'] . "'")->fetch_assoc();
+                            if ($member_org) {
+                                $pengurus_info = $member_org['nama_ranting'];
+                            }
+                        }
                     ?>
-                    <tr>
+                    <tr class="user-row" data-role="<?php echo $row['role']; ?>">
                         <td><strong><?php echo htmlspecialchars($row['username']); ?></strong></td>
                         <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
                         <td>
@@ -540,6 +564,7 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                                     'pengprov' => 'Provinsi',
                                     'pengkot' => 'Kota',
                                     'unit' => 'Unit/Ranting',
+                                    'anggota' => 'Anggota',
                                     'tamu' => 'Tamu'
                                 ];
                                 echo $role_labels[$row['role']] ?? ucfirst($row['role']);
@@ -550,13 +575,7 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                         <td><?php echo date('d M Y', strtotime($row['created_at'])); ?></td>
                         <td>
                             <div class="action-icons">
-                                <a href="javascript:void(0)" onclick="editUser(<?php echo $row['id']; ?>, '<?php echo htmlspecialchars($row['nama_lengkap']); ?>', '<?php echo $row['role']; ?>', '<?php echo $row['pengurus_id'] ?? ''; ?>', '<?php echo $row['ranting_id'] ?? ''; ?>')" class="icon-btn icon-edit" title="Edit User">
-                                    <i class="fas fa-edit"></i>
-                                </a>
                                 <?php if ($row['id'] != $_SESSION['user_id']): ?>
-                                <a href="javascript:void(0)" onclick="resetPassword(<?php echo $row['id']; ?>)" class="icon-btn icon-reset" title="Reset Password">
-                                    <i class="fas fa-key"></i>
-                                </a>
                                 <a href="user_management.php?delete=<?php echo $row['id']; ?>" onclick="return confirm('Yakin hapus?')" class="icon-btn icon-delete" title="Hapus User">
                                     <i class="fas fa-trash"></i>
                                 </a>
@@ -601,7 +620,8 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             negara: false,
             provinsi: false,
             kota: false,
-            ranting: false
+            ranting: false,
+            anggota: false
         };
         
         // Load data from API
@@ -689,6 +709,32 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             if (loadingEl) loadingEl.style.display = 'none';
         }
         
+        let anggotaData = [];
+        
+        async function loadAnggota() {
+            if (dataLoaded.anggota) return;
+            const selectEl = document.getElementById('anggota_select_add');
+            if (!selectEl) return;
+            const loadingEl = document.getElementById('loading_anggota_add');
+            if (loadingEl) loadingEl.style.display = 'block';
+            try {
+                const response = await fetch('../../api/get_anggota.php?list=1');
+                const result = await response.json();
+                if (result.success && result.data) {
+                    anggotaData = result.data;
+                    dataLoaded.anggota = true;
+                    selectEl.innerHTML = '<option value="">-- Pilih Anggota --</option>';
+                    anggotaData.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.no_anggota;
+                        option.textContent = item.no_anggota + ' - ' + item.nama_lengkap;
+                        selectEl.appendChild(option);
+                    });
+                }
+            } catch (e) { console.error('Error loading anggota:', e); }
+            if (loadingEl) loadingEl.style.display = 'none';
+        }
+        
         // Populate dropdown options
         function populateNegara(selectId) {
             const select = document.getElementById(selectId);
@@ -744,12 +790,14 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             const provinsiField = document.getElementById('provinsi_field_' + prefix);
             const kotaField = document.getElementById('kota_field_' + prefix);
             const rantingField = document.getElementById('ranting_field_' + prefix);
+            const anggotaField = document.getElementById('anggota_field_' + prefix);
             
             // Hide all fields first
             if (negaraField) negaraField.style.display = 'none';
             if (provinsiField) provinsiField.style.display = 'none';
             if (kotaField) kotaField.style.display = 'none';
             if (rantingField) rantingField.style.display = 'none';
+            if (anggotaField) anggotaField.style.display = 'none';
             
             // Show appropriate field based on role and load data
             if (role === 'negara') {
@@ -772,41 +820,11 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                     rantingField.style.display = 'block';
                     loadRanting();
                 }
-            }
-        }
-        
-        function editUser(id, nama, role, pengurus_id, ranting_id) {
-            let new_nama = prompt("Nama Lengkap:", nama);
-            if (new_nama && new_nama.trim() !== '') {
-                let form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action_type" value="edit">
-                    <input type="hidden" name="user_id" value="${id}">
-                    <input type="hidden" name="nama_lengkap" value="${new_nama}">
-                    <input type="hidden" name="role" value="${role}">
-                    <input type="hidden" name="pengurus_id" value="${pengurus_id || ''}">
-                    <input type="hidden" name="ranting_id" value="${ranting_id || ''}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-        
-        function resetPassword(id) {
-            let new_pass = prompt("Password baru (min 6 karakter):");
-            if (new_pass && new_pass.length >= 6) {
-                let form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action_type" value="reset_password">
-                    <input type="hidden" name="user_id" value="${id}">
-                    <input type="hidden" name="password" value="${new_pass}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            } else {
-                alert('Password minimal 6 karakter!');
+            } else if (role === 'anggota') {
+                if (anggotaField) {
+                    anggotaField.style.display = 'block';
+                    loadAnggota();
+                }
             }
         }
         
@@ -839,6 +857,13 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                 if (!rantingValue) {
                     alert('Mohon pilih Unit / Ranting!');
                     $('#ranting_select_add').focus();
+                    return false;
+                }
+            } else if (role === 'anggota') {
+                const anggotaValue = $('#anggota_select_add').val();
+                if (!anggotaValue) {
+                    alert('Mohon pilih Nomor Anggota!');
+                    $('#anggota_select_add').focus();
                     return false;
                 }
             }
@@ -896,7 +921,6 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             if (role === 'negara') {
                 const negaraSelect = document.getElementById('negara_select_add');
                 const negaraValue = negaraSelect ? negaraSelect.value : '';
-                console.log('negaraValue:', negaraValue);
                 if (!negaraValue) {
                     alert('Mohon pilih Negara (Pusat)!');
                     return false;
@@ -904,7 +928,6 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             } else if (role === 'pengprov') {
                 const provinsiSelect = document.getElementById('provinsi_select_add');
                 const provinsiValue = provinsiSelect ? provinsiSelect.value : '';
-                console.log('provinsiValue:', provinsiValue);
                 if (!provinsiValue) {
                     alert('Mohon pilih Provinsi!');
                     return false;
@@ -912,7 +935,6 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             } else if (role === 'pengkot') {
                 const kotaSelect = document.getElementById('kota_select_add');
                 const kotaValue = kotaSelect ? kotaSelect.value : '';
-                console.log('kotaValue:', kotaValue);
                 if (!kotaValue) {
                     alert('Mohon pilih Kota / Kabupaten!');
                     return false;
@@ -920,17 +942,49 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             } else if (role === 'unit') {
                 const rantingSelect = document.getElementById('ranting_select_add');
                 const rantingValue = rantingSelect ? rantingSelect.value : '';
-                console.log('rantingValue:', rantingValue);
                 if (!rantingValue) {
                     alert('Mohon pilih Unit / Ranting!');
                     return false;
                 }
             }
             
-            console.log('Form validation passed, submitting...');
-            
             return true;
         }
+
+        // Dynamic Filtering
+        function filterUsers() {
+            const userText = document.getElementById('userSearch').value.toLowerCase();
+            const roleFilter = document.getElementById('roleFilter').value;
+            const nameText = document.getElementById('nameSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('.user-row');
+            
+            rows.forEach(row => {
+                const username = row.cells[0].textContent.toLowerCase();
+                const nama = row.cells[1].textContent.toLowerCase();
+                const role = row.dataset.role;
+                
+                const matchesUser = username.includes(userText);
+                const matchesRole = roleFilter === '' || role === roleFilter;
+                const matchesName = nama.includes(nameText);
+                
+                if (matchesUser && matchesRole && matchesName) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('userSearch').value = '';
+            document.getElementById('roleFilter').value = '';
+            document.getElementById('nameSearch').value = '';
+            filterUsers();
+        }
+
+        document.getElementById('userSearch').addEventListener('keyup', filterUsers);
+        document.getElementById('roleFilter').addEventListener('change', filterUsers);
+        document.getElementById('nameSearch').addEventListener('keyup', filterUsers);
     </script>
 </body>
 </html>

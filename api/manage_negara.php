@@ -84,7 +84,7 @@ switch ($action) {
             // Auto-create user for Negara
             createOrUpdateUser($conn, [
                 'username' => $nama,
-                'password' => formatPwd($nama) . '1955',
+                'password' => $nama . '1955',
                 'nama_lengkap' => "Pengurus Negara $nama",
                 'role' => 'negara',
                 'pengurus_id' => $negara_id
@@ -123,7 +123,7 @@ switch ($action) {
             // Auto-update user for Negara
             createOrUpdateUser($conn, [
                 'username' => $nama,
-                'password' => formatPwd($nama) . '1955',
+                'password' => $nama . '1955',
                 'nama_lengkap' => "Pengurus Negara $nama",
                 'role' => 'negara',
                 'pengurus_id' => $id

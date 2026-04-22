@@ -63,7 +63,7 @@ switch ($action) {
             // Auto-create user for Provinsi
             createOrUpdateUser($conn, [
                 'username' => $nama,
-                'password' => formatPwd($nama) . '1955',
+                'password' => $nama . '1955',
                 'nama_lengkap' => "Pengurus Provinsi $nama",
                 'role' => 'pengprov',
                 'pengurus_id' => $provinsi_id
@@ -90,7 +90,7 @@ switch ($action) {
             // Auto-update user for Provinsi
             createOrUpdateUser($conn, [
                 'username' => $nama,
-                'password' => formatPwd($nama) . '1955',
+                'password' => $nama . '1955',
                 'nama_lengkap' => "Pengurus Provinsi $nama",
                 'role' => 'pengprov',
                 'pengurus_id' => $id

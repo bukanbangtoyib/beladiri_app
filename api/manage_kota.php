@@ -89,7 +89,7 @@ switch ($action) {
             // Auto-create user for Kota
             createOrUpdateUser($conn, [
                 'username' => $nama,
-                'password' => formatPwd($nama) . '1955',
+                'password' => $nama . '1955',
                 'nama_lengkap' => "Pengurus Kota / Kabupaten $nama",
                 'role' => 'pengkot',
                 'pengurus_id' => $kota_id
@@ -133,7 +133,7 @@ switch ($action) {
             // Auto-update user for Kota
             createOrUpdateUser($conn, [
                 'username' => $nama,
-                'password' => formatPwd($nama) . '1955',
+                'password' => $nama . '1955',
                 'nama_lengkap' => "Pengurus Kota / Kabupaten $nama",
                 'role' => 'pengkot',
                 'pengurus_id' => $id

@@ -24,8 +24,8 @@ function createOrUpdateUser($conn, $data) {
         $user = $result->fetch_assoc();
         $user_id = $user['id'];
         
-        // Update user (jangan update password jika tidak perlu, tapi di sini kita ikuti format default)
-        // Kita update password juga supaya sesuai dengan "namanegara1955" jika ada perubahan nama
+        // Update user - password di-reset sesuai format default username + 1955
+        // Ini mengikuti username karena username tidak bisa diubah setelah dibuat
         $sql = "UPDATE users SET nama_lengkap = ?, role = ?, pengurus_id = ?, ranting_id = ?, no_anggota = ?, password = ? WHERE id = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ssiissi", $nama_lengkap, $role, $pengurus_id, $ranting_id, $no_anggota, $hashed_password, $user_id);
