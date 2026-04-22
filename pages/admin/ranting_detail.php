@@ -411,6 +411,16 @@ function get_revision_number($filename) {
             display: flex;
             gap: 10px;
         }
+
+        .link-nav {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .link-nav:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -579,7 +589,7 @@ function get_revision_number($filename) {
                     <tbody>
                         <?php while ($p = $pelatih_result->fetch_assoc()): ?>
                             <tr>
-                                <td><a href="anggota_detail.php?id=<?php echo $p['id']; ?>" class="data-link"><?php echo htmlspecialchars($p['nama_lengkap']); ?></a></td>
+                                <td><a href="anggota_detail.php?id=<?php echo $p['id']; ?>" class="link-nav"><?php echo htmlspecialchars($p['nama_lengkap']); ?></a></td>
                                 <td><code><?php echo htmlspecialchars(formatNoAnggotaDisplay($p['no_anggota'], $pengaturan_nomor)); ?></code></td>
                                 <td><span class="badge badge-ukm" style="background: #e3f2fd; color: #1976d2;"><?php echo htmlspecialchars($p['nama_tingkat'] ?? '-'); ?></span></td>
                                 <td><small><?php echo htmlspecialchars($p['keterangan'] ?? '-'); ?></small></td>
@@ -690,7 +700,6 @@ function get_revision_number($filename) {
                             <th>Nama Anggota</th>
                             <th style="width: 125px;">Tingkat</th>
                             <th style="width: 200px; text-align: center;">Status</th>
-                            <th style="width: 80px; text-align: center;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="membersTableBody">
@@ -865,7 +874,7 @@ function get_revision_number($filename) {
                     row.innerHTML = `
                         <td style="text-align: center; color: #999; font-weight: 600;">${index + 1}</td>
                         <td><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">${htmlEscape(member.no_anggota_display)}</code></td>
-                        <td>${htmlEscape(member.nama_lengkap)}</td>
+                        <td><a href="anggota_detail.php?id=${member.id}" class="link-nav">${htmlEscape(member.nama_lengkap)}</a></td>
                         <td><span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 4px; font-weight: 600;">${htmlEscape(member.nama_tingkat || '-')}</span></td>
                         <td style="text-align: center;">
                             <label class="toggle-switch">
@@ -880,9 +889,6 @@ function get_revision_number($filename) {
                                 ${isActive ? '✓ Aktif' : '✗ Non Aktif'}
                             </span>
                             <span class="saving-status" id="saving-${member.id}"></span>
-                        </td>
-                        <td style="text-align: center;">
-                            <a href="anggota_detail.php?id=${member.id}" class="btn-detail">Lihat</a>
                         </td>
                     `;
                     

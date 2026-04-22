@@ -966,7 +966,6 @@ function getRevisionNumber($filename) {
                         <th>Jenis</th>
                         <th>Ketua</th>
                         <th>Periode</th>
-                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -977,13 +976,10 @@ function getRevisionNumber($filename) {
                         $child_detail = $conn->query("SELECT nama, kode, ketua_nama, periode_mulai, periode_akhir FROM $child_table WHERE id = " . $row['id'])->fetch_assoc();
                     ?>
                     <tr>
-                        <td><strong><?php echo htmlspecialchars($row['nama']); ?></strong></td>
+                        <td><strong><a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis == 'pusat' ? 'provinsi' : 'kota'; ?>" class="link-nav"><?php echo htmlspecialchars($row['nama']); ?></a></strong></td>
                         <td><?php echo $label_jenis_text[$jenis]; ?></td>
                         <td><?php echo htmlspecialchars($child_detail['ketua_nama'] ?? '-'); ?></td>
                         <td><?php echo formatTanggal($child_detail['periode_mulai'] ?? ''); ?> - <?php echo formatTanggal($child_detail['periode_akhir'] ?? ''); ?></td>
-                        <td>
-                            <a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis == 'pusat' ? 'provinsi' : 'kota'; ?>" class="link-nav">Lihat →</a>
-                        </td>
                     </tr>
                     <?php endwhile; ?>
                 </tbody>
@@ -1010,18 +1006,14 @@ function getRevisionNumber($filename) {
                         <th>Nama Unit/Ranting</th>
                         <th>Jenis</th>
                         <th>Ketua</th>
-                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php while ($row = $ranting_result->fetch_assoc()): ?>
                     <tr>
-                        <td><strong><?php echo htmlspecialchars($row['nama_ranting']); ?></strong></td>
+                        <td><strong><a href="ranting_detail.php?id=<?php echo $row['id']; ?>" class="link-nav"><?php echo htmlspecialchars($row['nama_ranting']); ?></a></strong></td>
                         <td><span class="badge badge-<?php echo $row['jenis']; ?>"><?php echo strtoupper($row['jenis']); ?></span></td>
                         <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
-                        <td>
-                            <a href="ranting_detail.php?id=<?php echo $row['id']; ?>" class="link-nav">Lihat →</a>
-                        </td>
                     </tr>
                     <?php endwhile; ?>
                 </tbody>
