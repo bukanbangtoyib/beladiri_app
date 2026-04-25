@@ -165,6 +165,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type'])) {
     }
 }
 
+// Proses reset password admin (hanya superadmin)
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type']) && $_POST['action_type'] == 'reset_admin_password') {
+    $target_user_id = (int)($_POST['user_id'] ?? 0);
+    $password_baru = $_POST['password_baru'] ?? '';
+    $konfirmasi_password = $_POST['konfirmasi_password'] ?? '';
+    
+    if ($password_baru === '' || $konfirmasi_password === '') {
+        $error = "Both password fields must be filled.";
+    } elseif ($password_baru !== $konfirmasi_password) {
+        $error = "New password and confirmation do not match.";
+    } elseif (strlen($password_baru) < 6) {
+        $error = "Password must be at least 6 characters long.";
+    } else {
+        $check = $conn->query("SELECT id, role FROM users WHERE id = $target_user_id");
+        if ($check->num_rows > 0) {
+            $user = $check->fetch_assoc();
+            if ($user['role'] !== 'admin') {
+                $error = "Hanya user dengan role admin yang dapat direset password-nya.";
+            } else {
+                $hashed = password_hash($password_baru, PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+                $stmt->bind_param("si", $hashed, $target_user_id);
+                if ($stmt->execute()) {
+                    $success = "Password admin berhasil direset!";
+                } else {
+                    $error = "Gagal reset password: " . $stmt->error;
+                }
+            }
+        } else {
+            $error = "User tidak ditemukan.";
+        }
+    }
+}
+
 // Hapus user
 if (isset($_GET['delete'])) {
     $del_id = (int)$_GET['delete'];
@@ -504,6 +538,9 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                         style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: white;"
                     >
                         <option value="">-- Semua Role --</option>
+                        <?php if ($_SESSION['role'] === 'superadmin'): ?>
+                        <option value="admin">Admin</option>
+                        <?php endif; ?>
                         <option value="negara">Negara</option>
                         <option value="pengprov">Provinsi</option>
                         <option value="pengkot">Kota</option>
@@ -586,6 +623,11 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                         <td>
                             <div class="action-icons">
                                 <?php if ($row['id'] != $_SESSION['user_id']): ?>
+                                    <?php if ($row['role'] === 'admin' && $_SESSION['role'] === 'superadmin'): ?>
+                                    <a href="#" onclick="openPasswordModal(<?php echo $row['id']; ?>, '<?php echo htmlspecialchars($row['username'], ENT_QUOTES); ?>')" class="icon-btn icon-reset" title="Reset Password Admin">
+                                        <i class="fas fa-key"></i>
+                                    </a>
+                                    <?php endif; ?>
                                 <a href="user_management.php?delete=<?php echo $row['id']; ?>" onclick="return confirm('Yakin hapus?')" class="icon-btn icon-delete" title="Hapus User">
                                     <i class="fas fa-trash"></i>
                                 </a>
@@ -600,8 +642,41 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             </table>
         </div>
     </div>
-    
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Modal Reset Password Admin -->
+    <div id="passwordModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:white; padding:30px; border-radius:8px; max-width:500px; width:90%; box-shadow:0 4px 20px rgba(0,0,0,0.2);">
+            <h3 style="margin-bottom:20px; color:#333;">Reset Password Admin</h3>
+            <form method="POST" action="">
+                <input type="hidden" name="action_type" value="reset_admin_password">
+                <input type="hidden" name="user_id" id="reset_user_id">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="reset_username" readonly style="background:#f8f9fa;">
+                </div>
+                <div class="form-group">
+                    <label>Password Baru <span class="required">*</span></label>
+                    <div class="password-field">
+                        <input type="password" name="password_baru" id="password_baru" required>
+                        <i class="fa fa-eye password-toggle" onclick="togglePassword('password_baru', this)"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Konfirmasi Password Baru <span class="required">*</span></label>
+                    <div class="password-field">
+                        <input type="password" name="konfirmasi_password" id="konfirmasi_password" required>
+                        <i class="fa fa-eye password-toggle" onclick="togglePassword('konfirmasi_password', this)"></i>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">💾 Simpan Password Baru</button>
+                    <button type="button" class="btn btn-secondary" onclick="closePasswordModal()">❌ Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
@@ -991,6 +1066,26 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             document.getElementById('nameSearch').value = '';
             filterUsers();
         }
+
+        function openPasswordModal(userId, username) {
+            document.getElementById('reset_user_id').value = userId;
+            document.getElementById('reset_username').value = username;
+            document.getElementById('password_baru').value = '';
+            document.getElementById('konfirmasi_password').value = '';
+            document.getElementById('passwordModal').style.display = 'flex';
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('passwordModal');
+            if (event.target === modal) {
+                closePasswordModal();
+            }
+        });
 
         document.getElementById('userSearch').addEventListener('keyup', filterUsers);
         document.getElementById('roleFilter').addEventListener('change', filterUsers);
