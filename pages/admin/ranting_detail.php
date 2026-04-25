@@ -439,7 +439,7 @@ function get_revision_number($filename) {
                         $user_role = $_SESSION['role'] ?? '';
                         $user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
                         
-                        if ($user_role === 'admin') {
+                        if (in_array($user_role, ['admin', 'superadmin'])) {
                             $can_edit = true;
                         } elseif ($user_role === 'pengkot') {
                             // Pengkot can edit ranting in their city

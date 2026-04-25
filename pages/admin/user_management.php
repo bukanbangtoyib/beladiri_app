@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'superadmin'])) {
     header("Location: ../../login.php");
     exit();
 }
@@ -181,7 +181,14 @@ if (isset($_GET['delete'])) {
 }
 
 // Ambil data semua user
-$users_result = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
+// Superadmin bisa melihat semua user; admin biasa tidak bisa melihat admin/superadmin lain
+$current_role = $_SESSION['role'];
+if ($current_role === 'superadmin') {
+    $users_result = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
+} else {
+    // admin: sembunyikan user dengan role admin & superadmin
+    $users_result = $conn->query("SELECT * FROM users WHERE role NOT IN ('admin','superadmin') ORDER BY created_at DESC");
+}
 
 // Ambil daftar (gabungkan negara, provinsi, kota)
 $all_orgs = [];
@@ -303,6 +310,7 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
         }
         
         .role-admin { background: #667eea; }
+        .role-superadmin { background: #2d3a8c; }
         .role-negara { background: #c52d2d; }
         .role-pengprov { background: #237e3e; }
         .role-pengkot { background: #4facfe; }
@@ -401,7 +409,9 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                         <label>Role <span class="required">*</span></label>
                         <select name="role" id="role_add" onchange="updateRoleFields(this, 'add')">
                             <option value="">-- Pilih Role --</option>
+                            <?php if ($_SESSION['role'] === 'superadmin'): ?>
                             <option value="admin">Admin (Full Access)</option>
+                            <?php endif; ?>
                             <option value="negara">Pengurus Pusat (Negara)</option>
                             <option value="pengprov">Pengurus Provinsi</option>
                             <option value="pengkot">Pengurus Kota / Kabupaten</option>
@@ -494,7 +504,6 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                         style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: white;"
                     >
                         <option value="">-- Semua Role --</option>
-                        <option value="admin">Admin</option>
                         <option value="negara">Negara</option>
                         <option value="pengprov">Provinsi</option>
                         <option value="pengkot">Kota</option>
@@ -559,6 +568,7 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                             <span class="role-badge role-<?php echo $row['role']; ?>">
                                 <?php 
                                 $role_labels = [
+                                    'superadmin' => 'Super Admin',
                                     'admin' => 'Admin',
                                     'negara' => 'Negara',
                                     'pengprov' => 'Provinsi',

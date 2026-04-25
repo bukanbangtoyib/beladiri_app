@@ -56,7 +56,7 @@ if ($user_role === 'negara') {
     if ($jenis !== 'kota') {
         die("❌ Anda tidak dapat menambahkan data ini!");
     }
-} elseif ($user_role !== 'admin') {
+} elseif (!in_array($user_role, ['admin', 'superadmin'])) {
     die("❌ Akses ditolak!");
 }
 

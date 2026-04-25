@@ -32,7 +32,7 @@ if (!$permission_manager->can('anggota_read')) {
 
 // Check permission untuk membuat anggota
 $user_role = $_SESSION['role'] ?? '';
-$allowed_roles = ['admin', 'pengkot', 'unit'];
+$allowed_roles = ['superadmin','admin', 'pengkot', 'unit'];
 if (!in_array($user_role, $allowed_roles)) {
     die("❌ Akses ditolak!");
 }

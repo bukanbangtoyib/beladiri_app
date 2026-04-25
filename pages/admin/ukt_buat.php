@@ -51,8 +51,8 @@ if ($user_peny_id && $user_jenis_peny) {
     }
 }
 
-// Check if admin (can choose any level)
-$is_admin = ($_SESSION['role'] === 'admin');
+// Check if admin or superadmin (can choose any level)
+$is_admin = in_array($_SESSION['role'], ['admin', 'superadmin']);
 
 // Map role to display name
 $role_jenis_map = [
@@ -271,9 +271,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     
                     <?php
                     // Determine which options to show based on role
-                    $show_pusat = in_array($_SESSION['role'], ['admin', 'negara']);
-                    $show_provinsi = in_array($_SESSION['role'], ['admin', 'negara', 'pengprov']);
-                    $show_kota = in_array($_SESSION['role'], ['admin', 'negara', 'pengprov', 'pengkot']);
+                    $show_pusat = in_array($_SESSION['role'], ['admin', 'superadmin', 'negara']);
+                    $show_provinsi = in_array($_SESSION['role'], ['admin', 'superadmin', 'negara', 'pengprov']);
+                    $show_kota = in_array($_SESSION['role'], ['admin', 'superadmin', 'negara', 'pengprov', 'pengkot']);
                     
                     // For non-admin, show as read-only
                     $is_readonly = !$is_admin;

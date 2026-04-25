@@ -86,7 +86,7 @@ if ($user_role === 'negara') {
     } else {
         die("❌ Akses ditolak!");
     }
-} elseif ($user_role !== 'admin') {
+} elseif (!in_array($user_role, ['admin', 'superadmin'])) {
     die("❌ Akses ditolak!");
 }
 

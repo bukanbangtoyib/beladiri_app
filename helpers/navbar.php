@@ -24,6 +24,7 @@ function renderNavbar($page_title) {
     
     // Mapping untuk role label yang lebih readable
     $role_map = [
+        'superadmin' => 'Super Admin',
         'admin' => 'Administrator',
         'pengprov' => 'Pengurus Provinsi',
         'pengkot' => 'Pengurus Kota',

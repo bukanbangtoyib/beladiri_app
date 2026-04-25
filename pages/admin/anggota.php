@@ -301,7 +301,7 @@ $is_readonly = true;
 $can_add = false;
 $can_import = false;
 
-if ($user_role === 'admin') {
+if (in_array($user_role, ['admin', 'superadmin'])) {
     $is_readonly = false;
     $can_add = true;
     $can_import = true;

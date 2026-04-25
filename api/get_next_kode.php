@@ -12,7 +12,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'superadmin'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
     exit();

@@ -29,7 +29,7 @@ $GLOBALS['permission_manager'] = $permission_manager;
 
 // For pengkot role on UKT pages, use custom permission check instead of general permission
 $user_role = $_SESSION['role'] ?? '';
-if ($user_role === 'pengkot' || $user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov') {
+if ($user_role === 'pengkot' || in_array($user_role, ['admin', 'superadmin']) || $user_role === 'negara' || $user_role === 'pengprov') {
     // Continue to UKT-specific permission check later
 } else {
     if (!$permission_manager->can('anggota_read')) {
@@ -66,7 +66,7 @@ $can_manage = false;
 if ($user_role === 'pengkot') {
     // Pengkot can only manage their own city UKT
     $can_manage = ($ukt['jenis_penyelenggara'] === 'kota' && (int)$ukt['penyelenggara_id'] === (int)$user_pengurus_id);
-} elseif ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov') {
+} elseif (in_array($user_role, ['admin', 'superadmin']) || $user_role === 'negara' || $user_role === 'pengprov') {
     $can_manage = $permission_manager->canManageUKT('ukt_update', $ukt['jenis_penyelenggara'], $ukt['penyelenggara_id']);
 }
 

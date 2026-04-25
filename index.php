@@ -321,7 +321,7 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
             <a href="pages/admin/pengurus.php">📋 Kepengurusan</a>
             <a href="pages/admin/ranting.php">🌳 Unit / Ranting</a>
             <a href="pages/admin/anggota.php">👥 Manajemen Anggota</a>
-            <?php if (in_array($_SESSION['role'], ['admin', 'negara', 'pengprov', 'pengkot'])): ?>
+            <?php if (in_array($_SESSION['role'], ['admin', 'superadmin', 'negara', 'pengprov', 'pengkot'])): ?>
             <a href="pages/admin/ukt.php">🏆 Ujian Kenaikan Tingkat</a>
             <?php endif; ?>
             <a href="pages/admin/kerohanian.php">🙏 Kerohanian</a>                        
@@ -332,7 +332,7 @@ $total_kerohanian = $conn->query("SELECT COUNT(*) as count FROM kerohanian")->fe
             <a href="akun_saya.php">👤 Akun Saya</a>
             <?php endif; ?>
              
-            <?php if ($_SESSION['role'] == 'admin'): ?>
+            <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
             <hr>
             <a href="pages/admin/settings.php">⚙️ Settings</a>
             <a href="pages/admin/user_management.php">👤 Kelola User</a>

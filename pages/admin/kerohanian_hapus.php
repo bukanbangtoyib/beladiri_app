@@ -2,7 +2,7 @@
 session_start();
 
 // Allow admin, negara, pengprov, pengkot to delete their own data
-$allowed_roles = ['admin', 'negara', 'pengprov', 'pengkot'];
+$allowed_roles = ['superadmin', 'admin', 'negara', 'pengprov', 'pengkot'];
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], $allowed_roles)) {
     header("Location: ../../login.php");
     exit();
@@ -64,7 +64,7 @@ $anggota_id = $data['anggota_id'];
 $record_penyelenggara = $data['penyelenggara'] ?? '';
 
 // Check ownership - admin can delete all, others can only delete their own organization's data
-$is_owner = ($user_role === 'admin') || ($record_penyelenggara === $user_org_name);
+$is_owner = in_array($user_role, ['admin', 'superadmin']) || ($record_penyelenggara === $user_org_name);
 
 if (!$is_owner) {
     die("❌ Anda hanya bisa menghapus data yang dibuat oleh organisasi Anda!");

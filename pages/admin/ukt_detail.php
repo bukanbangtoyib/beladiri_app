@@ -103,7 +103,7 @@ $user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
 if ($user_role === 'pengkot') {
     // Pengkot can manage their own city UKT
     $can_manage_ukt = ($ukt['jenis_penyelenggara'] === 'kota' && (int)$ukt['penyelenggara_id'] === (int)$user_pengurus_id);
-} elseif ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov') {
+} elseif (in_array($user_role, ['admin', 'superadmin']) || $user_role === 'negara' || $user_role === 'pengprov') {
     // Admin, negara, pengprov use the standard check
     try {
         $can_manage_ukt = $permission_manager->canManageUKT('ukt_update', $ukt['jenis_penyelenggara'], $ukt['penyelenggara_id']);

@@ -33,7 +33,7 @@ $user_ranting_id = $_SESSION['ranting_id'] ?? 0;
 
 // Get organization name for non-admin users
 $user_org_name = '';
-if ($user_role != 'admin') {
+if ($user_role != 'admin' && $user_role != 'superadmin') {
     if ($user_role == 'negara' && $user_pengurus_id) {
         $org_result = $conn->query("SELECT nama FROM negara WHERE id = $user_pengurus_id");
         if ($org_result && $org_result->num_rows > 0) {
@@ -59,7 +59,7 @@ if ($user_role != 'admin') {
 
 // Get all organizations for admin dropdown
 $all_organizations = [];
-if ($user_role == 'admin') {
+if (in_array($user_role, ['admin', 'superadmin'])) {
     // Get all negara
     $negara_result = $conn->query("SELECT id, nama, 'negara' as type FROM negara ORDER BY nama");
     while ($row = $negara_result->fetch_assoc()) {
@@ -288,7 +288,7 @@ $tingkat_list = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY ur
                 <div class="form-row">
                     <div class="form-group">
                         <label>Penyelenggara <span class="required">*</span></label>
-                        <?php if ($user_role == 'admin'): ?>
+                        <?php if (in_array($user_role, ['admin', 'superadmin'])): ?>
                             <!-- Admin: searchable dropdown with all organizations -->
                             <select name="penyelenggara" id="penyelenggara_select" required class="select2-searchable" style="width: 100%;">
                                 <option value="">-- Pilih Penyelenggara --</option>
@@ -374,7 +374,7 @@ $tingkat_list = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY ur
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         // Initialize Select2 for admin penyelenggara dropdown
-        <?php if ($user_role == 'admin'): ?>
+        <?php if (in_array($user_role, ['admin', 'superadmin'])): ?>
         $(document).ready(function() {
             $('#penyelenggara_select').select2({
                 placeholder: '-- Pilih Penyelenggara --',

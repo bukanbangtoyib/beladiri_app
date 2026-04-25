@@ -199,9 +199,9 @@ $show_negara_filter = true;
 $show_provinsi_filter = true;
 $show_kota_filter = true;
 
-$can_add = ($user_role === 'admin');
-$can_edit = ($user_role === 'admin' || $user_role === 'pengkot' || $user_role === 'ranting' || $user_role === 'unit');
-$can_delete = ($user_role === 'admin' || $user_role === 'pengkot');
+$can_add = in_array($user_role, ['admin', 'superadmin']);
+$can_edit = in_array($user_role, ['admin', 'superadmin', 'pengkot', 'ranting', 'unit']);
+$can_delete = in_array($user_role, ['admin', 'superadmin', 'pengkot']);
 $is_readonly = !$can_add;
 
 // Get user's ranting_id for ownership checking (for ranting/unit roles)
@@ -636,7 +636,7 @@ if ($print_mode) {
                                 $show_actions = false;
                                 $show_delete = false;
                                 
-                                if ($user_role === 'admin') {
+                                if (in_array($user_role, ['admin', 'superadmin'])) {
                                     $show_actions = true;
                                     $show_delete = true;
                                 } elseif ($user_role === 'pengkot') {
@@ -774,7 +774,7 @@ if ($print_mode) {
                 let showActions = false;
                 let showDelete = false;
                 
-                if (userRole === 'admin') {
+                if (userRole === 'admin' || userRole === 'superadmin') {
                     showActions = true;
                     showDelete = true;
                 } else if (userRole === 'pengkot') {

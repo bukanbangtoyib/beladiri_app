@@ -19,6 +19,13 @@ class PermissionManager {
         include __DIR__ . '/../config/roles.php';
         $this->roles_config = $ROLES_CONFIG;
     }
+
+    /**
+     * Returns true for both admin and superadmin roles
+     */
+    private function isAdmin(): bool {
+        return $this->role === 'admin' || $this->role === 'superadmin';
+    }
     
     /**
      * Check apakah user memiliki permission
@@ -29,8 +36,8 @@ class PermissionManager {
      * @return bool
      */
     public function can($action, $target_pengurus_id = null, $target_ranting_id = null) {
-        // Admin selalu bisa
-        if ($this->role === 'admin') {
+        // Admin & superadmin selalu bisa
+        if ($this->isAdmin()) {
             return true;
         }
         
@@ -219,7 +226,7 @@ class PermissionManager {
      * Khusus untuk check permission UKT berdasarkan level penyelenggara
      */
     public function canManageUKT($action, $jenis_peny, $peny_id) {
-        if ($this->role === 'admin') return true;
+        if ($this->isAdmin()) return true;
         
         // For UKT create/update, special handling - $peny_id IS the organization ID
         $permissions = $this->getPermissions();
@@ -262,8 +269,8 @@ class PermissionManager {
      * Returns array with 'where_clause' and 'params' for prepared statement
      */
     public function getUKTFilterSQL() {
-        // Admin can see all UKT
-        if ($this->role === 'admin') {
+        // Admin & superadmin can see all UKT
+        if ($this->isAdmin()) {
             return ['where' => '1=1', 'params' => []];
         }
         
@@ -323,7 +330,7 @@ class PermissionManager {
      * Returns the level they can create and the penyelenggaraan_id
      */
     public function canCreateOwnUKT() {
-        if ($this->role === 'admin') {
+        if ($this->isAdmin()) {
             return ['can' => true, 'jenis' => 'all', 'peny_id' => null];
         }
         
@@ -357,7 +364,7 @@ class PermissionManager {
      * Check if user can update UKT at their own level (for UI buttons)
      */
     public function canUpdateOwnUKT() {
-        if ($this->role === 'admin') {
+        if ($this->isAdmin()) {
             return true;
         }
         
@@ -373,8 +380,8 @@ class PermissionManager {
      * Check if user can delete UKT (must have no participants)
      */
     public function canDeleteUKT($ukt_id) {
-        // Admin always can delete
-        if ($this->role === 'admin') {
+        // Admin & superadmin always can delete
+        if ($this->isAdmin()) {
             return true;
         }
         

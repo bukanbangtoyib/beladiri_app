@@ -183,7 +183,7 @@ $ranting = $conn->query("SELECT COUNT(*) as count FROM ranting")->fetch_assoc();
             $user_role = strtolower($_SESSION['role'] ?? '');
             
             // Simple direct output based on role
-            if ($user_role === 'admin' || $user_role === 'negara' || $user_role === 'pengprov') {
+            if (in_array($user_role, ['admin', 'superadmin']) || $user_role === 'negara' || $user_role === 'pengprov') {
                 echo '<a href="pengurus_import.php" class="btn btn-success">⬆️ Import CSV</a>';
             }
             ?>

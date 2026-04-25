@@ -3,8 +3,8 @@ session_start();
 
 $user_role = $_SESSION['role'] ?? '';
 
-// Allow admin, negara, and pengprov roles
-if (!isset($_SESSION['user_id']) || !in_array($user_role, ['admin', 'negara', 'pengprov'])) {
+// Allow superadmin, admin, negara, and pengprov roles
+if (!isset($_SESSION['user_id']) || !in_array($user_role, ['superadmin', 'admin', 'negara', 'pengprov'])) {
     header("Location: ../../login.php");
     exit();
 }

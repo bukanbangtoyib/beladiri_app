@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['sk_file'])) {
 }
 
 // Handle SK delete
-if (isset($_GET['delete_sk']) && $_SESSION['role'] == 'admin') {
+if (isset($_GET['delete_sk']) && in_array($_SESSION['role'], ['admin', 'superadmin'])) {
     $sk_file = basename($_GET['delete_sk']);
     $upload_dir = '../../uploads/sk_pengurus/';
     $file_path = $upload_dir . $sk_file;
@@ -725,7 +725,7 @@ function getRevisionNumber($filename) {
 <?php
                           // Check if user can edit this pengurus
                           $can_edit = false;
-                          if ($_SESSION['role'] == 'admin') {
+                          if (in_array($_SESSION['role'], ['admin', 'superadmin'])) {
                               $can_edit = true;
                           } elseif ($_SESSION['role'] == 'pengprov' && $jenis == 'provinsi' && $id == $_SESSION['pengurus_id']) {
                               $can_edit = true;
@@ -871,7 +871,7 @@ function getRevisionNumber($filename) {
         <div class="info-card">
             <h3>📄 SK Pembentukan</h3>
             
-            <?php if ($_SESSION['role'] == 'admin'): ?>
+            <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
             <div class="sk-upload-form">
                 <form method="POST" enctype="multipart/form-data">
                     <label>Upload SK Baru (PDF)</label>
@@ -908,7 +908,7 @@ function getRevisionNumber($filename) {
                         <div class="sk-actions">
                             <a href="sk_download_pengurus.php?file=<?php echo urlencode($sk_file); ?>&id=<?php echo $id; ?>" 
                                class="btn btn-download">📥 Download</a>
-                            <?php if ($_SESSION['role'] == 'admin'): ?>
+                            <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
                             <a href="pengurus_detail.php?id=<?php echo $id; ?>&delete_sk=<?php echo urlencode($sk_file); ?>" 
                                class="btn btn-danger-small" onclick="return confirm('Hapus SK ini?')">Hapus</a>
                             <?php endif; ?>

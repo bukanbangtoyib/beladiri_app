@@ -22,8 +22,8 @@ $permission_manager = new PermissionManager(
 
 $GLOBALS['permission_manager'] = $permission_manager;
 
-// Check if admin
-$is_admin = ($_SESSION['role'] === 'admin');
+// Check if admin or superadmin
+$is_admin = in_array($_SESSION['role'], ['admin', 'superadmin']);
 
 // Get user's organization info for non-admin
 // The session's pengurus_id IS the organization ID (negara_id, provinsi_id, or kota_id)

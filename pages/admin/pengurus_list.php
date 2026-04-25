@@ -25,7 +25,7 @@ $GLOBALS['permission_manager'] = $permission_manager;
 
 // Check permission untuk action ini - allow all roles including tamu
 $user_role = $_SESSION['role'] ?? '';
-$allowed_roles = ['admin', 'negara', 'pengprov', 'pengkot', 'unit', 'tamu', 'anggota'];
+$allowed_roles = ['superadmin', 'admin', 'negara', 'pengprov', 'pengkot', 'unit', 'tamu', 'anggota'];
 if (!in_array($user_role, $allowed_roles)) {
     die("❌ Akses ditolak!");
 }
@@ -110,7 +110,7 @@ $can_edit = false;
 $can_delete = false;
 
 // Determine permissions based on role and jenis
-if ($user_role === 'admin') {
+if (in_array($user_role, ['admin', 'superadmin'])) {
     $is_readonly = false;
     $can_add = true;
     $can_edit = true;
@@ -399,7 +399,7 @@ if ($user_role === 'admin') {
                             $row_negara_id = $row['negara_id'] ?? 0;
                             $row_provinsi_id = $row['provinsi_id'] ?? 0;
                             
-                            if ($user_role === 'admin') {
+                            if (in_array($user_role, ['admin', 'superadmin'])) {
                                 // Admin can do everything
                                 $show_actions = true;
                                 $show_delete = true;

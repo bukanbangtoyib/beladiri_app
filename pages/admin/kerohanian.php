@@ -121,11 +121,11 @@ if ($user_role == 'negara' && $user_pengurus_id) {
 // Admin can do everything
 // negara, pengprov, pengkot can add, edit, delete their own data
 // Other roles are read-only
-$is_readonly = !in_array($user_role, ['admin', 'negara', 'pengprov', 'pengkot']);
-$can_add = in_array($user_role, ['admin', 'negara', 'pengprov', 'pengkot']);
-$can_edit = in_array($user_role, ['admin', 'negara', 'pengprov', 'pengkot']);
-$can_delete = in_array($user_role, ['admin', 'negara', 'pengprov', 'pengkot']);
-$can_import = in_array($user_role, ['admin', 'negara', 'pengprov', 'pengkot']);
+$is_readonly = !in_array($user_role, ['superadmin', 'admin', 'negara', 'pengprov', 'pengkot']);
+$can_add = in_array($user_role, ['superadmin', 'admin', 'negara', 'pengprov', 'pengkot']);
+$can_edit = in_array($user_role, ['superadmin', 'admin', 'negara', 'pengprov', 'pengkot']);
+$can_delete = in_array($user_role, ['superadmin', 'admin', 'negara', 'pengprov', 'pengkot']);
+$can_import = in_array($user_role, ['superadmin', 'admin', 'negara', 'pengprov', 'pengkot']);
 
 // Helper: format no_anggota sesuai pengaturan
 function formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) {
@@ -440,7 +440,7 @@ function singkatanTingkat($nama_tingkat) {
                             // Check if user can edit/delete this specific record
                             // Admin can edit all, others can only edit their own organization's data
                             $record_penyelenggara = $row['penyelenggara'] ?? '';
-                            $is_owner = ($user_role === 'admin') || ($record_penyelenggara === $user_org_name);
+                            $is_owner = in_array($user_role, ['admin', 'superadmin']) || ($record_penyelenggara === $user_org_name);
                             ?>
                             <div class="action-icons">
                                 <a href="kerohanian_detail.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-view" title="Lihat">

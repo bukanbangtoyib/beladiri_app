@@ -8,7 +8,7 @@ session_start();
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'negara', 'pengprov'])) {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['superadmin','admin', 'negara', 'pengprov'])) {
     echo json_encode(['success' => false, 'message' => 'Akses ditolak!']);
     exit();
 }

@@ -15,8 +15,8 @@ if (!isset($_SESSION['user_id'])) {
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
-// For write operations, restrict to admin/negara/pengprov
-if (in_array($action, ['add', 'update', 'delete', 'reorder']) && !in_array($_SESSION['role'], ['admin', 'negara', 'pengprov'])) {
+// For write operations, restrict to superadmin/admin/negara/pengprov
+if (in_array($action, ['add', 'update', 'delete', 'reorder']) && !in_array($_SESSION['role'], ['superadmin','admin', 'negara', 'pengprov'])) {
     echo json_encode(['success' => false, 'message' => 'Akses ditolak! Hanya admin/negara/pengprov yang bisa melakukan aksi ini.']);
     exit();
 }

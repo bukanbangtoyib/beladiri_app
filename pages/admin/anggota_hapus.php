@@ -10,7 +10,7 @@ $user_role = $_SESSION['role'] ?? '';
 $user_ranting_id = $_SESSION['ranting_id'] ?? 0;
 
 // Allow admin, ranting, and unit roles
-if (!in_array($user_role, ['admin', 'ranting', 'unit'])) {
+if (!in_array($user_role, ['superadmin', 'admin', 'ranting', 'unit'])) {
     header("Location: ../../login.php");
     exit();
 }

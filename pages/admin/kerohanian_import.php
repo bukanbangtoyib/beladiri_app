@@ -2,7 +2,7 @@
 session_start();
 
 // Allow admin, negara, pengprov, pengkot to import
-$allowed_roles = ['admin', 'negara', 'pengprov', 'pengkot'];
+$allowed_roles = ['superadmin','admin', 'negara', 'pengprov', 'pengkot'];
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], $allowed_roles)) {
     header("Location: ../../login.php");
     exit();

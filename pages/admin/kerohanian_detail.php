@@ -209,7 +209,7 @@ $age = $birthDate->diff($today)->y;
                 <div class="value"><span class="badge"><?php echo $kerohanian['tingkat_pembuka_nama']; ?></span></div>
             </div>         
                 
-            <?php if ($_SESSION['role'] == 'admin'): ?>
+            <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
             <div class="button-group">
                 <button onclick="window.print()" class="btn btn-warning" style="background: #6c757d;">
                     🖨️ Print Detail

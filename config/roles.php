@@ -1,6 +1,45 @@
 <?php
 // Definisi role dan permission
 $ROLES_CONFIG = [
+    'superadmin' => [
+        'label' => 'Super Administrator',
+        'description' => 'Full access to all features including creating admin accounts',
+        'permissions' => [
+            'view_dashboard' => true,
+            'anggota_create' => true,
+            'anggota_read' => true,
+            'anggota_update' => true,
+            'anggota_delete' => true,
+            'anggota_import' => true,
+            'anggota_export' => true,
+            'ukt_create' => true,
+            'ukt_read' => true,
+            'ukt_update' => true,
+            'ukt_delete' => true,
+            'ukt_manage_pusat' => true,
+            'ukt_manage_provinsi' => true,
+            'ukt_manage_kota' => true,
+            'kerohanian_create' => true,
+            'kerohanian_read' => true,
+            'kerohanian_update' => true,
+            'kerohanian_delete' => true,
+            'pengurus_create' => true,
+            'pengurus_read' => true,
+            'pengurus_update' => true,
+            'pengurus_delete' => true,
+            'ranting_create' => true,
+            'ranting_read' => true,
+            'ranting_update' => true,
+            'ranting_delete' => true,
+            'jadwal_create' => true,
+            'jadwal_read' => true,
+            'jadwal_update' => true,
+            'jadwal_delete' => true,
+            'user_manage' => true,
+            'settings' => true,
+        ]
+    ],
+
     'admin' => [
         'label' => 'Administrator',
         'description' => 'Full access to all features',
