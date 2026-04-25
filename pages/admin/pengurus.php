@@ -25,7 +25,7 @@ $GLOBALS['permission_manager'] = $permission_manager;
 
 // Check permission untuk action ini - allow all roles including tamu
 $user_role = $_SESSION['role'] ?? '';
-$allowed_roles = ['admin', 'negara', 'pengprov', 'pengkot', 'unit', 'tamu', 'anggota'];
+$allowed_roles = ['superadmin', 'admin', 'negara', 'pengprov', 'pengkot', 'unit', 'tamu', 'anggota'];
 if (!in_array($user_role, $allowed_roles)) {
     die("❌ Akses ditolak!");
 }
