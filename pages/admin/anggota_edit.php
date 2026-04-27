@@ -226,6 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $jenis_anggota = $is_anggota ? $anggota['jenis_anggota'] : $_POST['jenis_anggota'];
     $tahun_bergabung = $is_anggota ? $anggota['tahun_bergabung'] : (!empty($_POST['tahun_bergabung']) ? (int)$_POST['tahun_bergabung'] : NULL);
     $no_handphone = $conn->real_escape_string($_POST['no_handphone'] ?? '');
+    $alamat = $conn->real_escape_string($_POST['alamat'] ?? '');
     
     // Process UKT format
     $ukt_terakhir = $is_anggota ? $anggota['ukt_terakhir'] : ($_POST['ukt_terakhir'] ?? '');
@@ -304,19 +305,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     if (!$error) {
         // Process form data
-        $sql = "UPDATE anggota SET 
+$sql = "UPDATE anggota SET 
                 no_anggota = ?,
                 nama_lengkap = ?, tempat_lahir = ?, tanggal_lahir = ?, 
                 jenis_kelamin = ?, ranting_awal_id = ?, ranting_awal_manual = ?, ranting_saat_ini_id = ?, tingkat_id = ?, 
-                jenis_anggota = ?, tahun_bergabung = ?, no_handphone = ?,
+                jenis_anggota = ?, tahun_bergabung = ?, no_handphone = ?, alamat = ?,
                 ukt_terakhir = ?, nama_foto = ? WHERE id = ?";
         
         $stmt = $conn->prepare($sql);
         
         if ($stmt) {
-            // Total 15 parameter: no_anggota, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, ranting_awal_id, ranting_awal_manual, ranting_saat_ini_id, tingkat_id, jenis_anggota, tahun_bergabung, no_handphone, ukt_terakhir, nama_foto, id
+            // Total 16 parameters: no_anggota, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, ranting_awal_id, ranting_awal_manual, ranting_saat_ini_id, tingkat_id, jenis_anggota, tahun_bergabung, no_handphone, alamat, ukt_terakhir, nama_foto, id
             $stmt->bind_param(
-                "sssssisiiiisssi",
+                "ssssisisiiiissi",
                 $no_anggota,
                 $nama_lengkap, 
                 $tempat_lahir, 
@@ -329,6 +330,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $jenis_anggota,
                 $tahun_bergabung,
                 $no_handphone,
+                $alamat,
                 $ukt_terakhir,
                 $foto_path,
                 $id
@@ -486,7 +488,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
         input[type="file"],
         input[type="number"],
         input[type="tel"],
-        select {
+        select, textarea {
             width: 100%;
             padding: 11px 14px;
             border: 1px solid #ddd;
@@ -496,8 +498,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
             transition: all 0.3s;
         }
         
-        input:focus,
-        select:focus {
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -508,6 +509,7 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
             cursor: not-allowed;
         }
         
+        textarea { resize: none; min-height: 100px; }
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1076,8 +1078,16 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                     </div>
                 </div>
                 
+                <div class="form-row full">
+                    <div class="form-group" style="width: 100%;">
+                        <label>Alamat Lengkap</label>
+                        <textarea name="alamat" rows="3" placeholder="Masukkan alamat lengkap (jalan, kelurahan, kecamatan, kota, provinsi)"><?php echo htmlspecialchars($anggota['alamat'] ?? ''); ?></textarea>
+                        <div class="form-hint">Alamat tempat tinggal saat ini</div>
+                    </div>
+                </div>
+                
                 <hr>               
-                                
+                                 
                 <!-- Prestasi Section -->
                 <h3>🏆 Prestasi yang Diraih (Opsional)</h3>
                 

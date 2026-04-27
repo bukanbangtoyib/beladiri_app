@@ -334,7 +334,7 @@ $kota_result = $conn->query("SELECT id, nama FROM kota ORDER BY nama");
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
-        textarea { resize: vertical; min-height: 100px; }
+        textarea { resize: none; min-height: 100px; }
         
         .form-row {
             display: grid;

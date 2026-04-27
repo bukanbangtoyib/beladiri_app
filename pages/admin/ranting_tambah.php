@@ -211,7 +211,7 @@ $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        textarea { resize: vertical; min-height: 100px; }
+        textarea { resize: none; min-height: 100px; }
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;

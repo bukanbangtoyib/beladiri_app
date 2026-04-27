@@ -40,10 +40,10 @@ if (isset($_GET['download']) && $_GET['download'] === 'anggota') {
     
     $output = fopen('php://output', 'w');
     // Header
-    fputcsv($output, ['negara_kode', 'provinsi_kode', 'kota_kode', 'ranting_kode', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'no_handphone', 'jenis_anggota', 'tingkat_id', 'tahun_bergabung', 'ranting_awal_manual'], ';');
+    fputcsv($output, ['negara_kode', 'provinsi_kode', 'kota_kode', 'ranting_kode', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'no_handphone', 'alamat', 'jenis_anggota', 'tingkat_id', 'tahun_bergabung', 'ranting_awal_manual'], ';');
     // Filter examples
-    fputcsv($output, ['ID', '001', '001', '001', 'Budi Santoso', 'Jakarta', '1990-05-15', 'L', '08123456789', 'murid', '1', '2024', 'Ranting Surabaya Timur'], ';');
-    fputcsv($output, ['ID', '001', '001', '001', 'Siti Nurhaliza', 'Bandung', '1992-03-20', 'P', '08123456780', 'pelatih', '2', '2023', 'Ranting Bandung Utara'], ';');
+    fputcsv($output, ['ID', '001', '001', '001', 'Budi Santoso', 'Jakarta', '1990-05-15', 'L', '08123456789', 'Jl. Merdeka No. 123, Jakarta Pusat', 'murid', '1', '2024', 'Ranting Surabaya Timur'], ';');
+    fputcsv($output, ['ID', '001', '001', '001', 'Siti Nurhaliza', 'Bandung', '1992-03-20', 'P', '08123456780', 'Jl. Asia Afrika No. 45, Bandung', 'pelatih', '2', '2023', 'Ranting Bandung Utara'], ';');
     
     fclose($output);
     exit();
@@ -106,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_excel'])) {
             $tanggal_lahir_col = null;
             $jenis_kelamin_col = null;
             $no_handphone_col = null;
+            $alamat_col = null;
             $jenis_anggota_col = null;
             $tingkat_id_col = null;
             $tahun_bergabung_col = null;
@@ -121,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_excel'])) {
                 if (strpos($col, 'tanggal_lahir') !== false) $tanggal_lahir_col = $idx;
                 if (strpos($col, 'jenis_kelamin') !== false) $jenis_kelamin_col = $idx;
                 if (strpos($col, 'no_handphone') !== false || strpos($col, 'handphone') !== false || strpos($col, 'hp') !== false) $no_handphone_col = $idx;
+                if (strpos($col, 'alamat') !== false) $alamat_col = $idx;
                 if (strpos($col, 'jenis_anggota') !== false) $jenis_anggota_col = $idx;
                 if (strpos($col, 'tingkat') !== false || strpos($col, 'tingkat_id') !== false) $tingkat_id_col = $idx;
                 if (strpos($col, 'tahun_bergabung') !== false) $tahun_bergabung_col = $idx;
@@ -138,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_excel'])) {
                 
                 // Prepared statements
                 $check_stmt = $conn->prepare("SELECT id FROM anggota WHERE no_anggota = ?");
-                $insert_stmt = $conn->prepare("INSERT INTO anggota (no_anggota, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, ranting_awal_id, ranting_awal_manual, ranting_saat_ini_id, tingkat_id, jenis_anggota, tahun_bergabung, no_handphone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $insert_stmt = $conn->prepare("INSERT INTO anggota (no_anggota, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, ranting_awal_id, ranting_awal_manual, ranting_saat_ini_id, tingkat_id, jenis_anggota, tahun_bergabung, no_handphone, alamat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 
                 while ($row = fgetcsv($handle, 0, ';')) {
                     $row_num++;
@@ -155,6 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_excel'])) {
                     $tanggal_lahir_raw = isset($tanggal_lahir_col) ? trim($row[$tanggal_lahir_col] ?? '') : '';
                     $jenis_kelamin = isset($jenis_kelamin_col) ? strtoupper(trim($row[$jenis_kelamin_col] ?? '')) : '';
                     $no_handphone = isset($no_handphone_col) ? trim($row[$no_handphone_col] ?? '') : '';
+                    $alamat = isset($alamat_col) ? trim($row[$alamat_col] ?? '') : '';
                     $jenis_anggota = isset($jenis_anggota_col) ? trim($row[$jenis_anggota_col] ?? '') : '';
                     $tingkat_urutan = isset($tingkat_id_col) ? trim($row[$tingkat_id_col] ?? '') : '';
 $tingkat_id = 1; // default to first level
@@ -265,20 +268,21 @@ if (!empty($tingkat_urutan)) {
                     // Insert data
                     // Set ranting_awal_id same as ranting_saat_ini_id for import
                     $ranting_awal_id = $ranting_id;
-                    $insert_stmt->bind_param("sssssssiisss", 
-                        $no_anggota,           // s
-                        $nama_lengkap,         // s
-                        $tempat_lahir,         // s
-                        $tanggal_lahir,        // s
-                        $jenis_kelamin,        // s
-                        $ranting_awal_id,      // s (NULL - same as ranting_saat_ini_id)
-                        $ranting_awal_manual,  // s
-                        $ranting_id,           // i
-                        $tingkat_id,           // i
-                        $jenis_anggota_id,     // i (ID instead of name)
-                        $year,                 // s
-                        $no_handphone          // s
-                    );
+$insert_stmt->bind_param("sssssssiissss", 
+                         $no_anggota,           // s
+                         $nama_lengkap,         // s
+                         $tempat_lahir,         // s
+                         $tanggal_lahir,        // s
+                         $jenis_kelamin,        // s
+                         $ranting_awal_id,      // s (NULL - same as ranting_saat_ini_id)
+                         $ranting_awal_manual,  // s
+                         $ranting_id,           // i
+                         $tingkat_id,           // i
+                         $jenis_anggota_id,     // i (ID instead of name)
+                         $year,                 // s
+                         $no_handphone,         // s
+                         $alamat                // s
+                     );
                     
                     if ($insert_stmt->execute()) {
                         log_import_anggota($row_num, "'$nama_lengkap' berhasil ditambahkan (No: $no_anggota)", 'success');
@@ -417,6 +421,7 @@ if (!empty($tingkat_urutan)) {
                         <li style="margin-bottom: 6px;"><strong>tanggal_lahir</strong> - Tanggal lahir (dd/mm/yyyy)</li>
                         <li style="margin-bottom: 6px;"><strong>jenis_kelamin</strong> - L (Laki-laki) atau P (Perempuan)</li>
                         <li style="margin-bottom: 6px;"><strong>no_handphone</strong> - Nomor telepon (contoh: 08123456789)</li>
+                        <li style="margin-bottom: 6px;"><strong>alamat</strong> - Alamat lengkap anggota</li>
                         <li style="margin-bottom: 6px;"><strong>jenis_anggota</strong> - Jenis anggota (contoh: Murid, Pelatih, Pelatih Unit/Ranting)</li>
                         <li style="margin-bottom: 6px;"><strong>tingkat_id</strong> - ID tingkat (angka)</li>
                         <li style="margin-bottom: 6px;"><strong>tahun_bergabung</strong> - Tahun bergabung (contoh: 2024)</li>

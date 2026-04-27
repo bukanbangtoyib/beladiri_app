@@ -605,6 +605,11 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
                         </div>
                         
                         <div class="info-row">
+                            <div class="label">Alamat Lengkap</div>
+                            <div class="value"><?php echo !empty($anggota['alamat']) ? nl2br(htmlspecialchars($anggota['alamat'])) : '-'; ?></div>
+                        </div>
+                        
+                        <div class="info-row">
                             <div class="label">Tingkat Saat Ini</div>
                             <div class="value highlight"><?php echo $anggota['nama_tingkat']; ?></div>
                         </div>

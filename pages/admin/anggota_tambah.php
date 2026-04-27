@@ -203,6 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $jenis_anggota = $_POST['jenis_anggota'];
     $tahun_bergabung = !empty($_POST['tahun_bergabung']) ? (int)$_POST['tahun_bergabung'] : NULL;
     $no_handphone = $conn->real_escape_string($_POST['no_handphone'] ?? '');
+    $alamat = $conn->real_escape_string($_POST['alamat'] ?? '');
     
     // Convert dd/mm/yyyy to yyyy-mm-dd for MySQL
     $ukt_terakhir = $_POST['ukt_terakhir'] ?? '';
@@ -302,14 +303,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $sql = "INSERT INTO anggota (
                 no_anggota, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin,
                 ranting_awal_id, ranting_awal_manual, ranting_saat_ini_id, tingkat_id, jenis_anggota,
-                tahun_bergabung, no_handphone, ukt_terakhir, nama_foto
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                tahun_bergabung, no_handphone, alamat, ukt_terakhir, nama_foto
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $conn->prepare($sql);
             
             if ($stmt) {
-                // Total 14 parameter
-                $stmt->bind_param("ssssssssssssss", 
+                // Total 15 parameter
+                $stmt->bind_param("sssssssssssssss", 
                     $no_anggota,           // s
                     $nama_lengkap,         // s
                     $tempat_lahir,         // s
@@ -322,6 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $jenis_anggota,        // s
                     $tahun_bergabung,      // s
                     $no_handphone,         // s
+                    $alamat,               // s
                     $ukt_terakhir,         // s
                     $foto_path             // s
                 );
@@ -454,7 +456,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
         input[type="file"],
         input[type="number"],
         input[type="tel"],
-        select {
+        select, textarea {
             width: 100%;
             padding: 11px 14px;
             border: 1px solid #ddd;
@@ -463,19 +465,19 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
             font-family: 'Segoe UI', sans-serif;
             transition: all 0.3s;
         }
-        
-        input:focus,
-        select:focus {
+
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        
+
         input:disabled {
             background-color: #f5f5f5;
             cursor: not-allowed;
         }
         
+        textarea { resize: none; min-height: 100px; }
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -910,30 +912,38 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                         </div>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Jenis Kelamin <span class="required">*</span></label>
-                            <select name="jenis_kelamin" required>
-                                <option value="">-- Pilih Jenis Kelamin --</option>
-                                <option value="L">Laki-laki</option>
-                                <option value="P">Perempuan</option>
-                            </select>
-                        </div>
+<div class="form-row">
+                            <div class="form-group">
+                                <label>Jenis Kelamin <span class="required">*</span></label>
+                                <select name="jenis_kelamin" required>
+                                    <option value="">-- Pilih Jenis Kelamin --</option>
+                                    <option value="L">Laki-laki</option>
+                                    <option value="P">Perempuan</option>
+                                </select>
+                            </div>
 
-                        <div class="form-group">
-                            <label>No. Handphone</label>
-                            <input type="tel" name="no_handphone" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Contoh: 08xxxxxxxxxx">
-                            <div class="form-hint">Nomor telepon yang dapat dihubungi</div>
+                            <div class="form-group">
+                                <label>No. Handphone</label>
+                                <input type="tel" name="no_handphone" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Contoh: 08xxxxxxxxxx">
+                                <div class="form-hint">Nomor telepon yang dapat dihubungi</div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Foto Profil</label>
-                            <input type="file" name="foto" accept="image/*">
-                            <div class="form-hint">Format: JPG, PNG (Ukuran maksimal 5MB) | Nama file akan menjadi: NoAnggota_NamaLengkap.jpg</div>
+                        
+                        <div class="form-row full">
+                            <div class="form-group">
+                                <label>Alamat Lengkap</label>
+                                <textarea name="alamat" placeholder="Masukkan alamat lengkap (jalan, kelurahan, kecamatan, kota, provinsi)"></textarea>
+                                <div class="form-hint">Alamat tempat tinggal saat ini</div>
+                            </div>
                         </div>
-                    </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Foto Profil</label>
+                                <input type="file" name="foto" accept="image/*">
+                                <div class="form-hint">Format: JPG, PNG (Ukuran maksimal 5MB) | Nama file akan menjadi: NoAnggota_NamaLengkap.jpg</div>
+                            </div>
+                        </div>
                     
                     <hr>
                     
