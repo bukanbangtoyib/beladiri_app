@@ -207,6 +207,7 @@ $is_readonly = $_SESSION['role'] == 'tamu';
             margin-bottom: 25px;
         }
         
+        
         h1 { color: #333; margin-bottom: 10px; }
         h3 { color: #333; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #667eea; }
         
@@ -335,163 +336,168 @@ $is_readonly = $_SESSION['role'] == 'tamu';
 <body>
     <?php renderNavbar('Jadwal Latihan'); ?>
     
-    <div class="container">
-        <?php if ($error): ?>
-            <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-        <?php endif; ?>
-        
-        <?php if ($success): ?>
-            <div class="alert alert-success">✓ <?php echo $success; ?></div>
-        <?php endif; ?>
-        
-        <!-- Filter Section -->
-        <div class="card">
-            <h3>🔍 Filter Jadwal Latihan (Cascade)</h3>
-            
-            <div class="info-text">
-                <strong>ℹ️ Cara Menggunakan:</strong> Pilih Negara terlebih dahulu, lalu Provinsi akan menampilkan list yang ada di bawahnya, kemudian Kota, dan terakhir Unit/Ranting.
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="header" style="max-width: 1400px; margin: auto;">
+                <h1>Jadwal Latihan Unit / Ranting</h1>
             </div>
+            <?php if ($error): ?>
+                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
+            <?php endif; ?>
             
-            <form id="filterForm" onsubmit="return false;">
-                        <div class="filter-row-regional">
-                        <!-- Filter 1: Negara -->
-                        <div class="form-group">
-                            <label for="filter_negara">🌍 Negara</label>
-                            <select name="filter_negara" id="filter_negara" onchange="updateProvinsi()">
-                                <option value="">-- Pilih Negara --</option>
-                                <?php 
-                                $negara_result->data_seek(0);
-                                while ($row = $negara_result->fetch_assoc()): 
-                                ?>
-                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_negara == $row['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($row['nama']); ?>
-                                    </option>
-                                <?php endwhile; ?>
-                            </select>
-                        </div>
-
-                        <!-- Filter 2: Provinsi -->
-                        <div class="form-group">
-                            <label for="filter_provinsi">📍 Provinsi</label>
-                            <select name="filter_provinsi" id="filter_provinsi" onchange="updateKota()" <?php echo $filter_negara == 0 ? 'disabled' : ''; ?>>
-                                <option value="">-- Pilih Provinsi --</option>
-                                <?php 
-                                if ($provinsi_result) {
-                                    $provinsi_result->data_seek(0);
-                                    while ($row = $provinsi_result->fetch_assoc()): 
+            <?php if ($success): ?>
+                <div class="alert alert-success">✓ <?php echo $success; ?></div>
+            <?php endif; ?>
+            
+            <!-- Filter Section -->
+            <div class="card">
+                <h3>🔍 Filter Jadwal Latihan (Cascade)</h3>
+                
+                <div class="info-text">
+                    <strong>ℹ️ Cara Menggunakan:</strong> Pilih Negara terlebih dahulu, lalu Provinsi akan menampilkan list yang ada di bawahnya, kemudian Kota, dan terakhir Unit/Ranting.
+                </div>
+                
+                <form id="filterForm" onsubmit="return false;">
+                            <div class="filter-row-regional">
+                            <!-- Filter 1: Negara -->
+                            <div class="form-group">
+                                <label for="filter_negara">🌍 Negara</label>
+                                <select name="filter_negara" id="filter_negara" onchange="updateProvinsi()">
+                                    <option value="">-- Pilih Negara --</option>
+                                    <?php 
+                                    $negara_result->data_seek(0);
+                                    while ($row = $negara_result->fetch_assoc()): 
                                     ?>
-                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_provinsi == $row['id'] ? 'selected' : ''; ?>>
+                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_negara == $row['id'] ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($row['nama']); ?>
                                         </option>
-                                    <?php endwhile;
-                                }
-                                ?>
-                            </select>
-                        </div>
+                                    <?php endwhile; ?>
+                                </select>
+                            </div>
 
-                        <!-- Filter 3: Kota -->
-                        <div class="form-group">
-                            <label for="filter_kota">🏛️ Kota / Kabupaten</label>
-                            <select name="filter_kota" id="filter_kota" onchange="updateRanting()" <?php echo $filter_provinsi == 0 ? 'disabled' : ''; ?>>
-                                <option value="">-- Pilih Kota --</option>
-                                <?php 
-                                if ($kota_result) {
-                                    $kota_result->data_seek(0);
-                                    while ($row = $kota_result->fetch_assoc()): 
+                            <!-- Filter 2: Provinsi -->
+                            <div class="form-group">
+                                <label for="filter_provinsi">📍 Provinsi</label>
+                                <select name="filter_provinsi" id="filter_provinsi" onchange="updateKota()" <?php echo $filter_negara == 0 ? 'disabled' : ''; ?>>
+                                    <option value="">-- Pilih Provinsi --</option>
+                                    <?php 
+                                    if ($provinsi_result) {
+                                        $provinsi_result->data_seek(0);
+                                        while ($row = $provinsi_result->fetch_assoc()): 
+                                        ?>
+                                            <option value="<?php echo $row['id']; ?>" <?php echo $filter_provinsi == $row['id'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($row['nama']); ?>
+                                            </option>
+                                        <?php endwhile;
+                                    }
                                     ?>
-                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_kota == $row['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($row['nama']); ?>
-                                        </option>
-                                    <?php endwhile;
-                                }
-                                ?>
-                            </select>
-                        </div>
+                                </select>
+                            </div>
 
-                        <!-- Filter 4: Ranting -->
-                        <div class="form-group">
-                            <label for="ranting_id">🢂 Unit/Ranting</label>
-                            <select name="ranting_id" id="ranting_id" onchange="applyFilters()" <?php echo $filter_kota == 0 ? 'disabled' : ''; ?>>
-                                <option value="">-- Pilih Ranting --</option>
-                                <?php 
-                                if ($ranting_result && $ranting_result->num_rows > 0) {
-                                    $ranting_result->data_seek(0);
-                                    while ($row = $ranting_result->fetch_assoc()): 
+                            <!-- Filter 3: Kota -->
+                            <div class="form-group">
+                                <label for="filter_kota">🏛️ Kota / Kabupaten</label>
+                                <select name="filter_kota" id="filter_kota" onchange="updateRanting()" <?php echo $filter_provinsi == 0 ? 'disabled' : ''; ?>>
+                                    <option value="">-- Pilih Kota --</option>
+                                    <?php 
+                                    if ($kota_result) {
+                                        $kota_result->data_seek(0);
+                                        while ($row = $kota_result->fetch_assoc()): 
+                                        ?>
+                                            <option value="<?php echo $row['id']; ?>" <?php echo $filter_kota == $row['id'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($row['nama']); ?>
+                                            </option>
+                                        <?php endwhile;
+                                    }
                                     ?>
-                                        <option value="<?php echo $row['id']; ?>" <?php echo ($ranting_id == $row['id']) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($row['nama_ranting']); ?>
-                                        </option>
-                                    <?php endwhile;
-                                }
-                                ?>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="filter-row" style="margin-top: 15px;">
-                        <!-- Filter 5: Hari -->
-                        <div class="form-group">
-                            <label for="filter_hari">📅 Hari</label>
-                            <select name="filter_hari" id="filter_hari" onchange="applyFilters()">
-                                <option value="">-- Semua Hari --</option>
-                                <?php 
-                                $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-                                foreach ($hari_options as $hari): 
-                                ?>
-                                    <option value="<?php echo $hari; ?>" <?php echo $filter_hari == $hari ? 'selected' : ''; ?>>
-                                        <?php echo $hari; ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                                </select>
+                            </div>
+
+                            <!-- Filter 4: Ranting -->
+                            <div class="form-group">
+                                <label for="ranting_id">🢂 Unit/Ranting</label>
+                                <select name="ranting_id" id="ranting_id" onchange="applyFilters()" <?php echo $filter_kota == 0 ? 'disabled' : ''; ?>>
+                                    <option value="">-- Pilih Ranting --</option>
+                                    <?php 
+                                    if ($ranting_result && $ranting_result->num_rows > 0) {
+                                        $ranting_result->data_seek(0);
+                                        while ($row = $ranting_result->fetch_assoc()): 
+                                        ?>
+                                            <option value="<?php echo $row['id']; ?>" <?php echo ($ranting_id == $row['id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($row['nama_ranting']); ?>
+                                            </option>
+                                        <?php endwhile;
+                                    }
+                                    ?>
+                                </select>
+                            </div>
                         </div>
                         
-                        <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
-                            <a href="jadwal_latihan.php" class="btn btn-reset">🔄 Reset</a>
+                        <div class="filter-row" style="margin-top: 15px;">
+                            <!-- Filter 5: Hari -->
+                            <div class="form-group">
+                                <label for="filter_hari">📅 Hari</label>
+                                <select name="filter_hari" id="filter_hari" onchange="applyFilters()">
+                                    <option value="">-- Semua Hari --</option>
+                                    <?php 
+                                    $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+                                    foreach ($hari_options as $hari): 
+                                    ?>
+                                        <option value="<?php echo $hari; ?>" <?php echo $filter_hari == $hari ? 'selected' : ''; ?>>
+                                            <?php echo $hari; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
+                                <a href="jadwal_latihan.php" class="btn btn-reset">🔄 Reset</a>
+                            </div>
                         </div>
-                    </div>
-            </form>
-        </div>
-                
-        <!-- Daftar Jadwal -->
-        <div class="card">
-            <h3>📋 Jadwal Latihan</h3>
-            
-            <?php if ($jadwal_result && $jadwal_result->num_rows > 0): ?>
-            <table style="width: 100%;">
-                <thead>
-                    <tr>
-                        <th>Unit/Ranting</th>
-                        <th>Hari</th>
-                        <th>Jam Mulai</th>
-                        <th>Jam Selesai</th>
-                        <th>Durasi</th>
-                    </tr>
-                </thead>
-                <tbody id="jadwal-tbody">
-                    <?php while ($row = $jadwal_result->fetch_assoc()): 
-                        $mulai = strtotime($row['jam_mulai']);
-                        $selesai = strtotime($row['jam_selesai']);
-                        $durasi = round(($selesai - $mulai) / 3600);
-                    ?>
-                    <tr id="row-<?php echo $row['id']; ?>">
-                        <td><strong><a href="ranting_detail.php?id=<?php echo $row['ranting_id']; ?>"><?php echo htmlspecialchars($row['nama_ranting'] ?? '-'); ?></a></strong></td>
-                        <td><strong><?php echo $row['hari']; ?></strong></td>
-                        <td><?php echo date('H:i', $mulai); ?></td>
-                        <td><?php echo date('H:i', $selesai); ?></td>
-                        <td><?php echo $durasi; ?> jam</td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="no-data">
-                <p>🔭 Belum ada jadwal latihan untuk filter yang dipilih</p>
+                </form>
             </div>
-            <?php endif; ?>
+                    
+            <!-- Daftar Jadwal -->
+            <div class="card">
+                <h3>📋 Jadwal Latihan</h3>
+                
+                <?php if ($jadwal_result && $jadwal_result->num_rows > 0): ?>
+                <table style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Unit/Ranting</th>
+                            <th>Hari</th>
+                            <th>Jam Mulai</th>
+                            <th>Jam Selesai</th>
+                            <th>Durasi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jadwal-tbody">
+                        <?php while ($row = $jadwal_result->fetch_assoc()): 
+                            $mulai = strtotime($row['jam_mulai']);
+                            $selesai = strtotime($row['jam_selesai']);
+                            $durasi = round(($selesai - $mulai) / 3600);
+                        ?>
+                        <tr id="row-<?php echo $row['id']; ?>">
+                            <td><strong><a href="ranting_detail.php?id=<?php echo $row['ranting_id']; ?>"><?php echo htmlspecialchars($row['nama_ranting'] ?? '-'); ?></a></strong></td>
+                            <td><strong><?php echo $row['hari']; ?></strong></td>
+                            <td><?php echo date('H:i', $mulai); ?></td>
+                            <td><?php echo date('H:i', $selesai); ?></td>
+                            <td><?php echo $durasi; ?> jam</td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="no-data">
+                    <p>🔭 Belum ada jadwal latihan untuk filter yang dipilih</p>
+                </div>
+                <?php endif; ?>
+            </div>
+
+
+            <!-- Form Input Jadwal -->        
         </div>
-
-
-        <!-- Form Input Jadwal -->        
     </div>
 
     <script>
