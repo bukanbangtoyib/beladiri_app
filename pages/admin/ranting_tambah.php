@@ -335,182 +335,185 @@ $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
     </style>
 </head>
 <body>
-    <?php renderNavbar('➕ Tambah Unit/Ranting'); ?>
+    <?php renderNavbar('Tambah Unit/Ranting'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <?php if ($error): ?>
-                <div class="alert alert-error">❌ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✓ <?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <form method="POST" enctype="multipart/form-data">
-                <h3>📋 Informasi Dasar</h3>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Formulir Penambahan Unit/Ranting Baru</h1>
+                <?php if ($error): ?>
+                    <div class="alert alert-error">❌ <?php echo $error; ?></div>
+                <?php endif; ?>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Jenis <span class="required">*</span></label>
-                        <select name="jenis" required>
-                            <option value="">-- Pilih Jenis --</option>
-                            <option value="ukm">UKM Perguruan Tinggi</option>
-                            <option value="ranting">Ranting</option>
-                            <option value="unit">Unit</option>
-                        </select>
-                    </div>
-                </div>
-
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✓ <?php echo $success; ?></div>
+                <?php endif; ?>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Negara <span class="required">*</span></label>
-                        <select name="negara_id" id="negara_id" onchange="updateProvinsi()" required>
-                            <option value="">-- Pilih Negara --</option>
-                            <?php foreach ($negara_list as $negara): ?>
-                                <option value="<?php echo $negara['id']; ?>" data-kode="<?php echo $negara['kode']; ?>"><?php echo htmlspecialchars($negara['nama']); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+                <form method="POST" enctype="multipart/form-data">
+                    <h3>📋 Informasi Dasar</h3>
                     
-                    <div class="form-group">
-                        <label>Kode Negara</label>
-                        <input type="text" id="kode_negara_display" readonly placeholder="-">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group" style="flex:2;">
-                        <label>Pengurus Provinsi <span class="required">*</span></label>
-                        <select name="pengurus_provinsi_id" id="pengurus_provinsi_id" onchange="updatePengKot()" required disabled>
-                            <option value="">-- Pilih Provinsi --</option>
-                            <?php while ($row = $pengurus_provinsi_result->fetch_assoc()): ?>
-                                <option value="<?php echo $row['id']; ?>" data-id_negara="<?php echo $row['negara_id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['nama']); ?></option>
-                            <?php endwhile; ?>
-                        </select>
-                        <div class="form-hint">Pilih provinsi terlebih dahulu</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Kode</label>
-                        <input type="text" id="kode_provinsi_display" readonly placeholder="-">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group" style="flex:2;">
-                        <label>Pengurus Kota <span class="required">*</span></label>
-                        <select name="kota_id" id="kota_id" required disabled>
-                            <option value="">-- Pilih Kota --</option>
-                        </select>
-                        <div class="form-hint">Akan ter-update sesuai provinsi yang dipilih</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Kode Kota</label>
-                        <input type="text" id="kode_kota_display" readonly placeholder="-">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nama Unit/Ranting <span class="required">*</span></label>
-                        <input type="text" name="nama_ranting" required placeholder="Contoh: Ranting Tenggilis">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Jenis <span class="required">*</span></label>
+                            <select name="jenis" required>
+                                <option value="">-- Pilih Jenis --</option>
+                                <option value="ukm">UKM Perguruan Tinggi</option>
+                                <option value="ranting">Ranting</option>
+                                <option value="unit">Unit</option>
+                            </select>
+                        </div>
                     </div>
 
                     
-                    <div class="form-group">
-                        <label>Kode Ranting</label>
-                        <input type="text" id="kode_ranting_display" readonly placeholder="Auto">
-                        <input type="hidden" name="kode_ranting" id="kode_ranting">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>No Kontak <span class="required">*</span></label>
-                        <input type="tel" name="no_kontak" required placeholder="08xxxxxxxxxx">
-                    </div>
-                </div>
-
-                <div class="form-row full">
-                    <div class="form-group">
-                        <label>Alamat <span class="required">*</span></label>
-                        <textarea name="alamat" required></textarea>
-                    </div>
-                </div>
-                                               
-                <hr>
-                
-                <h3>👤 Struktur Organisasi</h3>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nama Ketua <span class="required">*</span></label>
-                        <input type="text" name="ketua_nama" required>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Negara <span class="required">*</span></label>
+                            <select name="negara_id" id="negara_id" onchange="updateProvinsi()" required>
+                                <option value="">-- Pilih Negara --</option>
+                                <?php foreach ($negara_list as $negara): ?>
+                                    <option value="<?php echo $negara['id']; ?>" data-kode="<?php echo $negara['kode']; ?>"><?php echo htmlspecialchars($negara['nama']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kode Negara</label>
+                            <input type="text" id="kode_negara_display" readonly placeholder="-">
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label>Penanggung Jawab Teknik</label>
-                        <input type="text" name="penanggung_jawab">
+                    <div class="form-row">
+                        <div class="form-group" style="flex:2;">
+                            <label>Pengurus Provinsi <span class="required">*</span></label>
+                            <select name="pengurus_provinsi_id" id="pengurus_provinsi_id" onchange="updatePengKot()" required disabled>
+                                <option value="">-- Pilih Provinsi --</option>
+                                <?php while ($row = $pengurus_provinsi_result->fetch_assoc()): ?>
+                                    <option value="<?php echo $row['id']; ?>" data-id_negara="<?php echo $row['negara_id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['nama']); ?></option>
+                                <?php endwhile; ?>
+                            </select>
+                            <div class="form-hint">Pilih provinsi terlebih dahulu</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kode</label>
+                            <input type="text" id="kode_provinsi_display" readonly placeholder="-">
+                        </div>
                     </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Tanggal SK <span class="required">*</span></label>
-                        <input type="date" name="tanggal_sk" required>
+                    
+                    <div class="form-row">
+                        <div class="form-group" style="flex:2;">
+                            <label>Pengurus Kota <span class="required">*</span></label>
+                            <select name="kota_id" id="kota_id" required disabled>
+                                <option value="">-- Pilih Kota --</option>
+                            </select>
+                            <div class="form-hint">Akan ter-update sesuai provinsi yang dipilih</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kode Kota</label>
+                            <input type="text" id="kode_kota_display" readonly placeholder="-">
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>No SK Pembentukan</label>
-                        <input type="text" name="no_sk_pembentukan" placeholder="Contoh: 001/SK/KOTA/2024">
-                        <div class="form-hint">Nomor Surat Keputusan pembentukan (harus unik)</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nama Unit/Ranting <span class="required">*</span></label>
+                            <input type="text" name="nama_ranting" required placeholder="Contoh: Ranting Tenggilis">
+                        </div>
+
+                        
+                        <div class="form-group">
+                            <label>Kode Ranting</label>
+                            <input type="text" id="kode_ranting_display" readonly placeholder="Auto">
+                            <input type="hidden" name="kode_ranting" id="kode_ranting">
+                        </div>
                     </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Upload SK File (PDF)</label>
-                        <input type="file" name="sk_pembentukan" accept=".pdf">
-                        <div class="form-hint">Ukuran maksimal 5MB</div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>No Kontak <span class="required">*</span></label>
+                            <input type="tel" name="no_kontak" required placeholder="08xxxxxxxxxx">
+                        </div>
                     </div>
-                </div>
-                
-                <hr>
-                
-                <h3>👨‍🏫 Daftar Pelatih</h3>
-                <div class="info-box">
-                    <strong>ℹ️ Info:</strong> Cari pelatih berdasarkan nama atau nomor anggota.
-                </div>
 
-                <div style="position: relative; margin-bottom: 20px;">
-                    <input type="text" id="pelatih-search" placeholder="Cari nama pelatih..." autocomplete="off" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                    <div id="pelatih-results" class="search-results"></div>
-                </div>
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Alamat <span class="required">*</span></label>
+                            <textarea name="alamat" required></textarea>
+                        </div>
+                    </div>
+                                                
+                    <hr>
+                    
+                    <h3>👤 Struktur Organisasi</h3>
 
-                <div id="pelatih-list" style="margin-bottom: 20px;">
-                    <!-- Daftar pelatih akan muncul di sini -->
-                </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nama Ketua <span class="required">*</span></label>
+                            <input type="text" name="ketua_nama" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Penanggung Jawab Teknik</label>
+                            <input type="text" name="penanggung_jawab">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tanggal SK <span class="required">*</span></label>
+                            <input type="date" name="tanggal_sk" required>
+                        </div>
 
-                <hr>
-                
-                <h3>⏰ Jadwal Latihan (Opsional)</h3>
-                
-                <div class="info-box">
-                    <strong>ℹ️ Catatan:</strong> Anda dapat menambahkan jadwal latihan di sini. Jadwal bisa ditambah/diubah nanti di menu Jadwal Latihan atau Detail Unit.
-                </div>
-                
-                <div id="jadwal-list"></div>
-                
-                <button type="button" class="btn btn-primary btn-small" onclick="tambahJadwal()">+ Tambah Jadwal</button>
-                
-                <div class="button-group" style="margin-top: 40px;">
-                    <button type="submit" class="btn btn-primary">💾 Simpan Unit/Ranting</button>
-                    <a href="ranting.php" class="btn btn-secondary">Batal</a>
-                </div>
-            </form>
+                        <div class="form-group">
+                            <label>No SK Pembentukan</label>
+                            <input type="text" name="no_sk_pembentukan" placeholder="Contoh: 001/SK/KOTA/2024">
+                            <div class="form-hint">Nomor Surat Keputusan pembentukan (harus unik)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Upload SK File (PDF)</label>
+                            <input type="file" name="sk_pembentukan" accept=".pdf">
+                            <div class="form-hint">Ukuran maksimal 5MB</div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h3>👨‍🏫 Daftar Pelatih</h3>
+                    <div class="info-box">
+                        <strong>ℹ️ Info:</strong> Cari pelatih berdasarkan nama atau nomor anggota.
+                    </div>
+
+                    <div style="position: relative; margin-bottom: 20px;">
+                        <input type="text" id="pelatih-search" placeholder="Cari nama pelatih..." autocomplete="off" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                        <div id="pelatih-results" class="search-results"></div>
+                    </div>
+
+                    <div id="pelatih-list" style="margin-bottom: 20px;">
+                        <!-- Daftar pelatih akan muncul di sini -->
+                    </div>
+
+                    <hr>
+                    
+                    <h3>⏰ Jadwal Latihan (Opsional)</h3>
+                    
+                    <div class="info-box">
+                        <strong>ℹ️ Catatan:</strong> Anda dapat menambahkan jadwal latihan di sini. Jadwal bisa ditambah/diubah nanti di menu Jadwal Latihan atau Detail Unit.
+                    </div>
+                    
+                    <div id="jadwal-list"></div>
+                    
+                    <button type="button" class="btn btn-primary btn-small" onclick="tambahJadwal()">+ Tambah Jadwal</button>
+                    
+                    <div class="button-group" style="margin-top: 40px;">
+                        <button type="submit" class="btn btn-primary">💾 Simpan Unit/Ranting</button>
+                        <a href="ranting.php" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     

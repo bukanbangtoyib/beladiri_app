@@ -542,363 +542,365 @@ if ($foto_filename && file_exists($upload_dir . $foto_filename)) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('👥 Manajemen Anggota'); ?>
+    <?php renderNavbar('Manajemen Anggota'); ?>
     
-    <div class="container">
-        <!-- Profile Card -->
-        <div class="profile-card">
-            <div class="profile-photo">
-                <?php if ($foto_path): ?>
-                    <img src="<?php echo $foto_path; ?>" alt="Foto Profil">
-                <?php else: ?>
-                    <div class="no-photo">📷</div>
-                <?php endif; ?>
-                <div class="badge-status" style="background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%); color: #ffffff; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">
-                    <?php 
-                    // Tampilkan nama jenis dari tabel jenis_anggota berdasarkan ID
-                    $jenis_id = isset($anggota['jenis_anggota']) ? (int)$anggota['jenis_anggota'] : 0;
-                    $jenis_check = $conn->query("SELECT nama_jenis FROM jenis_anggota WHERE id = " . $jenis_id);
-                    $jenis_nama = 'Tidak Diketahui';
-                    if ($jenis_check && $jenis_check->num_rows > 0) {
-                        $jenis_data = $jenis_check->fetch_assoc();
-                        $jenis_nama = $jenis_data['nama_jenis'];
-                    }
-                    echo htmlspecialchars(strtoupper(str_replace('_', ' ', $jenis_nama))); 
-                    ?>
-                </div>
-            </div>
-            
-            <div class="profile-info">
-                <h2><?php echo htmlspecialchars($anggota['nama_lengkap']); ?></h2>
-                <div class="profile-subtitle">
-                    <strong>No Anggota  :</strong> <?php echo formatNoAnggotaDisplay($anggota['no_anggota'], $pengaturan_nomor); ?>
-                </div>
-                <div class="profile-subtitle" style="margin-top: 5px;">
-                    <strong>Regional    :</strong> <strong><?php echo htmlspecialchars(($anggota['nama_negara'] ?? '-') . ' / ' . ($anggota['nama_provinsi'] ?? '-') . ' / ' . ($anggota['nama_kota'] ?? '-')); ?></strong>
-                </div>
-                
-                <div class="info-section">
-                    <div class="info-row">
-                        <div class="label">Jenis Kelamin</div>
-                        <div class="value"><?php echo $anggota['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan'; ?></div>
-                    </div>
-                    
-                    <div class="info-row">
-                        <div class="label">Tempat Lahir</div>
-                        <div class="value"><?php echo htmlspecialchars($anggota['tempat_lahir']); ?></div>
-                    </div>
-                    
-                    <div class="info-row">
-                        <div class="label">Tanggal Lahir</div>
-                        <div class="value"><?php echo date('d M Y', strtotime($anggota['tanggal_lahir'])); ?> (<?php echo $age; ?> tahun)</div>
-                    </div>
-                    
-                    <div class="info-row">
-                        <div class="label">Tahun Bergabung</div>
-                        <div class="value"><?php echo $anggota['tahun_bergabung'] ?? '-'; ?></div>
-                    </div>
-                    
-                    <div class="info-row">
-                        <div class="label">No. Handphone</div>
-                        <div class="value"><?php echo $anggota['no_handphone'] ?? '-'; ?></div>
-                    </div>
-                    
-                    <div class="info-row">
-                        <div class="label">Tingkat Saat Ini</div>
-                        <div class="value highlight"><?php echo $anggota['nama_tingkat']; ?></div>
-                    </div>
-                    
-                    <div class="info-row">
-                        <div class="label">Unit/Ranting Awal</div>
-                        <div class="value">
-                            <?php if (!empty($anggota['nama_ranting_awal'])): ?>
-                                <a href="ranting_detail.php?id=<?php echo $anggota['ranting_awal_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 600;">
-                                    <?php echo htmlspecialchars($anggota['nama_ranting_awal']); ?> ↗
-                                </a>
-                            <?php elseif (!empty($anggota['ranting_awal_manual'])): ?>
-                                <?php echo htmlspecialchars($anggota['ranting_awal_manual']); ?>
-                            <?php else: echo '-';
-                            endif; ?>
-                        </div>
-                    </div>
-                    
-                    <div class="info-row">
-                        <div class="label">Unit/Ranting Saat Ini</div>
-                        <div class="value">
-                            <?php if (!empty($anggota['nama_ranting'])): ?>
-                                <a href="ranting_detail.php?id=<?php echo $anggota['ranting_saat_ini_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 600;">
-                                    <?php echo htmlspecialchars($anggota['nama_ranting']); ?> ↗
-                                </a>
-                            <?php else: echo '-';
-                            endif; ?>
-                        </div>
-                    </div>
-                    
-                    <div class="info-row">
-                        <div class="label">Status Kerohanian</div>
-                        <div class="value">
-                            <?php if ($anggota['status_kerohanian'] == 'sudah'): ?>
-                                <span style="color: #27ae60;">✓ Sudah (<?php echo date('d M Y', strtotime($anggota['tanggal_pembukaan_kerohanian'])); ?>)</span>
-                            <?php else: ?>
-                                <span style="color: #e74c3c;">✗ Belum</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="info-row">
-                        <div class="label">UKT Terakhir</div>
-                        <div class="value">
-                            <?php 
-                            $ukt_display = formatDateDisplay($ukt_terakhir_date);
-                            if ($ukt_display) {
-                                echo htmlspecialchars($ukt_display);
-                            } else {
-                                echo '-';
-                            }
-                            ?>
-                        </div>
-                    </div>
-
-                    <div class="info-row">
-                        <div class="label">Status Anggota</div>
-                        <div class="value">
-                            <?php 
-                            // Check if is_active column exists, default to 1 if not set
-                            $is_active = isset($anggota['is_active']) ? (int)$anggota['is_active'] : 1;
-                            
-                            if ($is_active === 1): 
-                            ?>
-                                <span style="color: #27ae60; font-weight: 600; font-size: 15px;">✓ Aktif</span>
-                            <?php else: ?>
-                                <span style="color: #e74c3c; font-weight: 600; font-size: 15px;">✗ Non Aktif</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="button-group">
-                    <?php if ($permission_manager->can('anggota_update', $anggota['pengurus_id'] ?? null, $anggota['ranting_saat_ini_id'] ?? null, $anggota['no_anggota'])): ?>
-                    <a href="anggota_edit.php?id=<?php echo $anggota['id']; ?>" class="btn btn-warning">✏️ Edit Data</a>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <!-- Profile Card -->
+            <div class="profile-card">
+                <div class="profile-photo">
+                    <?php if ($foto_path): ?>
+                        <img src="<?php echo $foto_path; ?>" alt="Foto Profil">
+                    <?php else: ?>
+                        <div class="no-photo">📷</div>
                     <?php endif; ?>
+                    <div class="badge-status" style="background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%); color: #ffffff; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">
+                        <?php 
+                        // Tampilkan nama jenis dari tabel jenis_anggota berdasarkan ID
+                        $jenis_id = isset($anggota['jenis_anggota']) ? (int)$anggota['jenis_anggota'] : 0;
+                        $jenis_check = $conn->query("SELECT nama_jenis FROM jenis_anggota WHERE id = " . $jenis_id);
+                        $jenis_nama = 'Tidak Diketahui';
+                        if ($jenis_check && $jenis_check->num_rows > 0) {
+                            $jenis_data = $jenis_check->fetch_assoc();
+                            $jenis_nama = $jenis_data['nama_jenis'];
+                        }
+                        echo htmlspecialchars(strtoupper(str_replace('_', ' ', $jenis_nama))); 
+                        ?>
+                    </div>
+                </div>
+                
+                <div class="profile-info">
+                    <h2><?php echo htmlspecialchars($anggota['nama_lengkap']); ?></h2>
+                    <div class="profile-subtitle">
+                        <strong>No Anggota  :</strong> <?php echo formatNoAnggotaDisplay($anggota['no_anggota'], $pengaturan_nomor); ?>
+                    </div>
+                    <div class="profile-subtitle" style="margin-top: 5px;">
+                        <strong>Regional    :</strong> <strong><?php echo htmlspecialchars(($anggota['nama_negara'] ?? '-') . ' / ' . ($anggota['nama_provinsi'] ?? '-') . ' / ' . ($anggota['nama_kota'] ?? '-')); ?></strong>
+                    </div>
                     
-                    <button onclick="window.print()" class="btn btn-warning" style="background: #6c757d;">
-                        🖨️ Print Detail
-                    </button>
+                    <div class="info-section">
+                        <div class="info-row">
+                            <div class="label">Jenis Kelamin</div>
+                            <div class="value"><?php echo $anggota['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan'; ?></div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <div class="label">Tempat Lahir</div>
+                            <div class="value"><?php echo htmlspecialchars($anggota['tempat_lahir']); ?></div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <div class="label">Tanggal Lahir</div>
+                            <div class="value"><?php echo date('d M Y', strtotime($anggota['tanggal_lahir'])); ?> (<?php echo $age; ?> tahun)</div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <div class="label">Tahun Bergabung</div>
+                            <div class="value"><?php echo $anggota['tahun_bergabung'] ?? '-'; ?></div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <div class="label">No. Handphone</div>
+                            <div class="value"><?php echo $anggota['no_handphone'] ?? '-'; ?></div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <div class="label">Tingkat Saat Ini</div>
+                            <div class="value highlight"><?php echo $anggota['nama_tingkat']; ?></div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <div class="label">Unit/Ranting Awal</div>
+                            <div class="value">
+                                <?php if (!empty($anggota['nama_ranting_awal'])): ?>
+                                    <a href="ranting_detail.php?id=<?php echo $anggota['ranting_awal_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                                        <?php echo htmlspecialchars($anggota['nama_ranting_awal']); ?> ↗
+                                    </a>
+                                <?php elseif (!empty($anggota['ranting_awal_manual'])): ?>
+                                    <?php echo htmlspecialchars($anggota['ranting_awal_manual']); ?>
+                                <?php else: echo '-';
+                                endif; ?>
+                            </div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <div class="label">Unit/Ranting Saat Ini</div>
+                            <div class="value">
+                                <?php if (!empty($anggota['nama_ranting'])): ?>
+                                    <a href="ranting_detail.php?id=<?php echo $anggota['ranting_saat_ini_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                                        <?php echo htmlspecialchars($anggota['nama_ranting']); ?> ↗
+                                    </a>
+                                <?php else: echo '-';
+                                endif; ?>
+                            </div>
+                        </div>
+                        
+                        <div class="info-row">
+                            <div class="label">Status Kerohanian</div>
+                            <div class="value">
+                                <?php if ($anggota['status_kerohanian'] == 'sudah'): ?>
+                                    <span style="color: #27ae60;">✓ Sudah (<?php echo date('d M Y', strtotime($anggota['tanggal_pembukaan_kerohanian'])); ?>)</span>
+                                <?php else: ?>
+                                    <span style="color: #e74c3c;">✗ Belum</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+    
+                        <div class="info-row">
+                            <div class="label">UKT Terakhir</div>
+                            <div class="value">
+                                <?php 
+                                $ukt_display = formatDateDisplay($ukt_terakhir_date);
+                                if ($ukt_display) {
+                                    echo htmlspecialchars($ukt_display);
+                                } else {
+                                    echo '-';
+                                }
+                                ?>
+                            </div>
+                        </div>
+    
+                        <div class="info-row">
+                            <div class="label">Status Anggota</div>
+                            <div class="value">
+                                <?php 
+                                // Check if is_active column exists, default to 1 if not set
+                                $is_active = isset($anggota['is_active']) ? (int)$anggota['is_active'] : 1;
+                                
+                                if ($is_active === 1): 
+                                ?>
+                                    <span style="color: #27ae60; font-weight: 600; font-size: 15px;">✓ Aktif</span>
+                                <?php else: ?>
+                                    <span style="color: #e74c3c; font-weight: 600; font-size: 15px;">✗ Non Aktif</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <?php if ($permission_manager->can('anggota_update', $anggota['pengurus_id'] ?? null, $anggota['ranting_saat_ini_id'] ?? null, $anggota['no_anggota'])): ?>
+                        <a href="anggota_edit.php?id=<?php echo $anggota['id']; ?>" class="btn btn-warning">✏️ Edit Data</a>
+                        <?php endif; ?>
+                        
+                        <button onclick="window.print()" class="btn btn-warning" style="background: #6c757d;">
+                            🖨️ Print Detail
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Informasi UKT Terakhir -->
-        <?php if ($ukt_terakhir_date): ?>
-        <div class="section">
-            <div class="ukt-info-box">
-                <strong>ℹ️ Catatan:</strong> "UKT Terakhir" menampilkan tanggal pelaksanaan UKT terakhir yang <strong>LULUS</strong>. 
-                Jika tidak ada data UKT lulus, maka akan menggunakan data UKT Terakhir dari input manual saat registrasi.
-            </div>
-        </div>
-        <?php endif; ?>
-        
-        <!-- Statistik UKT -->
-        <?php
-        $ukt_result->data_seek(0);
-        $total_ukt = $ukt_result->num_rows;
-        $lulus_count = 0;
-        $tidak_lulus_count = 0;
-        
-        $ukt_result->data_seek(0);
-        while ($row = $ukt_result->fetch_assoc()) {
-            if ($row['status'] == 'lulus') $lulus_count++;
-            if ($row['status'] == 'tidak_lulus') $tidak_lulus_count++;
-        }
-        ?>
-        
-        <!-- 1. Riwayat Ujian Kenaikan Tingkat (UKT) -->
-        <div class="section">
-            <h3>🏆 Riwayat Ujian Kenaikan Tingkat (UKT)</h3>
             
-            <?php if ($total_ukt > 0): ?>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo $total_ukt; ?></div>
-                    <div class="stat-label">Total UKT Diikuti</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" style="color: #27ae60;"><?php echo $lulus_count; ?></div>
-                    <div class="stat-label">Lulus</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" style="color: #e74c3c;"><?php echo $tidak_lulus_count; ?></div>
-                    <div class="stat-label">Tidak Lulus</div>
+            <!-- Informasi UKT Terakhir -->
+            <?php if ($ukt_terakhir_date): ?>
+            <div class="section">
+                <div class="ukt-info-box">
+                    <strong>ℹ️ Catatan:</strong> "UKT Terakhir" menampilkan tanggal pelaksanaan UKT terakhir yang <strong>LULUS</strong>. 
+                    Jika tidak ada data UKT lulus, maka akan menggunakan data UKT Terakhir dari input manual saat registrasi.
                 </div>
             </div>
+            <?php endif; ?>
             
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal Pelaksanaan</th>
-                        <th>Dari Tingkat</th>
-                        <th>Ke Tingkat</th>
-                        <th>Nilai</th>
-                        <th>Status</th>
-                        <th>Lokasi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $ukt_result->data_seek(0);
-                    while ($row = $ukt_result->fetch_assoc()): 
-                    ?>
-                    <tr>
-                        <td><strong><?php echo date('d M Y', strtotime($row['tanggal_pelaksanaan'])); ?></strong></td>
-                        <td><?php echo $row['tingkat_dari'] ?? '-'; ?></td>
-                        <td><?php echo $row['tingkat_ke'] ?? '-'; ?></td>
-                        <td>
-                            <?php if (!empty($row['id'])): ?>
-                                <a href="ukt_detail_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $row['ukt_id']; ?>" title="Lihat Detail Nilai">
+            <!-- Statistik UKT -->
+            <?php
+            $ukt_result->data_seek(0);
+            $total_ukt = $ukt_result->num_rows;
+            $lulus_count = 0;
+            $tidak_lulus_count = 0;
+            
+            $ukt_result->data_seek(0);
+            while ($row = $ukt_result->fetch_assoc()) {
+                if ($row['status'] == 'lulus') $lulus_count++;
+                if ($row['status'] == 'tidak_lulus') $tidak_lulus_count++;
+            }
+            ?>
+            
+            <!-- 1. Riwayat Ujian Kenaikan Tingkat (UKT) -->
+            <div class="section">
+                <h3>🏆 Riwayat Ujian Kenaikan Tingkat (UKT)</h3>
+                
+                <?php if ($total_ukt > 0): ?>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number"><?php echo $total_ukt; ?></div>
+                        <div class="stat-label">Total UKT Diikuti</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" style="color: #27ae60;"><?php echo $lulus_count; ?></div>
+                        <div class="stat-label">Lulus</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" style="color: #e74c3c;"><?php echo $tidak_lulus_count; ?></div>
+                        <div class="stat-label">Tidak Lulus</div>
+                    </div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal Pelaksanaan</th>
+                            <th>Dari Tingkat</th>
+                            <th>Ke Tingkat</th>
+                            <th>Nilai</th>
+                            <th>Status</th>
+                            <th>Lokasi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $ukt_result->data_seek(0);
+                        while ($row = $ukt_result->fetch_assoc()): 
+                        ?>
+                        <tr>
+                            <td><strong><?php echo date('d M Y', strtotime($row['tanggal_pelaksanaan'])); ?></strong></td>
+                            <td><?php echo $row['tingkat_dari'] ?? '-'; ?></td>
+                            <td><?php echo $row['tingkat_ke'] ?? '-'; ?></td>
+                            <td>
+                                <?php if (!empty($row['id'])): ?>
+                                    <a href="ukt_detail_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $row['ukt_id']; ?>" title="Lihat Detail Nilai">
+                                        <?php echo isset($row['rata_rata']) ? number_format($row['rata_rata'], 2) : '-'; ?>
+                                    </a>
+                                <?php else: ?>
                                     <?php echo isset($row['rata_rata']) ? number_format($row['rata_rata'], 2) : '-'; ?>
-                                </a>
-                            <?php else: ?>
-                                <?php echo isset($row['rata_rata']) ? number_format($row['rata_rata'], 2) : '-'; ?>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?php 
-                            if ($row['status'] == 'lulus') {
-                                echo '<span class="status-lulus">✓ LULUS</span>';
-                            } else if ($row['status'] == 'tidak_lulus') {
-                                echo '<span class="status-tidak_lulus">✗ TIDAK LULUS</span>';
-                            } else {
-                                echo '<span class="status-peserta">• PESERTA</span>';
-                            }
-                            ?>
-                        </td>
-                        <td><?php echo $row['lokasi'] ?? '-'; ?></td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="empty-state">
-                <div class="empty-state-icon">📝</div>
-                <p>Belum ada riwayat UKT</p>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php 
+                                if ($row['status'] == 'lulus') {
+                                    echo '<span class="status-lulus">✓ LULUS</span>';
+                                } else if ($row['status'] == 'tidak_lulus') {
+                                    echo '<span class="status-tidak_lulus">✗ TIDAK LULUS</span>';
+                                } else {
+                                    echo '<span class="status-peserta">• PESERTA</span>';
+                                }
+                                ?>
+                            </td>
+                            <td><?php echo $row['lokasi'] ?? '-'; ?></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <p>Belum ada riwayat UKT</p>
+                </div>
+                <?php endif; ?>
             </div>
-            <?php endif; ?>
-        </div>
-        
-        <!-- 2. Sertifikat Kelulusan UKT -->
-        <div class="section">
-            <h3>📜 Sertifikat Kelulusan UKT</h3>
             
-            <?php if ($sertifikat_result && $sertifikat_result->num_rows > 0): ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal UKT</th>
-                        <th>Tingkat Kenaikan</th>
-                        <th>Nama File Sertifikat</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $sertifikat_result->fetch_assoc()): 
-                        $sert_path = '../../uploads/sertifikat_ukt/' . $row['sertifikat_path'];
-                        $sert_exists = file_exists($sert_path);
-                    ?>
-                    <tr>
-                        <td><strong><?php echo date('d M Y', strtotime($row['tanggal_pelaksanaan'])); ?></strong></td>
-                        <td><?php echo htmlspecialchars($row['tingkat_ke'] ?? '-'); ?></td>
-                        <td>
-                            <span style="font-family: monospace; font-size: 12px; background: #f0f0f0; padding: 4px 8px; border-radius: 3px;">
-                                <?php echo htmlspecialchars($row['sertifikat_path']); ?>
-                            </span>
-                        </td>
-                        <td>
-                            <?php if ($sert_exists): ?>
-                                <a href="<?php echo $sert_path; ?>" class="btn btn-primary" style="padding: 8px 16px; font-size: 12px;" target="_blank" download>
-                                    ⬇️ Download
-                                </a>
-                            <?php else: ?>
-                                <span style="color: #e74c3c; font-size: 12px;">❌ File tidak ditemukan</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="empty-state">
-                <div class="empty-state-icon">📜</div>
-                <p>Belum ada sertifikat kelulusan UKT</p>
+            <!-- 2. Sertifikat Kelulusan UKT -->
+            <div class="section">
+                <h3>📜 Sertifikat Kelulusan UKT</h3>
+                
+                <?php if ($sertifikat_result && $sertifikat_result->num_rows > 0): ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal UKT</th>
+                            <th>Tingkat Kenaikan</th>
+                            <th>Nama File Sertifikat</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $sertifikat_result->fetch_assoc()): 
+                            $sert_path = '../../uploads/sertifikat_ukt/' . $row['sertifikat_path'];
+                            $sert_exists = file_exists($sert_path);
+                        ?>
+                        <tr>
+                            <td><strong><?php echo date('d M Y', strtotime($row['tanggal_pelaksanaan'])); ?></strong></td>
+                            <td><?php echo htmlspecialchars($row['tingkat_ke'] ?? '-'); ?></td>
+                            <td>
+                                <span style="font-family: monospace; font-size: 12px; background: #f0f0f0; padding: 4px 8px; border-radius: 3px;">
+                                    <?php echo htmlspecialchars($row['sertifikat_path']); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <?php if ($sert_exists): ?>
+                                    <a href="<?php echo $sert_path; ?>" class="btn btn-primary" style="padding: 8px 16px; font-size: 12px;" target="_blank" download>
+                                        ⬇️ Download
+                                    </a>
+                                <?php else: ?>
+                                    <span style="color: #e74c3c; font-size: 12px;">❌ File tidak ditemukan</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="empty-state">
+                    <div class="empty-state-icon">📜</div>
+                    <p>Belum ada sertifikat kelulusan UKT</p>
+                </div>
+                <?php endif; ?>
             </div>
-            <?php endif; ?>
-        </div>
-        
-        <!-- 3. Prestasi yang Diraih -->
-        <div class="section">
-            <h3>🏆 Prestasi yang Diraih</h3>
             
-            <?php if ($prestasi_result && $prestasi_result->num_rows > 0): ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Event</th>
-                        <th>Tanggal Pelaksanaan</th>
-                        <th>Penyelenggara</th>
-                        <th>Kategori</th>
-                        <th>Prestasi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $prestasi_result->fetch_assoc()): ?>
-                    <tr>
-                        <td><strong><?php echo htmlspecialchars($row['event_name']); ?></strong></td>
-                        <td><?php echo date('d M Y', strtotime($row['tanggal_pelaksanaan'])); ?></td>
-                        <td><?php echo htmlspecialchars($row['penyelenggara'] ?? '-'); ?></td>
-                        <td><?php echo htmlspecialchars($row['kategori'] ?? '-'); ?></td>
-                        <td><?php echo htmlspecialchars($row['prestasi'] ?? '-'); ?></td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="empty-state">
-                <div class="empty-state-icon">🏆</div>
-                <p>Belum ada prestasi yang terdaftar</p>
+            <!-- 3. Prestasi yang Diraih -->
+            <div class="section">
+                <h3>🏆 Prestasi yang Diraih</h3>
+                
+                <?php if ($prestasi_result && $prestasi_result->num_rows > 0): ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Tanggal Pelaksanaan</th>
+                            <th>Penyelenggara</th>
+                            <th>Kategori</th>
+                            <th>Prestasi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $prestasi_result->fetch_assoc()): ?>
+                        <tr>
+                            <td><strong><?php echo htmlspecialchars($row['event_name']); ?></strong></td>
+                            <td><?php echo date('d M Y', strtotime($row['tanggal_pelaksanaan'])); ?></td>
+                            <td><?php echo htmlspecialchars($row['penyelenggara'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars($row['kategori'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars($row['prestasi'] ?? '-'); ?></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="empty-state">
+                    <div class="empty-state-icon">🏆</div>
+                    <p>Belum ada prestasi yang terdaftar</p>
+                </div>
+                <?php endif; ?>
             </div>
-            <?php endif; ?>
-        </div>
-        
-        <!-- 4. Riwayat Pembukaan Kerohanian -->
-        <div class="section">
-            <h3>🙏 Riwayat Pembukaan Kerohanian</h3>
             
-            <?php if ($kerohanian_result->num_rows > 0): ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal Pembukaan</th>
-                        <th>Lokasi</th>
-                        <th>Pembuka</th>
-                        <th>Tingkat Pembuka</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $kerohanian_result->fetch_assoc()): ?>
-                    <tr>
-                        <td><strong><a href="kerohanian.php" title="Lihat Semua Kerohanian"><?php echo date('d M Y', strtotime($row['tanggal_pembukaan'])); ?></a></strong></td>
-                        <td><?php echo htmlspecialchars($row['lokasi']); ?></td>
-                        <td><?php echo htmlspecialchars($row['pembuka_nama']); ?></td>
-                        <td><?php echo htmlspecialchars($row['tingkat_pembuka_nama'] ?? '-'); ?></td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="empty-state">
-                <div class="empty-state-icon">🙏</div>
-                <p>Belum ada pembukaan kerohanian</p>
+            <!-- 4. Riwayat Pembukaan Kerohanian -->
+            <div class="section">
+                <h3>🙏 Riwayat Pembukaan Kerohanian</h3>
+                
+                <?php if ($kerohanian_result->num_rows > 0): ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal Pembukaan</th>
+                            <th>Lokasi</th>
+                            <th>Pembuka</th>
+                            <th>Tingkat Pembuka</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $kerohanian_result->fetch_assoc()): ?>
+                        <tr>
+                            <td><strong><a href="kerohanian.php" title="Lihat Semua Kerohanian"><?php echo date('d M Y', strtotime($row['tanggal_pembukaan'])); ?></a></strong></td>
+                            <td><?php echo htmlspecialchars($row['lokasi']); ?></td>
+                            <td><?php echo htmlspecialchars($row['pembuka_nama']); ?></td>
+                            <td><?php echo htmlspecialchars($row['tingkat_pembuka_nama'] ?? '-'); ?></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="empty-state">
+                    <div class="empty-state-icon">🙏</div>
+                    <p>Belum ada pembukaan kerohanian</p>
+                </div>
+                <?php endif; ?>
             </div>
-            <?php endif; ?>
         </div>
     </div>
 </body>

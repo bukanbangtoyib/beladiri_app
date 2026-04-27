@@ -56,7 +56,7 @@ $ranting = $conn->query("SELECT COUNT(*) as count FROM ranting")->fetch_assoc();
             align-items: center;
         }
         
-        .container { max-width: 1100px; margin: 20px auto; padding: 0 20px; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
         
         h1 { color: #333; margin-bottom: 10px; }
         .subtitle { color: #666; margin-bottom: 30px; }
@@ -91,7 +91,7 @@ $ranting = $conn->query("SELECT COUNT(*) as count FROM ranting")->fetch_assoc();
         .cards-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
+            gap: 30px;
             margin-bottom: 30px;
         }
         
@@ -168,66 +168,68 @@ $ranting = $conn->query("SELECT COUNT(*) as count FROM ranting")->fetch_assoc();
     </style>
 </head>
 <body>
-    <?php renderNavbar('📋 Manajemen Pengurus'); ?>
-    
-    <div class="container">
-        <h1>Manajemen Struktur Kepengurusan</h1>
-        <p class="subtitle">Kelola data pengurus negara, provinsi, dan kota/kabupaten</p>
-        
-        <div class="info-box">
-            <div>
-                <h4><strong>ℹ️ Informasi : </strong></h4> 
-                <p>Pilih salah satu jenis kepengurusan di bawah untuk mengelola data struktur organisasi.</p>
+    <?php renderNavbar('Manajemen Pengurus'); ?>
+
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%; max-width: 1100px;">
+            <h1>Manajemen Struktur Kepengurusan</h1>
+            <p class="subtitle">Kelola data pengurus negara, provinsi, dan kota/kabupaten</p>
+            
+            <div class="info-box">
+                <div>
+                    <h4><strong>ℹ️ Informasi : </strong></h4> 
+                    <p>Pilih salah satu jenis kepengurusan di bawah untuk mengelola data struktur organisasi.</p>
+                </div>
+                <?php 
+                $user_role = strtolower($_SESSION['role'] ?? '');
+                
+                // Simple direct output based on role
+                if (in_array($user_role, ['admin', 'superadmin']) || $user_role === 'negara' || $user_role === 'pengprov') {
+                    echo '<a href="pengurus_import.php" class="btn btn-success">⬆️ Import CSV</a>';
+                }
+                ?>
             </div>
-            <?php 
-            $user_role = strtolower($_SESSION['role'] ?? '');
             
-            // Simple direct output based on role
-            if (in_array($user_role, ['admin', 'superadmin']) || $user_role === 'negara' || $user_role === 'pengprov') {
-                echo '<a href="pengurus_import.php" class="btn btn-success">⬆️ Import CSV</a>';
-            }
-            ?>
-        </div>
-        
-        <div class="cards-grid">
-            <!-- Card Pengurus Negara -->
-            <a href="pengurus_list.php?jenis=negara" class="card">
-                <div class="card-header negara">
-                    <div class="card-icon">🏛️</div>
-                    <div class="card-title">Pengurus Negara</div>
-                    <div class="card-desc">Tingkat Negara</div>
-                </div>
-                <div class="card-body">
-                    <div class="card-number"><?php echo $negara['count']; ?></div>
-                    <div class="card-label">Struktur Aktif</div>
-                </div>
-            </a>
-            
-            <!-- Card Pengurus Provinsi -->
-            <a href="pengurus_list.php?jenis=provinsi" class="card">
-                <div class="card-header provinsi">
-                    <div class="card-icon">🏢</div>
-                    <div class="card-title">Pengurus Provinsi</div>
-                    <div class="card-desc">Tingkat Provinsi</div>
-                </div>
-                <div class="card-body">
-                    <div class="card-number"><?php echo $provinsi['count']; ?></div>
-                    <div class="card-label">Struktur Aktif</div>
-                </div>
-            </a>
-            
-            <!-- Card Pengurus Kota -->
-            <a href="pengurus_list.php?jenis=kota" class="card">
-                <div class="card-header kota">
-                    <div class="card-icon">🏙️</div>
-                    <div class="card-title">Pengurus Kota</div>
-                    <div class="card-desc">Tingkat Kota/Kabupaten</div>
-                </div>
-                <div class="card-body">
-                    <div class="card-number"><?php echo $kota['count']; ?></div>
-                    <div class="card-label">Struktur Aktif</div>
-                </div>
-            </a>
+            <div class="cards-grid">
+                <!-- Card Pengurus Negara -->
+                <a href="pengurus_list.php?jenis=negara" class="card">
+                    <div class="card-header negara">
+                        <div class="card-icon">🏛️</div>
+                        <div class="card-title">Pengurus Negara</div>
+                        <div class="card-desc">Tingkat Negara</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-number"><?php echo $negara['count']; ?></div>
+                        <div class="card-label">Struktur Aktif</div>
+                    </div>
+                </a>
+                
+                <!-- Card Pengurus Provinsi -->
+                <a href="pengurus_list.php?jenis=provinsi" class="card">
+                    <div class="card-header provinsi">
+                        <div class="card-icon">🏢</div>
+                        <div class="card-title">Pengurus Provinsi</div>
+                        <div class="card-desc">Tingkat Provinsi</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-number"><?php echo $provinsi['count']; ?></div>
+                        <div class="card-label">Struktur Aktif</div>
+                    </div>
+                </a>
+                
+                <!-- Card Pengurus Kota -->
+                <a href="pengurus_list.php?jenis=kota" class="card">
+                    <div class="card-header kota">
+                        <div class="card-icon">🏙️</div>
+                        <div class="card-title">Pengurus Kota</div>
+                        <div class="card-desc">Tingkat Kota/Kabupaten</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-number"><?php echo $kota['count']; ?></div>
+                        <div class="card-label">Struktur Aktif</div>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 </body>

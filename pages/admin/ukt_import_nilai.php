@@ -415,60 +415,62 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('📥 Import Nilai UKT'); ?>
+    <?php renderNavbar('Import Nilai UKT'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>Import Nilai UKT dari CSV</h1>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✅ <?php echo $success; ?></div>
-                <?php if (count($import_log) > 0): ?>
-                <div class="log-box">
-                    <strong>📋 Detail Import:</strong><br>
-                    <?php foreach ($import_log as $log): ?>
-                        <div class="log-item"><?php echo htmlspecialchars($log); ?></div>
-                    <?php endforeach; ?>
-                </div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Import Nilai UKT dari CSV</h1>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
                 <?php endif; ?>
-            <?php endif; ?>
-            
-            <div class="info-box">
-                <h4>📋 Format File CSV</h4>
-                <p><strong>CSV harus memiliki kolom:</strong></p>
-                <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
-                    <li style="margin-bottom: 4px;"><strong>No Anggota</strong> - Identitas unik anggota</li>
-                    <li style="margin-bottom: 4px;"><strong>Nilai A s/d Nilai J</strong> - Nilai materi untuk tiap kolom</li>
-                </ol>
                 
-                <p style="margin-top: 15px; color: #666; font-size: 12px;">
-                    💡 <strong>Catatan:</strong><br>
-                    • Rata-rata dihitung otomatis dari nilai yang terisi.<br>
-                    • Status LULUS otomatis jika rata-rata ≥ 60.<br>
-                    • Anggota yang lulus otomatis naik tingkat.<br>
-                    • <strong>Auto-Register:</strong> Anggota baru di CSV otomatis didaftarkan ke UKT ini.
-                </p>
-            </div>
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✅ <?php echo $success; ?></div>
+                    <?php if (count($import_log) > 0): ?>
+                    <div class="log-box">
+                        <strong>📋 Detail Import:</strong><br>
+                        <?php foreach ($import_log as $log): ?>
+                            <div class="log-item"><?php echo htmlspecialchars($log); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+                
+                <div class="info-box">
+                    <h4>📋 Format File CSV</h4>
+                    <p><strong>CSV harus memiliki kolom:</strong></p>
+                    <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
+                        <li style="margin-bottom: 4px;"><strong>No Anggota</strong> - Identitas unik anggota</li>
+                        <li style="margin-bottom: 4px;"><strong>Nilai A s/d Nilai J</strong> - Nilai materi untuk tiap kolom</li>
+                    </ol>
+                    
+                    <p style="margin-top: 15px; color: #666; font-size: 12px;">
+                        💡 <strong>Catatan:</strong><br>
+                        • Rata-rata dihitung otomatis dari nilai yang terisi.<br>
+                        • Status LULUS otomatis jika rata-rata ≥ 60.<br>
+                        • Anggota yang lulus otomatis naik tingkat.<br>
+                        • <strong>Auto-Register:</strong> Anggota baru di CSV otomatis didaftarkan ke UKT ini.
+                    </p>
+                </div>
 
-            <div class="tab-header">
-                <a href="?ukt_id=<?php echo $ukt_id; ?>&download=template" class="template-link">📥 Download Template</a>
-            </div>
-            
-            <form method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="csv_file">Pilih File CSV <span style="color: #dc3545;">*</span></label>
-                    <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+                <div class="tab-header">
+                    <a href="?ukt_id=<?php echo $ukt_id; ?>&download=template" class="template-link">📥 Download Template</a>
                 </div>
                 
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">📥 Upload & Import</button>
-                    <a href="ukt_input_nilai.php?id=<?php echo $ukt_id; ?>" class="btn btn-secondary">Batal</a>
-                </div>
-            </form>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="csv_file">Pilih File CSV <span style="color: #dc3545;">*</span></label>
+                        <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">📥 Upload & Import</button>
+                        <a href="ukt_input_nilai.php?id=<?php echo $ukt_id; ?>" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </body>

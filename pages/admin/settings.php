@@ -668,603 +668,605 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
     </style>
 </head>
 <body>
-    <?php renderNavbar('⚙️ Pengaturan Sistem'); ?>
+    <?php renderNavbar('Pengaturan Sistem'); ?>
     
-    <div class="container">
-        <?php if ($error): ?>
-            <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-        <?php endif; ?>
-        
-        <?php if ($success): ?>
-            <div class="alert alert-success">✓ <?php echo $success; ?></div>
-        <?php endif; ?>
-        
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('organisasi', this)">📋 Organisasi</button>
-            <button class="tab" onclick="showTab('tingkatan', this)">🏆 Tingkatan</button>
-            <button class="tab" onclick="showTab('jenis', this)">👥 Jenis Anggota</button>
-            <button class="tab" onclick="showTab('nomor', this)">🔢 Nomor Anggota</button>
-        </div>
-        
-        <!-- Tab Organisasi -->
-        <div id="tab-organisasi" class="tab-content active">
-            <div class="form-container">
-                <h1>Pengaturan Organisasi</h1>
-                
-                <div class="info-box">
-                    <strong>ℹ️ Informasi:</strong> Edit data organisasi Anda di sini. Data ini akan muncul di laporan dan dokumen resmi.
-                </div>
-                
-                <form method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="save_org" value="1">
-                    
-                    <div class="form-group">
-                        <label>Logo Organisasi</label>
-                        <?php if (!empty($settings['logo'])): ?>
-                            <div style="margin-bottom: 10px;">
-                                <img src="../../<?php echo htmlspecialchars($settings['logo']); ?>" alt="Logo" style="max-height: 80px; max-width: 200px; object-fit: contain;">
-                                <div style="margin-top: 5px;">
-                                    <label style="display: inline; font-weight: normal;">
-                                        <input type="checkbox" name="delete_logo" value="1"> Hapus logo
-                                    </label>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                        <input type="file" name="logo" accept="image/*">
-                        <div class="form-hint">Format: JPG, PNG, GIF, WebP (Ukuran maksimal 2MB)</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Nama Organisasi / Lembaga</label>
-                        <input type="text" name="nama_organisasi" value="<?php echo htmlspecialchars($settings['nama_organisasi']); ?>" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Alamat Kantor Pusat</label>
-                        <textarea name="alamat" required><?php echo htmlspecialchars($settings['alamat']); ?></textarea>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Nomor Telepon</label>
-                            <input type="text" name="no_telp" value="<?php echo htmlspecialchars($settings['no_telp']); ?>" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" name="email" value="<?php echo htmlspecialchars($settings['email']); ?>" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Tahun Berdiri</label>
-                        <input type="text" name="tahun_berdiri" value="<?php echo htmlspecialchars($settings['tahun_berdiri']); ?>" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Pesan Info-Box Dashboard</label>
-                        <div class="rich-text-editor">
-                            <div class="rich-text-buttons">
-                                <button type="button" onmousedown="event.preventDefault(); insertTag('info_box_dashboard', '<b>', '</b>')" title="Tebal"><b>B</b></button>
-                                <button type="button" onmousedown="event.preventDefault(); insertTag('info_box_dashboard', '<i>', '</i>')" title="Miring"><i>I</i></button>
-                                <button type="button" onmousedown="event.preventDefault(); insertTag('info_box_dashboard', '<u>', '</u>')" title="Garis Bawah"><u>U</u></button>
-                                <button type="button" onmousedown="event.preventDefault(); insertAtCursor('info_box_dashboard', '<br>')" title="Baris Baru">↵</button>
-                                <button type="button" onmousedown="event.preventDefault(); insertLink('info_box_dashboard')" title="Link">🔗</button>
-                            </div>
-                            <textarea name="info_box_dashboard" id="info_box_dashboard" rows="3"><?php echo htmlspecialchars($settings['info_box_dashboard'] ?? ''); ?></textarea>
-                        </div>
-                        <div class="form-hint">Pesan yang akan ditampilkan di kotak info pada halaman dashboard (index.php). Gunakan tombol di atas untuk format: <b>Tebal</b>, <i>Miring</i>, <u>Garis Bawah</u>, <br>Baris Baru, <a>Link</a></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Footer - Nama Aplikasi/Sistem</label>
-                        <input type="text" name="footer_text" value="<?php echo htmlspecialchars($settings['footer_text'] ?? ''); ?>">
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Footer - Pembuat/Developer</label>
-                            <input type="text" name="footer_creator" value="<?php echo htmlspecialchars($settings['footer_creator'] ?? ''); ?>">
-                        </div>
-                        <div class="form-group">
-                            <label>Footer - Tahun Pembuatan</label>
-                            <input type="text" name="footer_tahun" value="<?php echo htmlspecialchars($settings['footer_tahun'] ?? ''); ?>">
-                        </div>
-                    </div>
-                    
-                    <div class="button-group">
-                        <button type="submit" class="btn btn-primary">💾 Simpan Pengaturan</button>
-                    </div>
-                </form>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <?php if ($error): ?>
+                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
+            <?php endif; ?>
+            
+            <?php if ($success): ?>
+                <div class="alert alert-success">✓ <?php echo $success; ?></div>
+            <?php endif; ?>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('organisasi', this)">📋 Organisasi</button>
+                <button class="tab" onclick="showTab('tingkatan', this)">🏆 Tingkatan</button>
+                <button class="tab" onclick="showTab('jenis', this)">👥 Jenis Anggota</button>
+                <button class="tab" onclick="showTab('nomor', this)">🔢 Nomor Anggota</button>
             </div>
-        </div>
-        
-        <!-- Tab Tingkat -->
-        <div id="tab-tingkatan" class="tab-content">
-            <div class="form-container">
-                <h2>🏆 Manajemen Tingkatan</h2>
-                
-                <div class="info-box">
-                    <strong>ℹ️ Informasi:</strong> Kelola data tingkatan di sini. Tingkat yang sedang digunakan oleh anggota tidak dapat dihapus.
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <button class="btn btn-success" onclick="openModal('tingkatan')">+ Tambah Tingkat</button>
-                </div>
-                
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Nama Tingkat</th>
-                            <th>Singkatan</th>
-                            <th style="display: none;">Urutan</th>
-                            <th>Waktu UKT (Bulan)</th>
-                            <th>Jumlah Anggota</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($tingkatan_list as $i => $tingkat): ?>
-                        <tr>
-                            <td><?php echo $i + 1; ?></td>
-                            <td><strong><?php echo htmlspecialchars($tingkat['nama_tingkat']); ?></strong></td>
-                            <td><?php echo htmlspecialchars($tingkat['singkatan'] ?? '-'); ?></td>
-                            <td style="display: none;"><?php echo $tingkat['urutan']; ?></td>
-                            <td><?php echo $tingkat['waktu_ukt'] ?? '0'; ?> bulan</td>
-                            <td>
-                                <?php if ($tingkat['jumlah_anggota'] > 0): ?>
-                                    <span class="badge badge-warning"><?php echo $tingkat['jumlah_anggota']; ?> anggota</span>
-                                <?php else: ?>
-                                    <span class="badge badge-success">Tidak ada</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <button class="btn btn-primary btn-sm" onclick="editTingkat(<?php echo $tingkat['id']; ?>, '<?php echo htmlspecialchars($tingkat['nama_tingkat']); ?>', '<?php echo htmlspecialchars($tingkat['singkatan'] ?? ''); ?>', <?php echo $tingkat['urutan']; ?>, <?php echo $tingkat['waktu_ukt'] ?? 0; ?>)">✏️ Edit</button>
-                                <?php if ($tingkat['jumlah_anggota'] == 0): ?>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteTingkat(<?php echo $tingkat['id']; ?>, '<?php echo htmlspecialchars($tingkat['nama_tingkat']); ?>')">🗑️ Hapus</button>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <!-- Tab Jenis -->
-        <div id="tab-jenis" class="tab-content">
-            <div class="form-container">
-                <h2>👥 Manajemen Jenis Anggota</h2>
-                
-                <div class="info-box">
-                    <strong>ℹ️ Informasi:</strong> Kelola jenis anggota di sini. Jenis yang sedang digunakan oleh anggota tidak dapat dihapus.
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <button class="btn btn-success" onclick="openModal('jenis')">+ Tambah Jenis</button>
-                </div>
-                
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Nama Jenis</th>
-                            <th>Jumlah Anggota</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($jenis_list as $i => $jenis): ?>
-                        <tr>
-                            <td><?php echo $i + 1; ?></td>
-                            <td><strong><?php echo htmlspecialchars($jenis['nama_jenis']); ?></strong></td>
-                            <td>
-                                <?php if ($jenis['jumlah_anggota'] > 0): ?>
-                                    <span class="badge badge-warning"><?php echo $jenis['jumlah_anggota']; ?> anggota</span>
-                                <?php else: ?>
-                                    <span class="badge badge-success">Tidak ada</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <button class="btn btn-primary btn-sm" onclick="editJenis(<?php echo $jenis['id']; ?>, '<?php echo htmlspecialchars($jenis['nama_jenis']); ?>')">✏️ Edit</button>
-                                <?php if ($jenis['jumlah_anggota'] == 0): ?>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteJenis(<?php echo $jenis['id']; ?>, '<?php echo htmlspecialchars($jenis['nama_jenis']); ?>')">🗑️ Hapus</button>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <!-- Tab Nomor Anggota -->
-        <div id="tab-nomor" class="tab-content">
-            <div class="form-container">
-                <h2>🔢 Pengaturan Nomor Anggota</h2>
-                
-                <!-- All Sub-tabs consolidated -->
-                <div class="sub-tabs" style="margin-top: 25px;">
-                    <button class="sub-tab active" onclick="showSubTab('format', this)">⚙️ Konfigurasi Format</button>
-                    <button class="sub-tab" onclick="showKodeTab('negara', this)">🌍 Negara</button>
-                    <button class="sub-tab" onclick="showKodeTab('provinsi', this)">🏙️ Provinsi</button>
-                    <button class="sub-tab" onclick="showKodeTab('kota', this)">🏘️ Kota</button>
-                    <button class="sub-tab" onclick="showKodeTab('ranting', this)">🏠 Ranting</button>
-                </div>
-                
-                <div id="subtab-format" class="sub-tab-content active">
-                    <h3>⚙️ Konfigurasi Format Nomor Anggota</h3>
+            
+            <!-- Tab Organisasi -->
+            <div id="tab-organisasi" class="tab-content active">
+                <div class="form-container">
+                    <h1>Pengaturan Organisasi</h1>
                     
                     <div class="info-box">
-                        <strong>ℹ️ Informasi:</strong> Konfigurasi format nomor anggota. Format default: NNPPPKKK.RRR-YYYYXXX<br>
-                        <strong>NN</strong> = Kode Negara (2 digit), <strong>PPP</strong> = Kode Provinsi (3 digit), <strong>KKK</strong> = Kode Kota (3 digit), <strong>RRR</strong> = Kode Ranting (3 digit), <strong>YYYY</strong> = Tahun Daftar, <strong>XXX</strong> = Nomor Urut<br>
-                        <strong>Catatan:</strong> Jika kode sebelum ranting tidak digunakan, titik tidak ditampilkan. Jika kode sebelum tahun tidak digunakan, titik & garis tidak ditampilkan.
+                        <strong>ℹ️ Informasi:</strong> Edit data organisasi Anda di sini. Data ini akan muncul di laporan dan dokumen resmi.
                     </div>
                     
-                    <form method="POST">
-                        <input type="hidden" name="save_nomor" value="1">
+                    <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="save_org" value="1">
                         
-                        <h4>Pilih Komponen yang Aktif:</h4>
-                        <div class="checkbox-grid">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="kode_negara" name="kode_negara" <?php echo ($pengaturan_nomor['kode_negara'] ?? true) ? 'checked' : ''; ?>>
-                                <label for="kode_negara">Kode Negara (NN)</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="kode_provinsi" name="kode_provinsi" <?php echo ($pengaturan_nomor['kode_provinsi'] ?? true) ? 'checked' : ''; ?>>
-                                <label for="kode_provinsi">Kode Provinsi (PPP)</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="kode_kota" name="kode_kota" <?php echo ($pengaturan_nomor['kode_kota'] ?? true) ? 'checked' : ''; ?>>
-                                <label for="kode_kota">Kode Kota (KKK)</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="kode_ranting" name="kode_ranting" <?php echo ($pengaturan_nomor['kode_ranting'] ?? true) ? 'checked' : ''; ?>>
-                                <label for="kode_ranting">Kode Unit/Ranting (RRR)</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="tahun_daftar" name="tahun_daftar" <?php echo ($pengaturan_nomor['tahun_daftar'] ?? true) ? 'checked' : ''; ?>>
-                                <label for="tahun_daftar">Tahun Daftar (YYYY)</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="urutan_daftar" name="urutan_daftar" <?php echo ($pengaturan_nomor['urutan_daftar'] ?? true) ? 'checked' : ''; ?>>
-                                <label for="urutan_daftar">Nomor Urut (XXX)</label>
-                            </div>
+                        <div class="form-group">
+                            <label>Logo Organisasi</label>
+                            <?php if (!empty($settings['logo'])): ?>
+                                <div style="margin-bottom: 10px;">
+                                    <img src="../../<?php echo htmlspecialchars($settings['logo']); ?>" alt="Logo" style="max-height: 80px; max-width: 200px; object-fit: contain;">
+                                    <div style="margin-top: 5px;">
+                                        <label style="display: inline; font-weight: normal;">
+                                            <input type="checkbox" name="delete_logo" value="1"> Hapus logo
+                                        </label>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                            <input type="file" name="logo" accept="image/*">
+                            <div class="form-hint">Format: JPG, PNG, GIF, WebP (Ukuran maksimal 2MB)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Nama Organisasi / Lembaga</label>
+                            <input type="text" name="nama_organisasi" value="<?php echo htmlspecialchars($settings['nama_organisasi']); ?>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Alamat Kantor Pusat</label>
+                            <textarea name="alamat" required><?php echo htmlspecialchars($settings['alamat']); ?></textarea>
                         </div>
                         
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Negara Default</label>
-                                <select name="default_negara">
-                                    <?php foreach ($negara_list as $negara): ?>
-                                        <option value="<?php echo $negara['id']; ?>" <?php echo ($pengaturan_nomor['default_negara'] ?? 1) == $negara['id'] ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($negara['kode'] . ' - ' . $negara['nama']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <label>Nomor Telepon</label>
+                                <input type="text" name="no_telp" value="<?php echo htmlspecialchars($settings['no_telp']); ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" name="email" value="<?php echo htmlspecialchars($settings['email']); ?>" required>
                             </div>
                         </div>
                         
-                        <button type="submit" class="btn btn-primary">💾 Simpan Konfigurasi</button>
+                        <div class="form-group">
+                            <label>Tahun Berdiri</label>
+                            <input type="text" name="tahun_berdiri" value="<?php echo htmlspecialchars($settings['tahun_berdiri']); ?>" required>
+                        </div>
                         
-                        <div class="preview-box">
-                            <h4>Contoh Format Nomor Anggota:</h4>
-                            <div class="preview-number" id="preview-number">
-                                <?php 
-                                // Build format: NNPPPKKK.RRR-YYYYXXX
-                                $parts = [];
-                                
-                                // Bagian kode: negara + provinsi + kota digabungkan tanpa separator
-                                $kode_parts = [];
-                                if ($pengaturan_nomor['kode_negara'] ?? false) $kode_parts[] = 'ID';
-                                if ($pengaturan_nomor['kode_provinsi'] ?? false) $kode_parts[] = '001';
-                                if ($pengaturan_nomor['kode_kota'] ?? false) $kode_parts[] = '001';
-                                
-                                $kode_str = implode('', $kode_parts);
-                                
-                                // Ranting - add dot prefix if there's kode before it
-                                $ranting_str = '';
-                                if ($pengaturan_nomor['kode_ranting'] ?? true) {
-                                    if (!empty($kode_str)) {
-                                        $ranting_str = '.' . '001';
-                                    } else {
-                                        $ranting_str = '001';
-                                    }
-                                }
-                                
-                                // Year and sequence
-                                $year_seq = '';
-                                if (($pengaturan_nomor['tahun_daftar'] ?? true) || ($pengaturan_nomor['urutan_daftar'] ?? true)) {
-                                    $year_part = ($pengaturan_nomor['tahun_daftar'] ?? true) ? date('Y') : '';
-                                    $seq_part = ($pengaturan_nomor['urutan_daftar'] ?? true) ? '001' : '';
-                                    
-                                    // Add dash before year if there's something before it
-                                    if (!empty($kode_str) || !empty($ranting_str)) {
-                                        $year_seq = '-' . $year_part . $seq_part;
-                                    } else {
-                                        $year_seq = $year_part . $seq_part;
-                                    }
-                                }
-                                
-                                echo $kode_str . $ranting_str . $year_seq;
-                                ?>
+                        <div class="form-group">
+                            <label>Pesan Info-Box Dashboard</label>
+                            <div class="rich-text-editor">
+                                <div class="rich-text-buttons">
+                                    <button type="button" onmousedown="event.preventDefault(); insertTag('info_box_dashboard', '<b>', '</b>')" title="Tebal"><b>B</b></button>
+                                    <button type="button" onmousedown="event.preventDefault(); insertTag('info_box_dashboard', '<i>', '</i>')" title="Miring"><i>I</i></button>
+                                    <button type="button" onmousedown="event.preventDefault(); insertTag('info_box_dashboard', '<u>', '</u>')" title="Garis Bawah"><u>U</u></button>
+                                    <button type="button" onmousedown="event.preventDefault(); insertAtCursor('info_box_dashboard', '<br>')" title="Baris Baru">↵</button>
+                                    <button type="button" onmousedown="event.preventDefault(); insertLink('info_box_dashboard')" title="Link">🔗</button>
+                                </div>
+                                <textarea name="info_box_dashboard" id="info_box_dashboard" rows="3"><?php echo htmlspecialchars($settings['info_box_dashboard'] ?? ''); ?></textarea>
                             </div>
-                            <div class="preview-label">Format: NNPPPKKK.RRR-YYYYXXX</div>
+                            <div class="form-hint">Pesan yang akan ditampilkan di kotak info pada halaman dashboard (index.php). Gunakan tombol di atas untuk format: <b>Tebal</b>, <i>Miring</i>, <u>Garis Bawah</u>, <br>Baris Baru, <a>Link</a></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Footer - Nama Aplikasi/Sistem</label>
+                            <input type="text" name="footer_text" value="<?php echo htmlspecialchars($settings['footer_text'] ?? ''); ?>">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Footer - Pembuat/Developer</label>
+                                <input type="text" name="footer_creator" value="<?php echo htmlspecialchars($settings['footer_creator'] ?? ''); ?>">
+                            </div>
+                            <div class="form-group">
+                                <label>Footer - Tahun Pembuatan</label>
+                                <input type="text" name="footer_tahun" value="<?php echo htmlspecialchars($settings['footer_tahun'] ?? ''); ?>">
+                            </div>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">💾 Simpan Pengaturan</button>
                         </div>
                     </form>
                 </div>
-                
-
-                              
-                <div id="kode-negara" class="kode-sub-tab-content">
-                    <div class="stats-row">
-                        <div class="stat-card">
-                            <div class="number"><?php echo count($negara_list); ?></div>
-                            <div class="label">Total Negara</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="number"><?php echo count(array_filter($negara_list, fn($n) => $n['aktif'])); ?></div>
-                            <div class="label">Negara Aktif</div>
-                        </div>
+            </div>
+            
+            <!-- Tab Tingkat -->
+            <div id="tab-tingkatan" class="tab-content">
+                <div class="form-container">
+                    <h2>🏆 Manajemen Tingkatan</h2>
+                    
+                    <div class="info-box">
+                        <strong>ℹ️ Informasi:</strong> Kelola data tingkatan di sini. Tingkat yang sedang digunakan oleh anggota tidak dapat dihapus.
                     </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-success" onclick="openModal('tingkatan')">+ Tambah Tingkat</button>
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Tingkat</th>
+                                <th>Singkatan</th>
+                                <th style="display: none;">Urutan</th>
+                                <th>Waktu UKT (Bulan)</th>
+                                <th>Jumlah Anggota</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($tingkatan_list as $i => $tingkat): ?>
+                            <tr>
+                                <td><?php echo $i + 1; ?></td>
+                                <td><strong><?php echo htmlspecialchars($tingkat['nama_tingkat']); ?></strong></td>
+                                <td><?php echo htmlspecialchars($tingkat['singkatan'] ?? '-'); ?></td>
+                                <td style="display: none;"><?php echo $tingkat['urutan']; ?></td>
+                                <td><?php echo $tingkat['waktu_ukt'] ?? '0'; ?> bulan</td>
+                                <td>
+                                    <?php if ($tingkat['jumlah_anggota'] > 0): ?>
+                                        <span class="badge badge-warning"><?php echo $tingkat['jumlah_anggota']; ?> anggota</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-success">Tidak ada</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" onclick="editTingkat(<?php echo $tingkat['id']; ?>, '<?php echo htmlspecialchars($tingkat['nama_tingkat']); ?>', '<?php echo htmlspecialchars($tingkat['singkatan'] ?? ''); ?>', <?php echo $tingkat['urutan']; ?>, <?php echo $tingkat['waktu_ukt'] ?? 0; ?>)">✏️ Edit</button>
+                                    <?php if ($tingkat['jumlah_anggota'] == 0): ?>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteTingkat(<?php echo $tingkat['id']; ?>, '<?php echo htmlspecialchars($tingkat['nama_tingkat']); ?>')">🗑️ Hapus</button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Tab Jenis -->
+            <div id="tab-jenis" class="tab-content">
+                <div class="form-container">
+                    <h2>👥 Manajemen Jenis Anggota</h2>
+                    
+                    <div class="info-box">
+                        <strong>ℹ️ Informasi:</strong> Kelola jenis anggota di sini. Jenis yang sedang digunakan oleh anggota tidak dapat dihapus.
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-success" onclick="openModal('jenis')">+ Tambah Jenis</button>
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Jenis</th>
+                                <th>Jumlah Anggota</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($jenis_list as $i => $jenis): ?>
+                            <tr>
+                                <td><?php echo $i + 1; ?></td>
+                                <td><strong><?php echo htmlspecialchars($jenis['nama_jenis']); ?></strong></td>
+                                <td>
+                                    <?php if ($jenis['jumlah_anggota'] > 0): ?>
+                                        <span class="badge badge-warning"><?php echo $jenis['jumlah_anggota']; ?> anggota</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-success">Tidak ada</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" onclick="editJenis(<?php echo $jenis['id']; ?>, '<?php echo htmlspecialchars($jenis['nama_jenis']); ?>')">✏️ Edit</button>
+                                    <?php if ($jenis['jumlah_anggota'] == 0): ?>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteJenis(<?php echo $jenis['id']; ?>, '<?php echo htmlspecialchars($jenis['nama_jenis']); ?>')">🗑️ Hapus</button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Tab Nomor Anggota -->
+            <div id="tab-nomor" class="tab-content">
+                <div class="form-container">
+                    <h2>🔢 Pengaturan Nomor Anggota</h2>
+                    
+                    <!-- All Sub-tabs consolidated -->
+                    <div class="sub-tabs" style="margin-top: 25px;">
+                        <button class="sub-tab active" onclick="showSubTab('format', this)">⚙️ Konfigurasi Format</button>
+                        <button class="sub-tab" onclick="showKodeTab('negara', this)">🌍 Negara</button>
+                        <button class="sub-tab" onclick="showKodeTab('provinsi', this)">🏙️ Provinsi</button>
+                        <button class="sub-tab" onclick="showKodeTab('kota', this)">🏘️ Kota</button>
+                        <button class="sub-tab" onclick="showKodeTab('ranting', this)">🏠 Ranting</button>
+                    </div>
+                    
+                    <div id="subtab-format" class="sub-tab-content active">
+                        <h3>⚙️ Konfigurasi Format Nomor Anggota</h3>
+                        
+                        <div class="info-box">
+                            <strong>ℹ️ Informasi:</strong> Konfigurasi format nomor anggota. Format default: NNPPPKKK.RRR-YYYYXXX<br>
+                            <strong>NN</strong> = Kode Negara (2 digit), <strong>PPP</strong> = Kode Provinsi (3 digit), <strong>KKK</strong> = Kode Kota (3 digit), <strong>RRR</strong> = Kode Ranting (3 digit), <strong>YYYY</strong> = Tahun Daftar, <strong>XXX</strong> = Nomor Urut<br>
+                            <strong>Catatan:</strong> Jika kode sebelum ranting tidak digunakan, titik tidak ditampilkan. Jika kode sebelum tahun tidak digunakan, titik & garis tidak ditampilkan.
+                        </div>
+                        
+                        <form method="POST">
+                            <input type="hidden" name="save_nomor" value="1">
+                            
+                            <h4>Pilih Komponen yang Aktif:</h4>
+                            <div class="checkbox-grid">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="kode_negara" name="kode_negara" <?php echo ($pengaturan_nomor['kode_negara'] ?? true) ? 'checked' : ''; ?>>
+                                    <label for="kode_negara">Kode Negara (NN)</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="kode_provinsi" name="kode_provinsi" <?php echo ($pengaturan_nomor['kode_provinsi'] ?? true) ? 'checked' : ''; ?>>
+                                    <label for="kode_provinsi">Kode Provinsi (PPP)</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="kode_kota" name="kode_kota" <?php echo ($pengaturan_nomor['kode_kota'] ?? true) ? 'checked' : ''; ?>>
+                                    <label for="kode_kota">Kode Kota (KKK)</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="kode_ranting" name="kode_ranting" <?php echo ($pengaturan_nomor['kode_ranting'] ?? true) ? 'checked' : ''; ?>>
+                                    <label for="kode_ranting">Kode Unit/Ranting (RRR)</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="tahun_daftar" name="tahun_daftar" <?php echo ($pengaturan_nomor['tahun_daftar'] ?? true) ? 'checked' : ''; ?>>
+                                    <label for="tahun_daftar">Tahun Daftar (YYYY)</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="urutan_daftar" name="urutan_daftar" <?php echo ($pengaturan_nomor['urutan_daftar'] ?? true) ? 'checked' : ''; ?>>
+                                    <label for="urutan_daftar">Nomor Urut (XXX)</label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Negara Default</label>
+                                    <select name="default_negara">
+                                        <?php foreach ($negara_list as $negara): ?>
+                                            <option value="<?php echo $negara['id']; ?>" <?php echo ($pengaturan_nomor['default_negara'] ?? 1) == $negara['id'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($negara['kode'] . ' - ' . $negara['nama']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">💾 Simpan Konfigurasi</button>
+                            
+                            <div class="preview-box">
+                                <h4>Contoh Format Nomor Anggota:</h4>
+                                <div class="preview-number" id="preview-number">
+                                    <?php 
+                                    // Build format: NNPPPKKK.RRR-YYYYXXX
+                                    $parts = [];
+                                    
+                                    // Bagian kode: negara + provinsi + kota digabungkan tanpa separator
+                                    $kode_parts = [];
+                                    if ($pengaturan_nomor['kode_negara'] ?? false) $kode_parts[] = 'ID';
+                                    if ($pengaturan_nomor['kode_provinsi'] ?? false) $kode_parts[] = '001';
+                                    if ($pengaturan_nomor['kode_kota'] ?? false) $kode_parts[] = '001';
+                                    
+                                    $kode_str = implode('', $kode_parts);
+                                    
+                                    // Ranting - add dot prefix if there's kode before it
+                                    $ranting_str = '';
+                                    if ($pengaturan_nomor['kode_ranting'] ?? true) {
+                                        if (!empty($kode_str)) {
+                                            $ranting_str = '.' . '001';
+                                        } else {
+                                            $ranting_str = '001';
+                                        }
+                                    }
+                                    
+                                    // Year and sequence
+                                    $year_seq = '';
+                                    if (($pengaturan_nomor['tahun_daftar'] ?? true) || ($pengaturan_nomor['urutan_daftar'] ?? true)) {
+                                        $year_part = ($pengaturan_nomor['tahun_daftar'] ?? true) ? date('Y') : '';
+                                        $seq_part = ($pengaturan_nomor['urutan_daftar'] ?? true) ? '001' : '';
                                         
-                    <div class="kode-card">
-                        <div class="kode-card-header">
-                            <h3>🌍 Manajemen Negara</h3>                            
-                        </div>
-                        <div class="kode-card-body">
-                            <div class="info-box">
-                                <strong>ℹ️ Informasi:</strong> Kelola kode negara di sini. Negara default digunakan untuk anggota baru.
+                                        // Add dash before year if there's something before it
+                                        if (!empty($kode_str) || !empty($ranting_str)) {
+                                            $year_seq = '-' . $year_part . $seq_part;
+                                        } else {
+                                            $year_seq = $year_part . $seq_part;
+                                        }
+                                    }
+                                    
+                                    echo $kode_str . $ranting_str . $year_seq;
+                                    ?>
+                                </div>
+                                <div class="preview-label">Format: NNPPPKKK.RRR-YYYYXXX</div>
                             </div>
-                            <table class="compact-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50px;">No</th>
-                                        <th style="width: 80px;">Kode</th>
-                                        <th>Nama Negara</th>
-                                        <th style="width: 100px;">Status</th>
-                                        <th style="width: 150px;">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="negara-table">
-                                    <?php foreach ($negara_list as $i => $negara): ?>
-                                    <tr>
-                                        <td><?php echo $i + 1; ?></td>
-                                        <td><strong><?php echo htmlspecialchars($negara['kode'] ?? '-'); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($negara['nama']); ?></td>
-                                        <td>
-                                            <span class="badge badge-<?php echo $negara['aktif'] ? 'success' : 'secondary'; ?>">
-                                                <?php echo $negara['aktif'] ? 'Aktif' : 'Nonaktif'; ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-<?php echo $negara['aktif'] ? 'warning' : 'success'; ?> btn-sm" onclick="toggleNegara(<?php echo $negara['id']; ?>)">
-                                                <?php echo $negara['aktif'] ? '⛔' : '✅'; ?>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                        </form>
                     </div>
-                </div>
-                
-                <!-- Sub-tab: Provinsi -->
-                <div id="kode-provinsi" class="kode-sub-tab-content">
-                    <div class="stats-row">
-                        <div class="stat-card">
-                            <div class="number"><?php echo count($provinsi_list); ?></div>
-                            <div class="label">Total Provinsi</div>
+                    
+
+                                
+                    <div id="kode-negara" class="kode-sub-tab-content">
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <div class="number"><?php echo count($negara_list); ?></div>
+                                <div class="label">Total Negara</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="number"><?php echo count(array_filter($negara_list, fn($n) => $n['aktif'])); ?></div>
+                                <div class="label">Negara Aktif</div>
+                            </div>
                         </div>
-                        <div class="stat-card">
-                            <div class="number"><?php echo count(array_filter($provinsi_list, fn($p) => $p['aktif'])); ?></div>
-                            <div class="label">Provinsi Aktif</div>
+                                            
+                        <div class="kode-card">
+                            <div class="kode-card-header">
+                                <h3>🌍 Manajemen Negara</h3>                            
+                            </div>
+                            <div class="kode-card-body">
+                                <div class="info-box">
+                                    <strong>ℹ️ Informasi:</strong> Kelola kode negara di sini. Negara default digunakan untuk anggota baru.
+                                </div>
+                                <table class="compact-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px;">No</th>
+                                            <th style="width: 80px;">Kode</th>
+                                            <th>Nama Negara</th>
+                                            <th style="width: 100px;">Status</th>
+                                            <th style="width: 150px;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="negara-table">
+                                        <?php foreach ($negara_list as $i => $negara): ?>
+                                        <tr>
+                                            <td><?php echo $i + 1; ?></td>
+                                            <td><strong><?php echo htmlspecialchars($negara['kode'] ?? '-'); ?></strong></td>
+                                            <td><?php echo htmlspecialchars($negara['nama']); ?></td>
+                                            <td>
+                                                <span class="badge badge-<?php echo $negara['aktif'] ? 'success' : 'secondary'; ?>">
+                                                    <?php echo $negara['aktif'] ? 'Aktif' : 'Nonaktif'; ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-<?php echo $negara['aktif'] ? 'warning' : 'success'; ?> btn-sm" onclick="toggleNegara(<?php echo $negara['id']; ?>)">
+                                                    <?php echo $negara['aktif'] ? '⛔' : '✅'; ?>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="kode-card">
-                        <div class="kode-card-header">
-                            <h3>🏙️ Manajemen Provinsi</h3>
-                            <div style="display: flex; gap: 10px;">
-                                <select id="filter-provinsi-negara" onchange="filterProvinsiTable()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
-                                    <option value="">Semua Negara</option>
-                                    <?php foreach ($negara_list as $negara): ?>
-                                        <option value="<?php echo $negara['id']; ?>"><?php echo htmlspecialchars($negara['nama']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>                                
+                    <!-- Sub-tab: Provinsi -->
+                    <div id="kode-provinsi" class="kode-sub-tab-content">
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <div class="number"><?php echo count($provinsi_list); ?></div>
+                                <div class="label">Total Provinsi</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="number"><?php echo count(array_filter($provinsi_list, fn($p) => $p['aktif'])); ?></div>
+                                <div class="label">Provinsi Aktif</div>
                             </div>
                         </div>
-                        <div class="kode-card-body">
-                            <div class="info-box">
-                                <strong>ℹ️ Informasi:</strong> Kelola kode provinsi di sini. Provinsi diurutkan berdasarkan negara dan urutan internal.
+                        
+                        <div class="kode-card">
+                            <div class="kode-card-header">
+                                <h3>🏙️ Manajemen Provinsi</h3>
+                                <div style="display: flex; gap: 10px;">
+                                    <select id="filter-provinsi-negara" onchange="filterProvinsiTable()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                        <option value="">Semua Negara</option>
+                                        <?php foreach ($negara_list as $negara): ?>
+                                            <option value="<?php echo $negara['id']; ?>"><?php echo htmlspecialchars($negara['nama']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>                                
+                                </div>
                             </div>
-                            <table class="compact-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50px;">No</th>
-                                        <th style="width: 80px;">Kode</th>
-                                        <th>Nama Provinsi</th>
-                                        <th>Negara</th>
-                                        <th style="width: 100px;">Status</th>
-                                        <th style="width: 150px;">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="provinsi-table">
-                                    <?php foreach ($provinsi_list as $i => $provinsi): ?>
-                                    <tr data-negara="<?php echo $provinsi['negara_id']; ?>">
-                                        <td><?php echo $i + 1; ?></td>
-                                        <td><strong><?php echo htmlspecialchars($provinsi['kode'] ?? '-'); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($provinsi['nama_pengurus']); ?></td>
-                                        <td><?php echo htmlspecialchars($provinsi['nama_negara'] ?? '-'); ?></td>
-                                        <td>
-                                            <span class="badge badge-<?php echo $provinsi['aktif'] ? 'success' : 'secondary'; ?>">
-                                                <?php echo $provinsi['aktif'] ? 'Aktif' : 'Nonaktif'; ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-<?php echo $provinsi['aktif'] ? 'warning' : 'success'; ?> btn-sm" onclick="toggleProvinsi(<?php echo $provinsi['id']; ?>)">
-                                                <?php echo $provinsi['aktif'] ? '⛔' : '✅'; ?>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Sub-tab: Kota -->
-                <div id="kode-kota" class="kode-sub-tab-content">
-                    <div class="stats-row">
-                        <div class="stat-card">
-                            <div class="number"><?php echo count($kota_list); ?></div>
-                            <div class="label">Total Kota</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="number"><?php echo count(array_filter($kota_list, fn($k) => $k['aktif'])); ?></div>
-                            <div class="label">Kota Aktif</div>
-                        </div>
-                    </div>
-                    
-                    <div class="kode-card">
-                        <div class="kode-card-header">
-                            <h3>🏘️ Manajemen Kota/Kabupaten</h3>
-                            <div style="display: flex; gap: 10px;">
-                                <select id="filter-kota-negara" onchange="cascadeKotaNegara()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
-                                    <option value="">Semua Negara</option>
-                                    <?php foreach ($negara_list as $negara): ?>
-                                        <option value="<?php echo $negara['id']; ?>"><?php echo htmlspecialchars($negara['nama']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <select id="filter-kota-provinsi" onchange="filterKotaTable()" disabled style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
-                                    <option value="">Semua Provinsi</option>
-                                    <?php foreach ($provinsi_list as $provinsi): ?>
-                                        <option value="<?php echo $provinsi['id']; ?>" data-negara="<?php echo $provinsi['negara_id']; ?>"><?php echo htmlspecialchars($provinsi['nama_pengurus'] ?? $provinsi['nama'] ?? '-'); ?></option>
-                                    <?php endforeach; ?>
-                                </select>                                
+                            <div class="kode-card-body">
+                                <div class="info-box">
+                                    <strong>ℹ️ Informasi:</strong> Kelola kode provinsi di sini. Provinsi diurutkan berdasarkan negara dan urutan internal.
+                                </div>
+                                <table class="compact-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px;">No</th>
+                                            <th style="width: 80px;">Kode</th>
+                                            <th>Nama Provinsi</th>
+                                            <th>Negara</th>
+                                            <th style="width: 100px;">Status</th>
+                                            <th style="width: 150px;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="provinsi-table">
+                                        <?php foreach ($provinsi_list as $i => $provinsi): ?>
+                                        <tr data-negara="<?php echo $provinsi['negara_id']; ?>">
+                                            <td><?php echo $i + 1; ?></td>
+                                            <td><strong><?php echo htmlspecialchars($provinsi['kode'] ?? '-'); ?></strong></td>
+                                            <td><?php echo htmlspecialchars($provinsi['nama_pengurus']); ?></td>
+                                            <td><?php echo htmlspecialchars($provinsi['nama_negara'] ?? '-'); ?></td>
+                                            <td>
+                                                <span class="badge badge-<?php echo $provinsi['aktif'] ? 'success' : 'secondary'; ?>">
+                                                    <?php echo $provinsi['aktif'] ? 'Aktif' : 'Nonaktif'; ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-<?php echo $provinsi['aktif'] ? 'warning' : 'success'; ?> btn-sm" onclick="toggleProvinsi(<?php echo $provinsi['id']; ?>)">
+                                                    <?php echo $provinsi['aktif'] ? '⛔' : '✅'; ?>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
-                        <div class="kode-card-body">
-                            <div class="info-box">
-                                <strong>ℹ️ Informasi:</strong> Kelola kode kota/kabupaten di sini.
-                            </div>
-                            <table class="compact-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50px;">No</th>
-                                        <th style="width: 80px;">Kode</th>
-                                        <th>Nama Kota</th>
-                                        <th>Provinsi</th>
-                                        <th>Negara</th>
-                                        <th style="width: 100px;">Status</th>
-                                        <th style="width: 150px;">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="kota-table">
-                                    <?php foreach ($kota_list as $i => $kota): ?>
-                                    <tr data-provinsi="<?php echo $kota['provinsi_id']; ?>" data-negara="<?php echo $kota['negara_id'] ?? ''; ?>">
-                                        <td><?php echo $i + 1; ?></td>
-                                        <td><strong><?php echo htmlspecialchars($kota['kode'] ?? '-'); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($kota['nama'] ?? '-'); ?></td>
-                                        <td><?php echo htmlspecialchars($kota['nama_provinsi'] ?? '-'); ?></td>
-                                        <td><?php echo htmlspecialchars($kota['nama_negara'] ?? '-'); ?></td>
-                                        <td>
-                                            <span class="badge badge-<?php echo ($kota['aktif'] ?? 0) ? 'success' : 'secondary'; ?>">
-                                                <?php echo ($kota['aktif'] ?? 0) ? 'Aktif' : 'Nonaktif'; ?>
-                                            </span>
-                                        </td>
-                                        <td>    
-                                            <button class="btn btn-<?php echo $kota['aktif'] ? 'warning' : 'success'; ?> btn-sm" onclick="toggleKota(<?php echo $kota['id']; ?>)">
-                                                <?php echo $kota['aktif'] ? '⛔' : '✅'; ?>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Sub-tab: Ranting -->
-                <div id="kode-ranting" class="kode-sub-tab-content">
-                    <div class="stats-row">
-                        <div class="stat-card">
-                            <div class="number"><?php echo count($ranting_list); ?></div>
-                            <div class="label">Total Ranting</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="number"><?php echo count(array_filter($ranting_list, fn($r) => $r['aktif'])); ?></div>
-                            <div class="label">Ranting Aktif</div>
                         </div>
                     </div>
                     
-                    <div class="kode-card">
-                        <div class="kode-card-header">
-                            <h3>🏠 Manajemen Unit/Ranting</h3>
-                            <div style="display: flex; gap: 10px;">
-                                <select id="filter-ranting-negara" onchange="cascadeRantingNegara()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
-                                    <option value="">Semua Negara</option>
-                                    <?php foreach ($negara_list as $negara): ?>
-                                        <option value="<?php echo $negara['id']; ?>"><?php echo htmlspecialchars($negara['nama']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <select id="filter-ranting-provinsi" onchange="cascadeRantingProvinsi()" disabled style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
-                                    <option value="">Semua Provinsi</option>
-                                    <?php foreach ($provinsi_list as $provinsi): ?>
-                                        <option value="<?php echo $provinsi['id']; ?>" data-negara="<?php echo $provinsi['negara_id']; ?>"><?php echo htmlspecialchars($provinsi['nama_pengurus'] ?? $provinsi['nama'] ?? '-'); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <select id="filter-ranting-kota" onchange="filterRantingTable()" disabled style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
-                                    <option value="">Semua Kota</option>
-                                    <?php foreach ($kota_list as $kota): ?>
-                                        <option value="<?php echo $kota['id']; ?>" data-provinsi="<?php echo $kota['provinsi_id']; ?>" data-negara="<?php echo $kota['negara_id'] ?? ''; ?>"><?php echo htmlspecialchars($kota['nama']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>                                
+                    <!-- Sub-tab: Kota -->
+                    <div id="kode-kota" class="kode-sub-tab-content">
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <div class="number"><?php echo count($kota_list); ?></div>
+                                <div class="label">Total Kota</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="number"><?php echo count(array_filter($kota_list, fn($k) => $k['aktif'])); ?></div>
+                                <div class="label">Kota Aktif</div>
                             </div>
                         </div>
-                        <div class="kode-card-body">
-                            <div class="info-box">
-                                <strong>ℹ️ Informasi:</strong> Kelola kode unit/ranting di sini.
+                        
+                        <div class="kode-card">
+                            <div class="kode-card-header">
+                                <h3>🏘️ Manajemen Kota/Kabupaten</h3>
+                                <div style="display: flex; gap: 10px;">
+                                    <select id="filter-kota-negara" onchange="cascadeKotaNegara()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                        <option value="">Semua Negara</option>
+                                        <?php foreach ($negara_list as $negara): ?>
+                                            <option value="<?php echo $negara['id']; ?>"><?php echo htmlspecialchars($negara['nama']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <select id="filter-kota-provinsi" onchange="filterKotaTable()" disabled style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                        <option value="">Semua Provinsi</option>
+                                        <?php foreach ($provinsi_list as $provinsi): ?>
+                                            <option value="<?php echo $provinsi['id']; ?>" data-negara="<?php echo $provinsi['negara_id']; ?>"><?php echo htmlspecialchars($provinsi['nama_pengurus'] ?? $provinsi['nama'] ?? '-'); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>                                
+                                </div>
                             </div>
-                            <table class="compact-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50px;">No</th>
-                                        <th style="width: 80px;">Kode</th>
-                                        <th>Nama Unit/Ranting</th>
-                                        <th>Kota</th>
-                                        <th style="width: 100px;">Status</th>
-                                        <th style="width: 150px;">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="ranting-table">
-                                    <?php foreach ($ranting_list as $i => $ranting): ?>
-                                    <tr data-kota="<?php echo $ranting['id_kota']; ?>" data-provinsi="<?php echo $ranting['provinsi_id']; ?>" data-negara="<?php echo $ranting['negara_id']; ?>">
-                                        <td><?php echo $i + 1; ?></td>
-                                        <td><strong><?php echo htmlspecialchars($ranting['kode'] ?? '-'); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($ranting['nama_ranting'] ?? $ranting['nama'] ?? '-'); ?></td>
-                                        <td><?php echo htmlspecialchars($ranting['kode_kota'] ?? '-'); ?></td>
-                                        <td>
-                                            <span class="badge badge-<?php echo $ranting['aktif'] ? 'success' : 'secondary'; ?>">
-                                                <?php echo $ranting['aktif'] ? 'Aktif' : 'Nonaktif'; ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-<?php echo $ranting['aktif'] ? 'warning' : 'success'; ?> btn-sm" onclick="toggleRanting(<?php echo $ranting['id']; ?>)">
-                                                <?php echo $ranting['aktif'] ? '⛔' : '✅'; ?>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                            <div class="kode-card-body">
+                                <div class="info-box">
+                                    <strong>ℹ️ Informasi:</strong> Kelola kode kota/kabupaten di sini.
+                                </div>
+                                <table class="compact-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px;">No</th>
+                                            <th style="width: 80px;">Kode</th>
+                                            <th>Nama Kota</th>
+                                            <th>Provinsi</th>
+                                            <th>Negara</th>
+                                            <th style="width: 100px;">Status</th>
+                                            <th style="width: 150px;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="kota-table">
+                                        <?php foreach ($kota_list as $i => $kota): ?>
+                                        <tr data-provinsi="<?php echo $kota['provinsi_id']; ?>" data-negara="<?php echo $kota['negara_id'] ?? ''; ?>">
+                                            <td><?php echo $i + 1; ?></td>
+                                            <td><strong><?php echo htmlspecialchars($kota['kode'] ?? '-'); ?></strong></td>
+                                            <td><?php echo htmlspecialchars($kota['nama'] ?? '-'); ?></td>
+                                            <td><?php echo htmlspecialchars($kota['nama_provinsi'] ?? '-'); ?></td>
+                                            <td><?php echo htmlspecialchars($kota['nama_negara'] ?? '-'); ?></td>
+                                            <td>
+                                                <span class="badge badge-<?php echo ($kota['aktif'] ?? 0) ? 'success' : 'secondary'; ?>">
+                                                    <?php echo ($kota['aktif'] ?? 0) ? 'Aktif' : 'Nonaktif'; ?>
+                                                </span>
+                                            </td>
+                                            <td>    
+                                                <button class="btn btn-<?php echo $kota['aktif'] ? 'warning' : 'success'; ?> btn-sm" onclick="toggleKota(<?php echo $kota['id']; ?>)">
+                                                    <?php echo $kota['aktif'] ? '⛔' : '✅'; ?>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
+                    
+                    <!-- Sub-tab: Ranting -->
+                    <div id="kode-ranting" class="kode-sub-tab-content">
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <div class="number"><?php echo count($ranting_list); ?></div>
+                                <div class="label">Total Ranting</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="number"><?php echo count(array_filter($ranting_list, fn($r) => $r['aktif'])); ?></div>
+                                <div class="label">Ranting Aktif</div>
+                            </div>
+                        </div>
+                        
+                        <div class="kode-card">
+                            <div class="kode-card-header">
+                                <h3>🏠 Manajemen Unit/Ranting</h3>
+                                <div style="display: flex; gap: 10px;">
+                                    <select id="filter-ranting-negara" onchange="cascadeRantingNegara()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                        <option value="">Semua Negara</option>
+                                        <?php foreach ($negara_list as $negara): ?>
+                                            <option value="<?php echo $negara['id']; ?>"><?php echo htmlspecialchars($negara['nama']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <select id="filter-ranting-provinsi" onchange="cascadeRantingProvinsi()" disabled style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                        <option value="">Semua Provinsi</option>
+                                        <?php foreach ($provinsi_list as $provinsi): ?>
+                                            <option value="<?php echo $provinsi['id']; ?>" data-negara="<?php echo $provinsi['negara_id']; ?>"><?php echo htmlspecialchars($provinsi['nama_pengurus'] ?? $provinsi['nama'] ?? '-'); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <select id="filter-ranting-kota" onchange="filterRantingTable()" disabled style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd;">
+                                        <option value="">Semua Kota</option>
+                                        <?php foreach ($kota_list as $kota): ?>
+                                            <option value="<?php echo $kota['id']; ?>" data-provinsi="<?php echo $kota['provinsi_id']; ?>" data-negara="<?php echo $kota['negara_id'] ?? ''; ?>"><?php echo htmlspecialchars($kota['nama']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>                                
+                                </div>
+                            </div>
+                            <div class="kode-card-body">
+                                <div class="info-box">
+                                    <strong>ℹ️ Informasi:</strong> Kelola kode unit/ranting di sini.
+                                </div>
+                                <table class="compact-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px;">No</th>
+                                            <th style="width: 80px;">Kode</th>
+                                            <th>Nama Unit/Ranting</th>
+                                            <th>Kota</th>
+                                            <th style="width: 100px;">Status</th>
+                                            <th style="width: 150px;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ranting-table">
+                                        <?php foreach ($ranting_list as $i => $ranting): ?>
+                                        <tr data-kota="<?php echo $ranting['id_kota']; ?>" data-provinsi="<?php echo $ranting['provinsi_id']; ?>" data-negara="<?php echo $ranting['negara_id']; ?>">
+                                            <td><?php echo $i + 1; ?></td>
+                                            <td><strong><?php echo htmlspecialchars($ranting['kode'] ?? '-'); ?></strong></td>
+                                            <td><?php echo htmlspecialchars($ranting['nama_ranting'] ?? $ranting['nama'] ?? '-'); ?></td>
+                                            <td><?php echo htmlspecialchars($ranting['kode_kota'] ?? '-'); ?></td>
+                                            <td>
+                                                <span class="badge badge-<?php echo $ranting['aktif'] ? 'success' : 'secondary'; ?>">
+                                                    <?php echo $ranting['aktif'] ? 'Aktif' : 'Nonaktif'; ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-<?php echo $ranting['aktif'] ? 'warning' : 'success'; ?> btn-sm" onclick="toggleRanting(<?php echo $ranting['id']; ?>)">
+                                                    <?php echo $ranting['aktif'] ? '⛔' : '✅'; ?>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </div>
-                
             </div>
         </div>
     </div>

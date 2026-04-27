@@ -465,229 +465,231 @@ $kota_result = $conn->query("SELECT id, nama FROM kota ORDER BY nama");
     </style>
 </head>
 <body>
-    <?php renderNavbar('✏️ Edit Unit/Ranting'); ?>
+    <?php renderNavbar('Edit Unit/Ranting'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>Edit Data Unit/Ranting</h1>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✓ <?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <form method="POST" enctype="multipart/form-data">
-                <h3>📋 Informasi Dasar</h3>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Edit Data Unit/Ranting</h1>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nama Unit/Ranting <span class="required">*</span></label>
-                        <input type="text" name="nama_ranting" value="<?php echo htmlspecialchars($ranting['nama_ranting']); ?>" required>
-                    </div>
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✓ <?php echo $success; ?></div>
+                <?php endif; ?>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <h3>📋 Informasi Dasar</h3>
                     
-                    <div class="form-group">
-                        <label>Jenis <span class="required">*</span></label>
-                        <select name="jenis" required>
-                            <option value="ukm" <?php echo $ranting['jenis'] == 'ukm' ? 'selected' : ''; ?>>UKM Perguruan Tinggi</option>
-                            <option value="ranting" <?php echo $ranting['jenis'] == 'ranting' ? 'selected' : ''; ?>>Ranting</option>
-                            <option value="unit" <?php echo $ranting['jenis'] == 'unit' ? 'selected' : ''; ?>>Unit</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Negara <span class="required">*</span></label>
-                        <select name="id_negara" id="id_negara" onchange="updateProvinsi()" required>
-                            <option value="">-- Pilih Negara --</option>
-                            <?php $negara_result = $conn->query("SELECT id, nama, kode FROM negara ORDER BY nama"); ?>
-                            <?php while ($negara = $negara_result->fetch_assoc()): ?>
-                                <option value="<?php echo $negara['id']; ?>" data-kode="<?php echo $negara['kode']; ?>" <?php echo ($current_data && $current_data['negara_id'] == $negara['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($negara['nama']); ?></option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Kode Negara</label>
-                        <input type="text" id="kode_negara_display" value="<?php echo $current_data ? htmlspecialchars($current_data['negara_kode']) : ''; ?>" readonly placeholder="-">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group" style="flex:2;">
-                        <label>Pengurus Provinsi <span class="required">*</span></label>
-                        <select name="pengurus_provinsi_id" id="pengurus_provinsi_id" onchange="updatePengKot()" required>
-                            <option value="">-- Pilih Provinsi --</option>
-                            <?php $pengurus_provinsi_result = $conn->query("SELECT id, nama, kode, negara_id FROM provinsi ORDER BY nama"); ?>
-                            <?php while ($prov = $pengurus_provinsi_result->fetch_assoc()): ?>
-                                <option value="<?php echo $prov['id']; ?>" data-id_negara="<?php echo $prov['negara_id']; ?>" data-kode="<?php echo $prov['kode']; ?>" <?php echo ($current_data && $current_data['prov_id'] == $prov['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($prov['nama']); ?></option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Kode</label>
-                        <input type="text" id="kode_provinsi_display" value="<?php echo $current_data ? htmlspecialchars($current_data['prov_kode']) : ''; ?>" readonly placeholder="-">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group" style="flex:2;">
-                        <label>Pengurus Kota <span class="required">*</span></label>
-                        <select name="kota_id" id="kota_id" required>
-                            <option value="">-- Pilih Kota --</option>
-                            <?php if ($current_data): ?>
-                                <?php foreach ($kota_list as $kota): ?>
-                                    <option value="<?php echo $kota['id']; ?>" data-kode="<?php echo $kota['kode']; ?>" <?php echo ($current_data && $current_data['id'] == $kota['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($kota['nama']); ?></option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Kode</label>
-                        <input type="text" id="kode_kota_display" value="<?php echo $current_data ? htmlspecialchars($current_data['kota_kode']) : ''; ?>" readonly placeholder="-">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>No Kontak <span class="required">*</span></label>
-                        <input type="tel" name="no_kontak" value="<?php echo htmlspecialchars($ranting['no_kontak'] ?? ''); ?>" required>
-                    </div>
-                </div>                
-                
-                <div class="form-row full">
-                    <div class="form-group">
-                        <label>Alamat <span class="required">*</span></label>
-                        <textarea name="alamat" required><?php echo htmlspecialchars($ranting['alamat']); ?></textarea>
-                    </div>
-                </div>
-                                
-                <hr>
-                
-                <h3>👤 Struktur Organisasi</h3>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nama Ketua <span class="required">*</span></label>
-                        <input type="text" name="ketua_nama" value="<?php echo htmlspecialchars($ranting['ketua_nama'] ?? ''); ?>" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Penanggung Jawab Teknik</label>
-                        <input type="text" name="penanggung_jawab" value="<?php echo htmlspecialchars($ranting['penanggung_jawab_teknik'] ?? ''); ?>">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Tanggal SK Pembentukan <span class="required">*</span></label>
-                        <input type="date" name="tanggal_sk" value="<?php echo $ranting['tanggal_sk_pembentukan']; ?>" required>
-                    </div>                            
-                
-                    <div class="form-group">
-                        <label>No SK Pembentukan</label>
-                        <input type="text" name="no_sk_pembentukan" 
-                            value="<?php echo htmlspecialchars($ranting['no_sk_pembentukan'] ?? ''); ?>"
-                            placeholder="Contoh: 001/SK/KOTA/2024">
-                        <div class="form-hint">Nomor Surat Keputusan pembentukan unit/ranting</div>
-                    </div>
-                </div>
-
-                <hr>
-                
-                <h3>📄 SK Pembentukan</h3>
-                
-                <div class="info-box">
-                    <strong>ℹ️ Format Nama File SK:</strong><br>
-                    <span class="code">SK-{nama_ranting}-{nama_kota}-XX.pdf</span><br><br>
-                    Contoh: <span class="code">SK-SMP_1-Surabaya-01.pdf</span><br><br>
-                    Setiap upload file baru akan otomatis menambah nomor revisi (01 → 02 → 03, dst).
-                </div>
-                
-                <div class="form-row full">
-                    <div class="form-group">
-                        <label>Upload SK Pembentukan (PDF)</label>
-                        <input type="file" name="sk_pembentukan" accept=".pdf">
-                        <div class="form-hint">Format: PDF | Ukuran maksimal: 5MB | Kosongkan jika tidak ingin mengubah SK</div>
-                    </div>
-                </div>
-                
-                <hr>
-                
-                <h3>👨‍🏫 Daftar Pelatih</h3>
-                <div class="info-box">
-                    <strong>ℹ️ Info:</strong> Cari pelatih berdasarkan nama atau nomor anggota.
-                </div>
-
-                <div style="position: relative; margin-bottom: 20px;">
-                    <input type="text" id="pelatih-search" placeholder="Cari nama pelatih..." autocomplete="off" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                    <div id="pelatih-results" class="search-results"></div>
-                </div>
-
-                <div id="pelatih-list" style="margin-bottom: 20px;">
-                    <?php foreach ($pelatih_list_existing as $p): ?>
-                        <div class="pelatih-item" id="pelatih-row-<?php echo $p['anggota_id']; ?>">
-                            <input type="hidden" name="pelatih_id[]" value="<?php echo $p['anggota_id']; ?>">
-                            <div class="pelatih-info">
-                                <strong><?php echo htmlspecialchars($p['nama_lengkap']); ?></strong><br>
-                                <small><?php echo htmlspecialchars($p['no_anggota']); ?> | <?php echo htmlspecialchars($p['nama_tingkat']); ?></small>
-                            </div>
-                            <div class="pelatih-ket">
-                                <input type="text" name="pelatih_keterangan[]" value="<?php echo htmlspecialchars($p['keterangan'] ?? ''); ?>" placeholder="Keterangan (opsional)...">
-                            </div>
-                            <button type="button" class="jadwal-remove" onclick="removePelatih('<?php echo $p['anggota_id']; ?>')">X</button>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nama Unit/Ranting <span class="required">*</span></label>
+                            <input type="text" name="nama_ranting" value="<?php echo htmlspecialchars($ranting['nama_ranting']); ?>" required>
                         </div>
-                    <?php endforeach; ?>
-                </div>
-
-                <hr>
-                
-                <h3>⏰ Jadwal Latihan</h3>
-                
-                <div id="jadwal-list">
-                    <?php foreach ($jadwal_list_existing as $idx => $j): ?>
-                        <div class="jadwal-item" id="jadwal-<?php echo $idx; ?>">
-                            <div class="jadwal-row">
-                                <div class="form-group">
-                                    <label>Hari</label>
-                                    <select name="jadwal_hari[]" required>
-                                        <option value="">-- Pilih Hari --</option>
-                                        <?php 
-                                        $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-                                        foreach ($hari_options as $h) {
-                                            $selected = ($j['hari'] == $h) ? 'selected' : '';
-                                            echo "<option value=\"$h\" $selected>$h</option>";
-                                        }
-                                        ?>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Jam Mulai</label>
-                                    <input type="time" name="jadwal_jam_mulai[]" value="<?php echo substr($j['jam_mulai'], 0, 5); ?>" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Jam Selesai</label>
-                                    <input type="time" name="jadwal_jam_selesai[]" value="<?php echo substr($j['jam_selesai'], 0, 5); ?>" required>
-                                </div>
-                                <div><button type="button" class="jadwal-remove" onclick="hapusJadwal('jadwal-<?php echo $idx; ?>')">Hapus</button></div>
-                            </div>
+                        
+                        <div class="form-group">
+                            <label>Jenis <span class="required">*</span></label>
+                            <select name="jenis" required>
+                                <option value="ukm" <?php echo $ranting['jenis'] == 'ukm' ? 'selected' : ''; ?>>UKM Perguruan Tinggi</option>
+                                <option value="ranting" <?php echo $ranting['jenis'] == 'ranting' ? 'selected' : ''; ?>>Ranting</option>
+                                <option value="unit" <?php echo $ranting['jenis'] == 'unit' ? 'selected' : ''; ?>>Unit</option>
+                            </select>
                         </div>
-                    <?php endforeach; ?>
-                </div>
-                
-                <button type="button" class="btn btn-primary btn-small" onclick="tambahJadwal()">+ Tambah Jadwal</button>
-                
-                                                
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
-                    <a href="ranting_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Batal</a>
-                </div>
-            </form>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Negara <span class="required">*</span></label>
+                            <select name="id_negara" id="id_negara" onchange="updateProvinsi()" required>
+                                <option value="">-- Pilih Negara --</option>
+                                <?php $negara_result = $conn->query("SELECT id, nama, kode FROM negara ORDER BY nama"); ?>
+                                <?php while ($negara = $negara_result->fetch_assoc()): ?>
+                                    <option value="<?php echo $negara['id']; ?>" data-kode="<?php echo $negara['kode']; ?>" <?php echo ($current_data && $current_data['negara_id'] == $negara['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($negara['nama']); ?></option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kode Negara</label>
+                            <input type="text" id="kode_negara_display" value="<?php echo $current_data ? htmlspecialchars($current_data['negara_kode']) : ''; ?>" readonly placeholder="-">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group" style="flex:2;">
+                            <label>Pengurus Provinsi <span class="required">*</span></label>
+                            <select name="pengurus_provinsi_id" id="pengurus_provinsi_id" onchange="updatePengKot()" required>
+                                <option value="">-- Pilih Provinsi --</option>
+                                <?php $pengurus_provinsi_result = $conn->query("SELECT id, nama, kode, negara_id FROM provinsi ORDER BY nama"); ?>
+                                <?php while ($prov = $pengurus_provinsi_result->fetch_assoc()): ?>
+                                    <option value="<?php echo $prov['id']; ?>" data-id_negara="<?php echo $prov['negara_id']; ?>" data-kode="<?php echo $prov['kode']; ?>" <?php echo ($current_data && $current_data['prov_id'] == $prov['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($prov['nama']); ?></option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kode</label>
+                            <input type="text" id="kode_provinsi_display" value="<?php echo $current_data ? htmlspecialchars($current_data['prov_kode']) : ''; ?>" readonly placeholder="-">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group" style="flex:2;">
+                            <label>Pengurus Kota <span class="required">*</span></label>
+                            <select name="kota_id" id="kota_id" required>
+                                <option value="">-- Pilih Kota --</option>
+                                <?php if ($current_data): ?>
+                                    <?php foreach ($kota_list as $kota): ?>
+                                        <option value="<?php echo $kota['id']; ?>" data-kode="<?php echo $kota['kode']; ?>" <?php echo ($current_data && $current_data['id'] == $kota['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($kota['nama']); ?></option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kode</label>
+                            <input type="text" id="kode_kota_display" value="<?php echo $current_data ? htmlspecialchars($current_data['kota_kode']) : ''; ?>" readonly placeholder="-">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>No Kontak <span class="required">*</span></label>
+                            <input type="tel" name="no_kontak" value="<?php echo htmlspecialchars($ranting['no_kontak'] ?? ''); ?>" required>
+                        </div>
+                    </div>                
+                    
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Alamat <span class="required">*</span></label>
+                            <textarea name="alamat" required><?php echo htmlspecialchars($ranting['alamat']); ?></textarea>
+                        </div>
+                    </div>
+                                    
+                    <hr>
+                    
+                    <h3>👤 Struktur Organisasi</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nama Ketua <span class="required">*</span></label>
+                            <input type="text" name="ketua_nama" value="<?php echo htmlspecialchars($ranting['ketua_nama'] ?? ''); ?>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Penanggung Jawab Teknik</label>
+                            <input type="text" name="penanggung_jawab" value="<?php echo htmlspecialchars($ranting['penanggung_jawab_teknik'] ?? ''); ?>">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tanggal SK Pembentukan <span class="required">*</span></label>
+                            <input type="date" name="tanggal_sk" value="<?php echo $ranting['tanggal_sk_pembentukan']; ?>" required>
+                        </div>                            
+                    
+                        <div class="form-group">
+                            <label>No SK Pembentukan</label>
+                            <input type="text" name="no_sk_pembentukan" 
+                                value="<?php echo htmlspecialchars($ranting['no_sk_pembentukan'] ?? ''); ?>"
+                                placeholder="Contoh: 001/SK/KOTA/2024">
+                            <div class="form-hint">Nomor Surat Keputusan pembentukan unit/ranting</div>
+                        </div>
+                    </div>
+
+                    <hr>
+                    
+                    <h3>📄 SK Pembentukan</h3>
+                    
+                    <div class="info-box">
+                        <strong>ℹ️ Format Nama File SK:</strong><br>
+                        <span class="code">SK-{nama_ranting}-{nama_kota}-XX.pdf</span><br><br>
+                        Contoh: <span class="code">SK-SMP_1-Surabaya-01.pdf</span><br><br>
+                        Setiap upload file baru akan otomatis menambah nomor revisi (01 → 02 → 03, dst).
+                    </div>
+                    
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Upload SK Pembentukan (PDF)</label>
+                            <input type="file" name="sk_pembentukan" accept=".pdf">
+                            <div class="form-hint">Format: PDF | Ukuran maksimal: 5MB | Kosongkan jika tidak ingin mengubah SK</div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h3>👨‍🏫 Daftar Pelatih</h3>
+                    <div class="info-box">
+                        <strong>ℹ️ Info:</strong> Cari pelatih berdasarkan nama atau nomor anggota.
+                    </div>
+
+                    <div style="position: relative; margin-bottom: 20px;">
+                        <input type="text" id="pelatih-search" placeholder="Cari nama pelatih..." autocomplete="off" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                        <div id="pelatih-results" class="search-results"></div>
+                    </div>
+
+                    <div id="pelatih-list" style="margin-bottom: 20px;">
+                        <?php foreach ($pelatih_list_existing as $p): ?>
+                            <div class="pelatih-item" id="pelatih-row-<?php echo $p['anggota_id']; ?>">
+                                <input type="hidden" name="pelatih_id[]" value="<?php echo $p['anggota_id']; ?>">
+                                <div class="pelatih-info">
+                                    <strong><?php echo htmlspecialchars($p['nama_lengkap']); ?></strong><br>
+                                    <small><?php echo htmlspecialchars($p['no_anggota']); ?> | <?php echo htmlspecialchars($p['nama_tingkat']); ?></small>
+                                </div>
+                                <div class="pelatih-ket">
+                                    <input type="text" name="pelatih_keterangan[]" value="<?php echo htmlspecialchars($p['keterangan'] ?? ''); ?>" placeholder="Keterangan (opsional)...">
+                                </div>
+                                <button type="button" class="jadwal-remove" onclick="removePelatih('<?php echo $p['anggota_id']; ?>')">X</button>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <hr>
+                    
+                    <h3>⏰ Jadwal Latihan</h3>
+                    
+                    <div id="jadwal-list">
+                        <?php foreach ($jadwal_list_existing as $idx => $j): ?>
+                            <div class="jadwal-item" id="jadwal-<?php echo $idx; ?>">
+                                <div class="jadwal-row">
+                                    <div class="form-group">
+                                        <label>Hari</label>
+                                        <select name="jadwal_hari[]" required>
+                                            <option value="">-- Pilih Hari --</option>
+                                            <?php 
+                                            $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+                                            foreach ($hari_options as $h) {
+                                                $selected = ($j['hari'] == $h) ? 'selected' : '';
+                                                echo "<option value=\"$h\" $selected>$h</option>";
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Jam Mulai</label>
+                                        <input type="time" name="jadwal_jam_mulai[]" value="<?php echo substr($j['jam_mulai'], 0, 5); ?>" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Jam Selesai</label>
+                                        <input type="time" name="jadwal_jam_selesai[]" value="<?php echo substr($j['jam_selesai'], 0, 5); ?>" required>
+                                    </div>
+                                    <div><button type="button" class="jadwal-remove" onclick="hapusJadwal('jadwal-<?php echo $idx; ?>')">Hapus</button></div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary btn-small" onclick="tambahJadwal()">+ Tambah Jadwal</button>
+                    
+                                                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
+                        <a href="ranting_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     

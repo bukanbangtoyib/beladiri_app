@@ -270,7 +270,7 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             align-items: center;
         }
         
-        .container { max-width: 1100px; margin: 20px auto; padding: 0 20px; }
+        .container { max-width: 1500px; margin: 20px auto; padding: 0 20px; }
         
         .alert {
             padding: 15px;
@@ -400,7 +400,7 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
     </style>
 </head>
 <body>
-    <?php renderNavbar('👤 Kelola User'); ?>
+    <?php renderNavbar('Kelola User'); ?>
     
     <div class="container">
         <?php if ($error): ?>

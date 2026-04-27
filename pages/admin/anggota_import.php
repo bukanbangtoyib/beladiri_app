@@ -380,66 +380,68 @@ if (!empty($tingkat_urutan)) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('⬆️ Import Data Anggota'); ?>
+    <?php renderNavbar('Import Data Anggota'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>Import Data Anggota</h1>
-            <p class="description">Upload file CSV berisi data anggota baru.</p>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✅ <?php echo $success; ?></div>
-                <?php if (count($import_log) > 0): ?>
-                <div class="log-box">
-                    <strong>📋 Detail Import:</strong><br>
-                    <?php foreach ($import_log as $log): ?>
-                        <div class="log-item"><?php echo htmlspecialchars($log); ?></div>
-                    <?php endforeach; ?>
-                </div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Import Data Anggota</h1>
+                <p class="description">Upload file CSV berisi data anggota baru.</p>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
                 <?php endif; ?>
-            <?php endif; ?>
-            
-            <div class="info-box">
-                <h4>📋 Format File CSV</h4>
-                <p><strong>Kolom yang diperlukan:</strong></p>
-                <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
-                    <li style="margin-bottom: 6px;"><strong>negara_kode</strong> - Kode negara (contoh: ID, MY)</li>
-                    <li style="margin-bottom: 6px;"><strong>provinsi_kode</strong> - Kode provinsi (contoh: 001, 002)</li>
-                    <li style="margin-bottom: 6px;"><strong>kota_kode</strong> - Kode kota (contoh: 001, 002)</li>
-                    <li style="margin-bottom: 6px;"><strong>ranting_kode</strong> - Kode ranting/unit (contoh: 001, 002)</li>
-                    <li style="margin-bottom: 6px;"><strong>nama_lengkap</strong> - Nama lengkap anggota</li>
-                    <li style="margin-bottom: 6px;"><strong>tempat_lahir</strong> - Tempat lahir</li>
-                    <li style="margin-bottom: 6px;"><strong>tanggal_lahir</strong> - Tanggal lahir (dd/mm/yyyy)</li>
-                    <li style="margin-bottom: 6px;"><strong>jenis_kelamin</strong> - L (Laki-laki) atau P (Perempuan)</li>
-                    <li style="margin-bottom: 6px;"><strong>no_handphone</strong> - Nomor telepon (contoh: 08123456789)</li>
-                    <li style="margin-bottom: 6px;"><strong>jenis_anggota</strong> - Jenis anggota (contoh: Murid, Pelatih, Pelatih Unit/Ranting)</li>
-                    <li style="margin-bottom: 6px;"><strong>tingkat_id</strong> - ID tingkat (angka)</li>
-                    <li style="margin-bottom: 6px;"><strong>tahun_bergabung</strong> - Tahun bergabung (contoh: 2024)</li>
-                    <li style="margin-bottom: 6px;"><strong>ranting_awal_manual</strong> - Nama ranting awal (contoh: Ranting Surabaya Timur)</li>
-                </ol>
-                <p style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Catatan: <span style="color: #dc3545;">Pastikan data negara, provinsi, kota, dan ranting sudah ada sebelum import anggota.</span></strong></p>
-                <p style="margin-top: 5px; font-size: 12px; color: #666;"><strong>Format No. Anggota:</strong> NNPPPKKK.RRR-YYYYXXX (2 digit negara, 3 digit provinsi, 3 digit kota, 3 digit ranting, 4 digit tahun, 3 digit urutan)</p>
-            </div>
-            
-            <div class="tab-header" style="justify-content: flex-end;">
-                <a href="?download=anggota" class="template-link" style="background: #28a745; margin-left: 0;">📥 Download Template</a>
-            </div>
-            
-            <form method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="file_excel">Pilih File CSV <span style="color: #dc3545;">*</span></label>
-                    <input type="file" id="file_excel" name="file_excel" accept=".csv" required>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✅ <?php echo $success; ?></div>
+                    <?php if (count($import_log) > 0): ?>
+                    <div class="log-box">
+                        <strong>📋 Detail Import:</strong><br>
+                        <?php foreach ($import_log as $log): ?>
+                            <div class="log-item"><?php echo htmlspecialchars($log); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+                
+                <div class="info-box">
+                    <h4>📋 Format File CSV</h4>
+                    <p><strong>Kolom yang diperlukan:</strong></p>
+                    <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
+                        <li style="margin-bottom: 6px;"><strong>negara_kode</strong> - Kode negara (contoh: ID, MY)</li>
+                        <li style="margin-bottom: 6px;"><strong>provinsi_kode</strong> - Kode provinsi (contoh: 001, 002)</li>
+                        <li style="margin-bottom: 6px;"><strong>kota_kode</strong> - Kode kota (contoh: 001, 002)</li>
+                        <li style="margin-bottom: 6px;"><strong>ranting_kode</strong> - Kode ranting/unit (contoh: 001, 002)</li>
+                        <li style="margin-bottom: 6px;"><strong>nama_lengkap</strong> - Nama lengkap anggota</li>
+                        <li style="margin-bottom: 6px;"><strong>tempat_lahir</strong> - Tempat lahir</li>
+                        <li style="margin-bottom: 6px;"><strong>tanggal_lahir</strong> - Tanggal lahir (dd/mm/yyyy)</li>
+                        <li style="margin-bottom: 6px;"><strong>jenis_kelamin</strong> - L (Laki-laki) atau P (Perempuan)</li>
+                        <li style="margin-bottom: 6px;"><strong>no_handphone</strong> - Nomor telepon (contoh: 08123456789)</li>
+                        <li style="margin-bottom: 6px;"><strong>jenis_anggota</strong> - Jenis anggota (contoh: Murid, Pelatih, Pelatih Unit/Ranting)</li>
+                        <li style="margin-bottom: 6px;"><strong>tingkat_id</strong> - ID tingkat (angka)</li>
+                        <li style="margin-bottom: 6px;"><strong>tahun_bergabung</strong> - Tahun bergabung (contoh: 2024)</li>
+                        <li style="margin-bottom: 6px;"><strong>ranting_awal_manual</strong> - Nama ranting awal (contoh: Ranting Surabaya Timur)</li>
+                    </ol>
+                    <p style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Catatan: <span style="color: #dc3545;">Pastikan data negara, provinsi, kota, dan ranting sudah ada sebelum import anggota.</span></strong></p>
+                    <p style="margin-top: 5px; font-size: 12px; color: #666;"><strong>Format No. Anggota:</strong> NNPPPKKK.RRR-YYYYXXX (2 digit negara, 3 digit provinsi, 3 digit kota, 3 digit ranting, 4 digit tahun, 3 digit urutan)</p>
                 </div>
                 
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">⬆️ Upload</button>
-                    <a href="anggota.php" class="btn btn-secondary">Batal</a>
+                <div class="tab-header" style="justify-content: flex-end;">
+                    <a href="?download=anggota" class="template-link" style="background: #28a745; margin-left: 0;">📥 Download Template</a>
                 </div>
-            </form>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="file_excel">Pilih File CSV <span style="color: #dc3545;">*</span></label>
+                        <input type="file" id="file_excel" name="file_excel" accept=".csv" required>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">⬆️ Upload</button>
+                        <a href="anggota.php" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </body>

@@ -780,9 +780,12 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
     </style>
 </head>
 <body>
-    <?php renderNavbar('✏️ Edit Anggota'); ?>
-    
-    <div class="container">
+<?php renderNavbar('Edit Anggota'); ?>
+<?php include '../../helpers/icon_sidebar.php'; ?>
+
+<div class="container-with-sidebar">
+    <div class="main-content">
+        <div class="container">
         <div class="form-container">
             <h1>Edit Data Anggota</h1>
             <p class="form-subtitle">Silahkan isi semua kolom yang bertanda bintang merah (*)</p>
@@ -1487,8 +1490,10 @@ $prestasi_result = $conn->query("SELECT * FROM prestasi WHERE anggota_id = $id O
                         searchField.focus();
                     }
                 }, 50);
-            });
-        });
-    </script>
-</body>
+             });
+         });
+     </script>
+ </div>
+ </div>
+ </body>
 </html>

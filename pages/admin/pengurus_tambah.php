@@ -278,145 +278,147 @@ if (empty($final_kode) && $jenis == 'kota') {
     </style>
 </head>
 <body>
-    <?php renderNavbar('➕ Tambah ' . $label_jenis); ?>
+    <?php renderNavbar('Tambah ' . $label_jenis); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>Formulir Tambah <?php echo $label_jenis; ?> Baru</h1>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✓ <?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <form method="POST">
-                <?php if ($jenis == 'provinsi'): ?>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Negara <span class="required">*</span></label>
-                        <select name="negara_id" id="negara_id" required onchange="updateKode()" <?php echo ($user_role === 'negara') ? 'disabled' : ''; ?>>
-                            <option value="">-- Pilih Negara --</option>
-                            <?php foreach ($negara_list as $negara): ?>
-                                <option value="<?php echo $negara['id']; ?>" data-kode="<?php echo $negara['kode']; ?>" <?php echo ($auto_selected_negara == $negara['id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($negara['nama']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <?php if ($user_role === 'negara'): ?>
-                        <input type="hidden" name="negara_id" value="<?php echo $auto_selected_negara; ?>">
-                        <?php endif; ?>
-                    </div>
-                    <div class="form-group">
-                        <label>Kode</label>
-                        <input type="text" id="kode_otomatis" readonly placeholder="Otomatis dari negara">
-                    </div>
-                </div>
-                <?php elseif ($jenis == 'kota'): ?>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Negara <span class="required">*</span></label>
-                        <select name="negara_id" id="negara_id" required onchange="loadProvinsi()" <?php echo in_array($user_role, ['negara', 'pengprov', 'pengkot']) ? 'disabled' : ''; ?>>
-                            <option value="">-- Pilih Negara --</option>
-                            <?php foreach ($negara_list as $negara): ?>
-                                <option value="<?php echo $negara['id']; ?>" <?php echo ($auto_selected_negara == $negara['id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($negara['nama']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <?php if (in_array($user_role, ['negara', 'pengprov', 'pengkot'])): ?>
-                        <input type="hidden" name="negara_id" value="<?php echo $auto_selected_negara; ?>">
-                        <?php endif; ?>
-                    </div>
-                    <div class="form-group">
-                        <label>Kode Negara</label>
-                        <input type="text" id="kode_negara" readonly placeholder="Otomatis">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Provinsi <span class="required">*</span></label>
-                        <select name="provinsi_id" id="provinsi_id" required onchange="updateKode()" <?php echo in_array($user_role, ['pengprov', 'pengkot']) ? 'disabled' : ''; ?>>
-                            <option value="">-- Pilih Provinsi --</option>
-                            <?php foreach ($provinsi_list as $provinsi): ?>
-                                <option value="<?php echo $provinsi['id']; ?>" data-kode="<?php echo $provinsi['kode']; ?>" data-negara="<?php echo $provinsi['negara_id']; ?>" <?php echo ($auto_selected_provinsi == $provinsi['id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($provinsi['nama']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <?php if (in_array($user_role, ['pengprov', 'pengkot'])): ?>
-                        <input type="hidden" name="provinsi_id" value="<?php echo $auto_selected_provinsi; ?>">
-                        <?php endif; ?>
-                    </div>
-                    <div class="form-group">
-                        <label>Kode</label>
-                        <input type="text" id="kode_otomatis" name="kode_otomatis" readonly placeholder="Otomatis dari provinsi">
-                    </div>
-                </div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Formulir Tambah <?php echo $label_jenis; ?> Baru</h1>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
                 <?php endif; ?>
                 
-                <?php if ($jenis == 'pusat'): ?>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Negara <span class="required">*</span></label>
-                        <input type="text" name="nama" required placeholder="Contoh: Indonesia" value="<?php echo htmlspecialchars($_POST['nama'] ?? ''); ?>">
-                    </div>
-                    <div class="form-group">
-                        <label>Kode Negara <span class="required">*</span></label>
-                        <input type="text" name="kode" required maxlength="2" style="text-transform: uppercase;" placeholder="2 Huruf, Contoh: ID" value="<?php echo htmlspecialchars($_POST['kode'] ?? ''); ?>">
-                    </div>
-                </div>
-                <?php else: ?>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nama  <?php echo $label_jenis; ?> <span class="required">*</span></label>
-                        <input type="text" name="nama" required placeholder="Contoh: <?php echo ($jenis == 'provinsi') ? 'Jawa Timur' : 'Surabaya'; ?>" value="<?php echo htmlspecialchars($_POST['nama'] ?? ''); ?>">
-                    </div>
-                    <div class="form-group">
-                        <label>Kode <?php echo ($jenis == 'kota') ? 'Kota/Kabupaten' : 'Provinsi'; ?> <span class="required">*</span></label>
-                        <input type="text" id="kode_otomatis" name="kode_otomatis" readonly placeholder="Otomatis" value="<?php echo htmlspecialchars($_POST['kode_otomatis'] ?? ''); ?>">
-                    </div>
-                </div>       
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✓ <?php echo $success; ?></div>
                 <?php endif; ?>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nama Ketua <span class="required">*</span></label>
-                        <input type="text" name="ketua_nama" required placeholder="Contoh: Ahmad Fauzi" value="<?php echo htmlspecialchars($_POST['ketua_nama'] ?? ''); ?>">
+                <form method="POST">
+                    <?php if ($jenis == 'provinsi'): ?>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Negara <span class="required">*</span></label>
+                            <select name="negara_id" id="negara_id" required onchange="updateKode()" <?php echo ($user_role === 'negara') ? 'disabled' : ''; ?>>
+                                <option value="">-- Pilih Negara --</option>
+                                <?php foreach ($negara_list as $negara): ?>
+                                    <option value="<?php echo $negara['id']; ?>" data-kode="<?php echo $negara['kode']; ?>" <?php echo ($auto_selected_negara == $negara['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($negara['nama']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php if ($user_role === 'negara'): ?>
+                            <input type="hidden" name="negara_id" value="<?php echo $auto_selected_negara; ?>">
+                            <?php endif; ?>
+                        </div>
+                        <div class="form-group">
+                            <label>Kode</label>
+                            <input type="text" id="kode_otomatis" readonly placeholder="Otomatis dari negara">
+                        </div>
                     </div>
-
-                    <div class="form-group">
-                        <label>No. SK Kepengurusan</label>
-                        <input type="text" name="sk_kepengurusan" placeholder="Contoh: 001/SK/Pusat/2024" value="<?php echo htmlspecialchars($_POST['sk_kepengurusan'] ?? ''); ?>">
+                    <?php elseif ($jenis == 'kota'): ?>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Negara <span class="required">*</span></label>
+                            <select name="negara_id" id="negara_id" required onchange="loadProvinsi()" <?php echo in_array($user_role, ['negara', 'pengprov', 'pengkot']) ? 'disabled' : ''; ?>>
+                                <option value="">-- Pilih Negara --</option>
+                                <?php foreach ($negara_list as $negara): ?>
+                                    <option value="<?php echo $negara['id']; ?>" <?php echo ($auto_selected_negara == $negara['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($negara['nama']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php if (in_array($user_role, ['negara', 'pengprov', 'pengkot'])): ?>
+                            <input type="hidden" name="negara_id" value="<?php echo $auto_selected_negara; ?>">
+                            <?php endif; ?>
+                        </div>
+                        <div class="form-group">
+                            <label>Kode Negara</label>
+                            <input type="text" id="kode_negara" readonly placeholder="Otomatis">
+                        </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Provinsi <span class="required">*</span></label>
+                            <select name="provinsi_id" id="provinsi_id" required onchange="updateKode()" <?php echo in_array($user_role, ['pengprov', 'pengkot']) ? 'disabled' : ''; ?>>
+                                <option value="">-- Pilih Provinsi --</option>
+                                <?php foreach ($provinsi_list as $provinsi): ?>
+                                    <option value="<?php echo $provinsi['id']; ?>" data-kode="<?php echo $provinsi['kode']; ?>" data-negara="<?php echo $provinsi['negara_id']; ?>" <?php echo ($auto_selected_provinsi == $provinsi['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($provinsi['nama']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php if (in_array($user_role, ['pengprov', 'pengkot'])): ?>
+                            <input type="hidden" name="provinsi_id" value="<?php echo $auto_selected_provinsi; ?>">
+                            <?php endif; ?>
+                        </div>
+                        <div class="form-group">
+                            <label>Kode</label>
+                            <input type="text" id="kode_otomatis" name="kode_otomatis" readonly placeholder="Otomatis dari provinsi">
+                        </div>
+                    </div>
+                    <?php endif; ?>
                     
-                </div>
+                    <?php if ($jenis == 'pusat'): ?>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Negara <span class="required">*</span></label>
+                            <input type="text" name="nama" required placeholder="Contoh: Indonesia" value="<?php echo htmlspecialchars($_POST['nama'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Kode Negara <span class="required">*</span></label>
+                            <input type="text" name="kode" required maxlength="2" style="text-transform: uppercase;" placeholder="2 Huruf, Contoh: ID" value="<?php echo htmlspecialchars($_POST['kode'] ?? ''); ?>">
+                        </div>
+                    </div>
+                    <?php else: ?>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nama  <?php echo $label_jenis; ?> <span class="required">*</span></label>
+                            <input type="text" name="nama" required placeholder="Contoh: <?php echo ($jenis == 'provinsi') ? 'Jawa Timur' : 'Surabaya'; ?>" value="<?php echo htmlspecialchars($_POST['nama'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Kode <?php echo ($jenis == 'kota') ? 'Kota/Kabupaten' : 'Provinsi'; ?> <span class="required">*</span></label>
+                            <input type="text" id="kode_otomatis" name="kode_otomatis" readonly placeholder="Otomatis" value="<?php echo htmlspecialchars($_POST['kode_otomatis'] ?? ''); ?>">
+                        </div>
+                    </div>       
+                    <?php endif; ?>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nama Ketua <span class="required">*</span></label>
+                            <input type="text" name="ketua_nama" required placeholder="Contoh: Ahmad Fauzi" value="<?php echo htmlspecialchars($_POST['ketua_nama'] ?? ''); ?>">
+                        </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Periode Mulai <span class="required">*</span></label>
-                        <input type="date" name="periode_mulai" required value="<?php echo htmlspecialchars($_POST['periode_mulai'] ?? ''); ?>">
+                        <div class="form-group">
+                            <label>No. SK Kepengurusan</label>
+                            <input type="text" name="sk_kepengurusan" placeholder="Contoh: 001/SK/Pusat/2024" value="<?php echo htmlspecialchars($_POST['sk_kepengurusan'] ?? ''); ?>">
+                        </div>
+                        
                     </div>
-                    <div class="form-group">
-                        <label>Periode Akhir <span class="required">*</span></label>
-                        <input type="date" name="periode_akhir" required value="<?php echo htmlspecialchars($_POST['periode_akhir'] ?? ''); ?>">
-                    </div>
-                </div>
 
-                <div class="form-row full">                    
-                    <div class="form-group">
-                        <label>Alamat Sekretariat <span class="required">*</span></label>
-                        <textarea name="alamat" required placeholder="Contoh: Jl. Contoh No. 123" value="<?php echo htmlspecialchars($_POST['alamat'] ?? ''); ?>"></textarea>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Periode Mulai <span class="required">*</span></label>
+                            <input type="date" name="periode_mulai" required value="<?php echo htmlspecialchars($_POST['periode_mulai'] ?? ''); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Periode Akhir <span class="required">*</span></label>
+                            <input type="date" name="periode_akhir" required value="<?php echo htmlspecialchars($_POST['periode_akhir'] ?? ''); ?>">
+                        </div>
                     </div>
-                </div>                               
-                
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">💾 Simpan</button>
-                    <a href="pengurus_list.php?jenis=<?php echo $jenis; ?>" class="btn btn-secondary">Batal</a>
-                </div>
-            </form>
+
+                    <div class="form-row full">                    
+                        <div class="form-group">
+                            <label>Alamat Sekretariat <span class="required">*</span></label>
+                            <textarea name="alamat" required placeholder="Contoh: Jl. Contoh No. 123" value="<?php echo htmlspecialchars($_POST['alamat'] ?? ''); ?>"></textarea>
+                        </div>
+                    </div>                               
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">💾 Simpan</button>
+                        <a href="pengurus_list.php?jenis=<?php echo $jenis; ?>" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     

@@ -268,105 +268,107 @@ $tingkat_list = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY ur
     </style>
 </head>
 <body>
-    <?php renderNavbar('➕ Tambah Kerohanian'); ?>
+    <?php renderNavbar('Tambah Kerohanian'); ?>
 
-    <div class="container">
-        <div class="form-container">
-            <h1>📋 Formulir Pencatatan Pembukaan Kerohanian</h1>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✓ <?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <form method="POST">
-                <h3>Penyelenggara</h3>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Formulir Pencatatan Pembukaan Kerohanian</h1>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✓ <?php echo $success; ?></div>
+                <?php endif; ?>
+                
+                <form method="POST">
+                    <h3>Penyelenggara</h3>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Penyelenggara <span class="required">*</span></label>
-                        <?php if (in_array($user_role, ['admin', 'superadmin'])): ?>
-                            <!-- Admin: searchable dropdown with all organizations -->
-                            <select name="penyelenggara" id="penyelenggara_select" required class="select2-searchable" style="width: 100%;">
-                                <option value="">-- Pilih Penyelenggara --</option>
-                                <?php foreach ($all_organizations as $org): ?>
-                                    <option value="<?php echo htmlspecialchars($org['nama']); ?>">
-                                        <?php echo htmlspecialchars($org['nama']) . ' (' . ucfirst($org['type']) . ')'; ?>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Penyelenggara <span class="required">*</span></label>
+                            <?php if (in_array($user_role, ['admin', 'superadmin'])): ?>
+                                <!-- Admin: searchable dropdown with all organizations -->
+                                <select name="penyelenggara" id="penyelenggara_select" required class="select2-searchable" style="width: 100%;">
+                                    <option value="">-- Pilih Penyelenggara --</option>
+                                    <?php foreach ($all_organizations as $org): ?>
+                                        <option value="<?php echo htmlspecialchars($org['nama']); ?>">
+                                            <?php echo htmlspecialchars($org['nama']) . ' (' . ucfirst($org['type']) . ')'; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-hint">Pilih organisasi penyelenggara dari dropdown</div>
+                            <?php else: ?>
+                                <!-- Non-admin: fixed to their organization -->
+                                <input type="text" name="penyelenggara" value="<?php echo htmlspecialchars($user_org_name); ?>" readonly class="form-control-plaintext" style="background: #f8f9fa; color: #666;">
+                                <input type="hidden" name="penyelenggara" value="<?php echo htmlspecialchars($user_org_name); ?>">
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Tanggal Pembukaan <span class="required">*</span></label>
+                            <input type="date" name="tanggal_pembukaan" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">                    
+                        <div class="form-group">
+                            <label>Nama Pembuka <span class="required">*</span></label>
+                            <input type="text" name="pembuka_nama" required placeholder="Nama pembuka kerohanian">
+                        </div>
+                    
+                        <div class="form-group">
+                            <label>Tingkat Pembuka <span class="required">*</span></label>
+                            <select name="tingkat_pembuka_id" required>
+                                <option value="">-- Pilih Tingkat --</option>
+                                <?php while ($row = $tingkat_result->fetch_assoc()): ?>
+                                    <option value="<?php echo $row['id']; ?>">
+                                        <?php echo htmlspecialchars($row['nama_tingkat']); ?>
                                     </option>
-                                <?php endforeach; ?>
+                                <?php endwhile; ?>
                             </select>
-                            <div class="form-hint">Pilih organisasi penyelenggara dari dropdown</div>
-                        <?php else: ?>
-                            <!-- Non-admin: fixed to their organization -->
-                            <input type="text" name="penyelenggara" value="<?php echo htmlspecialchars($user_org_name); ?>" readonly class="form-control-plaintext" style="background: #f8f9fa; color: #666;">
-                            <input type="hidden" name="penyelenggara" value="<?php echo htmlspecialchars($user_org_name); ?>">
-                        <?php endif; ?>
+                            <div class="form-hint">Tingkat pembuka kerohanian</div>
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label>Tanggal Pembukaan <span class="required">*</span></label>
-                        <input type="date" name="tanggal_pembukaan" required>
+                        
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Lokasi Pembukaan <span class="required">*</span></label>
+                            <textarea name="lokasi" required placeholder="Contoh: Gedung Olahraga"></textarea>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="form-row">                    
-                    <div class="form-group">
-                        <label>Nama Pembuka <span class="required">*</span></label>
-                        <input type="text" name="pembuka_nama" required placeholder="Nama pembuka kerohanian">
-                    </div>
-                
-                    <div class="form-group">
-                        <label>Tingkat Pembuka <span class="required">*</span></label>
-                        <select name="tingkat_pembuka_id" required>
-                            <option value="">-- Pilih Tingkat --</option>
-                            <?php while ($row = $tingkat_result->fetch_assoc()): ?>
-                                <option value="<?php echo $row['id']; ?>">
-                                    <?php echo htmlspecialchars($row['nama_tingkat']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                        <div class="form-hint">Tingkat pembuka kerohanian</div>
-                    </div>
-                </div>
-                    
-                <div class="form-row full">
-                    <div class="form-group">
-                        <label>Lokasi Pembukaan <span class="required">*</span></label>
-                        <textarea name="lokasi" required placeholder="Contoh: Gedung Olahraga"></textarea>
-                    </div>
-                </div>
 
-                <h3>Data Peserta Pembukaan Kerohanian</h3>            
+                    <h3>Data Peserta Pembukaan Kerohanian</h3>            
 
-                <div class="form-group">
-                    <label>Anggota <span class="required">*</span></label>
-                    <input type="text" id="anggota_search" placeholder="Ketik nama anggota..." autocomplete="off" required>
-                    <input type="hidden" id="anggota_id" name="anggota_id">
-                    <div id="anggota_suggestions" class="suggestions-box"></div>
-                    <div class="form-hint">Ketik nama anggota untuk mencari (format: nama - ranting)</div>
-                </div>
-                <div class="form-group">
-                        <label>Tingkat<span class="required">*</span></label>
-                        <select name="tingkat_id" required>
-                            <option value="">-- Pilih Tingkat --</option>
-                            <?php while ($row = $tingkat_list->fetch_assoc()): ?>
-                                <option value="<?php echo $row['id']; ?>">
-                                    <?php echo htmlspecialchars($row['nama_tingkat']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                        <div class="form-hint">Tingkat saat pembukaan kerohanian</div>
+                    <div class="form-group">
+                        <label>Anggota <span class="required">*</span></label>
+                        <input type="text" id="anggota_search" placeholder="Ketik nama anggota..." autocomplete="off" required>
+                        <input type="hidden" id="anggota_id" name="anggota_id">
+                        <div id="anggota_suggestions" class="suggestions-box"></div>
+                        <div class="form-hint">Ketik nama anggota untuk mencari (format: nama - ranting)</div>
                     </div>
-                
-                
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">💾 Simpan</button>
-                    <a href="kerohanian.php" class="btn btn-secondary">Batal</a>
-                </div>
-            </form>
+                    <div class="form-group">
+                            <label>Tingkat<span class="required">*</span></label>
+                            <select name="tingkat_id" required>
+                                <option value="">-- Pilih Tingkat --</option>
+                                <?php while ($row = $tingkat_list->fetch_assoc()): ?>
+                                    <option value="<?php echo $row['id']; ?>">
+                                        <?php echo htmlspecialchars($row['nama_tingkat']); ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+                            <div class="form-hint">Tingkat saat pembukaan kerohanian</div>
+                        </div>
+                    
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">💾 Simpan</button>
+                        <a href="kerohanian.php" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     

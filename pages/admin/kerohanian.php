@@ -196,7 +196,7 @@ function singkatanTingkat($nama_tingkat) {
             align-items: center;
         }
         
-        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
         
         .header {
             display: flex;
@@ -364,105 +364,107 @@ function singkatanTingkat($nama_tingkat) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('🙏 Manajemen Kerohanian'); ?>
+    <?php renderNavbar('Manajemen Kerohanian'); ?>
     
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1>Daftar Pembukaan Kerohanian</h1>
-                <p style="color: #666;">Total: <strong id="total-count"><?php echo $total_kerohanian; ?></strong> data</p>
-            </div>
-            <?php if (!$is_readonly): ?>
-            <div class="header-right">
-                <?php if ($can_import): ?>
-                <a href="kerohanian_import.php" class="btn btn-success">⬆️ Import CSV</a>
-                <?php else: ?>
-                <a href="index.php" class="btn btn-secondary">🔙 Kembali</a>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="header">
+                <div>
+                    <h1>Daftar Pembukaan Kerohanian</h1>
+                    <p style="color: #666;">Total: <strong id="total-count"><?php echo $total_kerohanian; ?></strong> data</p>
+                </div>
+                <?php if (!$is_readonly): ?>
+                <div class="header-right">
+                    <?php if ($can_import): ?>
+                    <a href="kerohanian_import.php" class="btn btn-success">⬆️ Import CSV</a>
+                    <?php else: ?>
+                    <a href="index.php" class="btn btn-secondary">🔙 Kembali</a>
+                    <?php endif; ?>
+                    <?php if ($can_add): ?>
+                    <a href="kerohanian_tambah.php" class="btn btn-primary">+ Tambah Kerohanian</a>
+                    <?php endif; ?>
+                </div>
                 <?php endif; ?>
-                <?php if ($can_add): ?>
-                <a href="kerohanian_tambah.php" class="btn btn-primary">+ Tambah Kerohanian</a>
-                <?php endif; ?>
-            </div>
-            <?php endif; ?>
-        </div>
-        
-        <!-- Filter Section -->
-        <div class="filter-container">
-            <h3 style="margin-bottom: 15px; color: #333;">🔍 Filter Data</h3>
-            
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label>Nama Anggota</label>
-                    <input type="text" id="filter-anggota" placeholder="Cari nama anggota...">
-                </div>
-                
-                <div class="filter-group">
-                    <label>Penyelenggara</label>
-                    <input type="text" id="filter-penyelenggara" placeholder="Cari penyelenggara...">
-                </div>
-                
-                <div class="filter-group">
-                    <label>Nama Pembuka</label>
-                    <input type="text" id="filter-pembuka" placeholder="Cari pembuka...">
-                </div>
             </div>
             
-            <div class="filter-buttons">
-                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;" onclick="resetFilters()">🔄 Reset Filter</button>
+            <!-- Filter Section -->
+            <div class="filter-container">
+                <h3 style="margin-bottom: 15px; color: #333;">🔍 Filter Data</h3>
+                
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>Nama Anggota</label>
+                        <input type="text" id="filter-anggota" placeholder="Cari nama anggota...">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Penyelenggara</label>
+                        <input type="text" id="filter-penyelenggara" placeholder="Cari penyelenggara...">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Nama Pembuka</label>
+                        <input type="text" id="filter-pembuka" placeholder="Cari pembuka...">
+                    </div>
+                </div>
+                
+                <div class="filter-buttons">
+                    <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;" onclick="resetFilters()">🔄 Reset Filter</button>
+                </div>
             </div>
-        </div>
-        
-        <!-- Table Section -->
-        <div class="table-container">
-            <table id="kerohanian-table">
-                <thead>
-                    <tr>
-                        <th>No. Anggota</th>
-                        <th>Nama Anggota</th>
-                        <th>Penyelenggara</th>
-                        <th>Tgl Pembukaan</th>
-                        <th>Lokasi</th>
-                        <th>Pembuka</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="kerohanian-tbody">
-                    <?php while ($row = $result->fetch_assoc()): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars(formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor)); ?></td>
-                        <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
-                        <td><?php echo htmlspecialchars($row['penyelenggara'] ?? '-'); ?></td>
-                        <td><?php echo formatTanggal($row['tanggal_pembukaan']); ?></td>
-                        <td><?php echo htmlspecialchars($row['lokasi'] ?? '-'); ?></td>
-                        <td><?php echo htmlspecialchars($row['pembuka_nama'] ?? '-'); ?></td>
-                        <td>
-                            <?php
-                            // Check if user can edit/delete this specific record
-                            // Admin can edit all, others can only edit their own organization's data
-                            $record_penyelenggara = $row['penyelenggara'] ?? '';
-                            $is_owner = in_array($user_role, ['admin', 'superadmin']) || ($record_penyelenggara === $user_org_name);
-                            ?>
-                            <div class="action-icons">
-                                <a href="kerohanian_detail.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-view" title="Lihat">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <?php if ($can_edit && $is_owner): ?>
-                                <a href="kerohanian_edit.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-edit" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <?php endif; ?>
-                                <?php if ($can_delete && $is_owner): ?>
-                                <a href="kerohanian_hapus.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus data ini?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                                <?php endif; ?>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <div class="no-data" id="no-data" style="display: none;">🔭 Tidak ada data kerohanian</div>
+            
+            <!-- Table Section -->
+            <div class="table-container">
+                <table id="kerohanian-table">
+                    <thead>
+                        <tr>
+                            <th>No. Anggota</th>
+                            <th>Nama Anggota</th>
+                            <th>Penyelenggara</th>
+                            <th>Tgl Pembukaan</th>
+                            <th>Lokasi</th>
+                            <th>Pembuka</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kerohanian-tbody">
+                        <?php while ($row = $result->fetch_assoc()): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars(formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor)); ?></td>
+                            <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
+                            <td><?php echo htmlspecialchars($row['penyelenggara'] ?? '-'); ?></td>
+                            <td><?php echo formatTanggal($row['tanggal_pembukaan']); ?></td>
+                            <td><?php echo htmlspecialchars($row['lokasi'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars($row['pembuka_nama'] ?? '-'); ?></td>
+                            <td>
+                                <?php
+                                // Check if user can edit/delete this specific record
+                                // Admin can edit all, others can only edit their own organization's data
+                                $record_penyelenggara = $row['penyelenggara'] ?? '';
+                                $is_owner = in_array($user_role, ['admin', 'superadmin']) || ($record_penyelenggara === $user_org_name);
+                                ?>
+                                <div class="action-icons">
+                                    <a href="kerohanian_detail.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-view" title="Lihat">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <?php if ($can_edit && $is_owner): ?>
+                                    <a href="kerohanian_edit.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-edit" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <?php endif; ?>
+                                    <?php if ($can_delete && $is_owner): ?>
+                                    <a href="kerohanian_hapus.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus data ini?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <div class="no-data" id="no-data" style="display: none;">🔭 Tidak ada data kerohanian</div>
+            </div>
         </div>
     </div>
     

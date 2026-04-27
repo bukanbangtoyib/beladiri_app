@@ -629,147 +629,149 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
     </style>
 </head>
 <body>
-    <?php renderNavbar('⬆️ Import Data'); ?>
-    
-    <div class="container">
-        <div class="form-container">
-            <h1>Import Data dari CSV</h1>
-            
-            <!-- Tabs -->
-            <div class="tabs">
-                <?php if ($user_role !== 'negara' && $user_role !== 'pengprov'): ?>
-                <button class="tab <?php echo $active_tab == 'negara' ? 'active' : ''; ?>" onclick="location.href='?tab=negara'">🌍 Negara</button>
-                <?php endif; ?>
-                <?php if ($user_role !== 'pengprov'): ?>
-                <button class="tab <?php echo $active_tab == 'provinsi' ? 'active' : ''; ?>" onclick="location.href='?tab=provinsi'">🏛️ Provinsi</button>
-                <?php endif; ?>
-                <button class="tab <?php echo $active_tab == 'kota' ? 'active' : ''; ?>" onclick="location.href='?tab=kota'">🏙️ Kota</button>
-            </div>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✅ <?php echo $success; ?></div>
-                <?php if (count($import_log) > 0): ?>
-                <div class="log-box">
-                    <strong>📋 Detail Import:</strong><br>
-                    <?php foreach ($import_log as $log): ?>
-                        <div class="log-item"><?php echo htmlspecialchars($log); ?></div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-            <?php endif; ?>
-            
-            <!-- Tab Content: Negara -->
-            <?php if ($user_role !== 'negara'): ?>
-            <div class="tab-content <?php echo $active_tab == 'negara' ? 'active' : ''; ?>" id="tab-negara">
-                <div class="tab-header">
-                    <h3>Import Negara</h3>
-                    <a href="?tab=negara&download=negara" class="template-link">📥 Download Template</a>
+    <?php renderNavbar('⬆Import Data'); ?>
+
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Import Data dari CSV</h1>
+                
+                <!-- Tabs -->
+                <div class="tabs">
+                    <?php if ($user_role !== 'negara' && $user_role !== 'pengprov'): ?>
+                    <button class="tab <?php echo $active_tab == 'negara' ? 'active' : ''; ?>" onclick="location.href='?tab=negara'">🌍 Negara</button>
+                    <?php endif; ?>
+                    <?php if ($user_role !== 'pengprov'): ?>
+                    <button class="tab <?php echo $active_tab == 'provinsi' ? 'active' : ''; ?>" onclick="location.href='?tab=provinsi'">🏛️ Provinsi</button>
+                    <?php endif; ?>
+                    <button class="tab <?php echo $active_tab == 'kota' ? 'active' : ''; ?>" onclick="location.href='?tab=kota'">🏙️ Kota</button>
                 </div>
                 
-                <div class="info-box">
-                    <h4>📋 Format File CSV</h4>
-                    <p class="required-note">* Kode negara diisi MANUAL (2 karakter)</p>
-                    <p><strong>Kolom yang diperlukan:</strong></p>
-                    <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
-                        <li style="margin-bottom: 6px;"><strong>Kode</strong> - 2 karakter (contoh: ID, MY, SG)</li>
-                        <li style="margin-bottom: 6px;"><strong>Nama</strong> - Nama negara</li>
-                        <li style="margin-bottom: 6px;"><strong>Nama Ketua</strong> - Nama ketua negara</li>
-                        <li style="margin-bottom: 6px;"><strong>SK Kepengurusan</strong></li>
-                        <li style="margin-bottom: 6px;"><strong>Periode Mulai</strong> - dd/mm/yyyy</li>
-                        <li style="margin-bottom: 6px;"><strong>Periode Akhir</strong> - dd/mm/yyyy</li>
-                        <li style="margin-bottom: 6px;"><strong>Alamat Sekretariat</strong></li>
-                    </ol>
-                </div>
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
+                <?php endif; ?>
                 
-                <form method="POST" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label for="csv_file_negara">Pilih File CSV <span style="color: #dc3545;">*</span></label>
-                        <input type="file" id="csv_file_negara" name="csv_file" accept=".csv" required>
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✅ <?php echo $success; ?></div>
+                    <?php if (count($import_log) > 0): ?>
+                    <div class="log-box">
+                        <strong>📋 Detail Import:</strong><br>
+                        <?php foreach ($import_log as $log): ?>
+                            <div class="log-item"><?php echo htmlspecialchars($log); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+                
+                <!-- Tab Content: Negara -->
+                <?php if ($user_role !== 'negara'): ?>
+                <div class="tab-content <?php echo $active_tab == 'negara' ? 'active' : ''; ?>" id="tab-negara">
+                    <div class="tab-header">
+                        <h3>Import Negara</h3>
+                        <a href="?tab=negara&download=negara" class="template-link">📥 Download Template</a>
                     </div>
                     
-                    <div class="button-group">
-                        <button type="submit" class="btn btn-primary">⬆️ Upload & Import</button>
-                        <a href="pengurus.php" class="btn btn-secondary">Batal</a>
-                    </div>
-                </form>
-            </div>
-            <?php endif; ?>
-            
-            <!-- Tab Content: Provinsi -->
-            <div class="tab-content <?php echo $active_tab == 'provinsi' ? 'active' : ''; ?>" id="tab-provinsi">
-                <div class="tab-header">
-                    <h3>Import Provinsi</h3>
-                    <a href="?tab=provinsi&download=provinsi" class="template-link">📥 Download Template</a>
-                </div>
-                
-                <div class="info-box">
-                    <h4>📋 Format File CSV</h4>
-                    <p class="required-note">* Kode provinsi dibuat OTOMATIS oleh sistem (001, 002, 003...)</p>
-                    <p><strong>Kolom yang diperlukan:</strong></p>
-                    <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
-                        <li style="margin-bottom: 6px;"><strong>Negara Kode</strong> - Kode negara induk (contoh: ID, MY)</li>
-                        <li style="margin-bottom: 6px;"><strong>Nama</strong> - Nama provinsi</li>
-                        <li style="margin-bottom: 6px;"><strong>Nama Ketua</strong> - Nama ketua provinsi</li>
-                        <li style="margin-bottom: 6px;"><strong>SK Kepengurusan</strong></li>
-                        <li style="margin-bottom: 6px;"><strong>Periode Mulai</strong> - dd/mm/yyyy</li>
-                        <li style="margin-bottom: 6px;"><strong>Periode Akhir</strong> - dd/mm/yyyy</li>
-                        <li style="margin-bottom: 6px;"><strong>Alamat Sekretariat</strong></li>
-                    </ol>
-                    <p style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Catatan: <span style="color: #dc3545;">Pastikan data negara sudah ada sebelum import provinsi.</span></strong></p>
-                </div>
-                
-                <form method="POST" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label for="csv_file_provinsi">Pilih File CSV <span style="color: #dc3545;">*</span></label>
-                        <input type="file" id="csv_file_provinsi" name="csv_file" accept=".csv" required>
+                    <div class="info-box">
+                        <h4>📋 Format File CSV</h4>
+                        <p class="required-note">* Kode negara diisi MANUAL (2 karakter)</p>
+                        <p><strong>Kolom yang diperlukan:</strong></p>
+                        <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
+                            <li style="margin-bottom: 6px;"><strong>Kode</strong> - 2 karakter (contoh: ID, MY, SG)</li>
+                            <li style="margin-bottom: 6px;"><strong>Nama</strong> - Nama negara</li>
+                            <li style="margin-bottom: 6px;"><strong>Nama Ketua</strong> - Nama ketua negara</li>
+                            <li style="margin-bottom: 6px;"><strong>SK Kepengurusan</strong></li>
+                            <li style="margin-bottom: 6px;"><strong>Periode Mulai</strong> - dd/mm/yyyy</li>
+                            <li style="margin-bottom: 6px;"><strong>Periode Akhir</strong> - dd/mm/yyyy</li>
+                            <li style="margin-bottom: 6px;"><strong>Alamat Sekretariat</strong></li>
+                        </ol>
                     </div>
                     
-                    <div class="button-group">
-                        <button type="submit" class="btn btn-primary">⬆️ Upload & Import</button>
-                        <a href="pengurus.php" class="btn btn-secondary">Batal</a>
-                    </div>
-                </form>
-            </div>
-            
-            <!-- Tab Content: Kota -->
-            <div class="tab-content <?php echo $active_tab == 'kota' ? 'active' : ''; ?>" id="tab-kota">
-                <div class="tab-header">
-                    <h3>Import Kota</h3>
-                    <a href="?tab=kota&download=kota" class="template-link">📥 Download Template</a>
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="csv_file_negara">Pilih File CSV <span style="color: #dc3545;">*</span></label>
+                            <input type="file" id="csv_file_negara" name="csv_file" accept=".csv" required>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">⬆️ Upload & Import</button>
+                            <a href="pengurus.php" class="btn btn-secondary">Batal</a>
+                        </div>
+                    </form>
                 </div>
+                <?php endif; ?>
                 
-                <div class="info-box">
-                    <h4>📋 Format File CSV</h4>
-                    <p class="required-note">* Kode kota dibuat OTOMATIS oleh sistem (001, 002, 003...)</p>
-                    <p><strong>Kolom yang diperlukan:</strong></p>
-                    <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
-                        <li style="margin-bottom: 6px;"><strong>Negara Kode</strong> - Kode negara induk (contoh: ID, MY)</li>
-                        <li style="margin-bottom: 6px;"><strong>Provinsi Kode</strong> - Kode provinsi (contoh: 001, 002)</li>
-                        <li style="margin-bottom: 6px;"><strong>Nama</strong> - Nama kota/kabupaten</li>
-                        <li style="margin-bottom: 6px;"><strong>Nama Ketua</strong> - Nama ketua kota</li>
-                        <li style="margin-bottom: 6px;"><strong>SK Kepengurusan</strong></li>
-                        <li style="margin-bottom: 6px;"><strong>Periode Mulai</strong> - dd/mm/yyyy</li>
-                        <li style="margin-bottom: 6px;"><strong>Periode Akhir</strong> - dd/mm/yyyy</li>
-                        <li style="margin-bottom: 6px;"><strong>Alamat Sekretariat</strong></li>
-                    </ol>
-                    <p style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Catatan: <span style="color: #dc3545;">Pastikan data negara dan provinsi sudah ada sebelum import kota.</span></strong></p>
-                </div>
-                
-                <form method="POST" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label for="csv_file_kota">Pilih File CSV <span style="color: #dc3545;">*</span></label>
-                        <input type="file" id="csv_file_kota" name="csv_file" accept=".csv" required>
+                <!-- Tab Content: Provinsi -->
+                <div class="tab-content <?php echo $active_tab == 'provinsi' ? 'active' : ''; ?>" id="tab-provinsi">
+                    <div class="tab-header">
+                        <h3>Import Provinsi</h3>
+                        <a href="?tab=provinsi&download=provinsi" class="template-link">📥 Download Template</a>
                     </div>
                     
-                    <div class="button-group">
-                        <button type="submit" class="btn btn-primary">⬆️ Upload & Import</button>
-                        <a href="pengurus.php" class="btn btn-secondary">Batal</a>
+                    <div class="info-box">
+                        <h4>📋 Format File CSV</h4>
+                        <p class="required-note">* Kode provinsi dibuat OTOMATIS oleh sistem (001, 002, 003...)</p>
+                        <p><strong>Kolom yang diperlukan:</strong></p>
+                        <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
+                            <li style="margin-bottom: 6px;"><strong>Negara Kode</strong> - Kode negara induk (contoh: ID, MY)</li>
+                            <li style="margin-bottom: 6px;"><strong>Nama</strong> - Nama provinsi</li>
+                            <li style="margin-bottom: 6px;"><strong>Nama Ketua</strong> - Nama ketua provinsi</li>
+                            <li style="margin-bottom: 6px;"><strong>SK Kepengurusan</strong></li>
+                            <li style="margin-bottom: 6px;"><strong>Periode Mulai</strong> - dd/mm/yyyy</li>
+                            <li style="margin-bottom: 6px;"><strong>Periode Akhir</strong> - dd/mm/yyyy</li>
+                            <li style="margin-bottom: 6px;"><strong>Alamat Sekretariat</strong></li>
+                        </ol>
+                        <p style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Catatan: <span style="color: #dc3545;">Pastikan data negara sudah ada sebelum import provinsi.</span></strong></p>
                     </div>
-                </form>
+                    
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="csv_file_provinsi">Pilih File CSV <span style="color: #dc3545;">*</span></label>
+                            <input type="file" id="csv_file_provinsi" name="csv_file" accept=".csv" required>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">⬆️ Upload & Import</button>
+                            <a href="pengurus.php" class="btn btn-secondary">Batal</a>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Tab Content: Kota -->
+                <div class="tab-content <?php echo $active_tab == 'kota' ? 'active' : ''; ?>" id="tab-kota">
+                    <div class="tab-header">
+                        <h3>Import Kota</h3>
+                        <a href="?tab=kota&download=kota" class="template-link">📥 Download Template</a>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h4>📋 Format File CSV</h4>
+                        <p class="required-note">* Kode kota dibuat OTOMATIS oleh sistem (001, 002, 003...)</p>
+                        <p><strong>Kolom yang diperlukan:</strong></p>
+                        <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
+                            <li style="margin-bottom: 6px;"><strong>Negara Kode</strong> - Kode negara induk (contoh: ID, MY)</li>
+                            <li style="margin-bottom: 6px;"><strong>Provinsi Kode</strong> - Kode provinsi (contoh: 001, 002)</li>
+                            <li style="margin-bottom: 6px;"><strong>Nama</strong> - Nama kota/kabupaten</li>
+                            <li style="margin-bottom: 6px;"><strong>Nama Ketua</strong> - Nama ketua kota</li>
+                            <li style="margin-bottom: 6px;"><strong>SK Kepengurusan</strong></li>
+                            <li style="margin-bottom: 6px;"><strong>Periode Mulai</strong> - dd/mm/yyyy</li>
+                            <li style="margin-bottom: 6px;"><strong>Periode Akhir</strong> - dd/mm/yyyy</li>
+                            <li style="margin-bottom: 6px;"><strong>Alamat Sekretariat</strong></li>
+                        </ol>
+                        <p style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Catatan: <span style="color: #dc3545;">Pastikan data negara dan provinsi sudah ada sebelum import kota.</span></strong></p>
+                    </div>
+                    
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="csv_file_kota">Pilih File CSV <span style="color: #dc3545;">*</span></label>
+                            <input type="file" id="csv_file_kota" name="csv_file" accept=".csv" required>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">⬆️ Upload & Import</button>
+                            <a href="pengurus.php" class="btn btn-secondary">Batal</a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

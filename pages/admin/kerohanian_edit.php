@@ -185,79 +185,81 @@ while ($row = $tingkat_result->fetch_assoc()) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('✏️Edit Kerohanian'); ?>
+    <?php renderNavbar('Edit Kerohanian'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>Edit Data Kerohanian</h1>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✅ <?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <form method="POST">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Tanggal Pembukaan <span class="required">*</span></label>
-                        <input type="date" name="tanggal_pembukaan" value="<?php echo $kerohanian['tanggal_pembukaan']; ?>" required>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Edit Data Kerohanian</h1>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✅ <?php echo $success; ?></div>
+                <?php endif; ?>
+                
+                <form method="POST">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tanggal Pembukaan <span class="required">*</span></label>
+                            <input type="date" name="tanggal_pembukaan" value="<?php echo $kerohanian['tanggal_pembukaan']; ?>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Lokasi Pembukaan <span class="required">*</span></label>
+                            <input type="text" name="lokasi" value="<?php echo htmlspecialchars($kerohanian['lokasi']); ?>" required>
+                        </div>
                     </div>
                     
                     <div class="form-group">
                         <label>Lokasi Pembukaan <span class="required">*</span></label>
                         <input type="text" name="lokasi" value="<?php echo htmlspecialchars($kerohanian['lokasi']); ?>" required>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>Lokasi Pembukaan <span class="required">*</span></label>
-                    <input type="text" name="lokasi" value="<?php echo htmlspecialchars($kerohanian['lokasi']); ?>" required>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nama Pembuka <span class="required">*</span></label>
-                        <input type="text" name="pembuka_nama" value="<?php echo htmlspecialchars($kerohanian['pembuka_nama']); ?>" required>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nama Pembuka <span class="required">*</span></label>
+                            <input type="text" name="pembuka_nama" value="<?php echo htmlspecialchars($kerohanian['pembuka_nama']); ?>" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Penyelenggara <span class="required">*</span></label>
+                            <input type="text" name="penyelenggara" value="<?php echo htmlspecialchars($kerohanian['penyelenggara']); ?>" required>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label>Penyelenggara <span class="required">*</span></label>
-                        <input type="text" name="penyelenggara" value="<?php echo htmlspecialchars($kerohanian['penyelenggara']); ?>" required>
+                        <label>Tingkat Saat Pembukaan <span class="required">*</span></label>
+                        <select name="tingkat_id" required>
+                            <option value="">-- Pilih Tingkat --</option>
+                            <?php foreach ($tingkat_list as $row): ?>
+                                <option value="<?php echo $row['id']; ?>" <?php echo $kerohanian['tingkat_id'] == $row['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($row['nama_tingkat']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Tingkat Saat Pembukaan <span class="required">*</span></label>
-                    <select name="tingkat_id" required>
-                        <option value="">-- Pilih Tingkat --</option>
-                        <?php foreach ($tingkat_list as $row): ?>
-                            <option value="<?php echo $row['id']; ?>" <?php echo $kerohanian['tingkat_id'] == $row['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($row['nama_tingkat']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Tingkat Pembuka <span class="required">*</span></label>
-                    <select name="tingkat_pembuka_id" required>
-                        <option value="">-- Pilih Tingkat --</option>
-                        <?php foreach ($tingkat_list as $row): ?>
-                            <option value="<?php echo $row['id']; ?>" <?php echo $kerohanian['tingkat_pembuka_id'] == $row['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($row['nama_tingkat']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">✅ Simpan Perubahan</button>
-                    <a href="kerohanian_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Batal</a>
-                </div>
-            </form>
+                    
+                    <div class="form-group">
+                        <label>Tingkat Pembuka <span class="required">*</span></label>
+                        <select name="tingkat_pembuka_id" required>
+                            <option value="">-- Pilih Tingkat --</option>
+                            <?php foreach ($tingkat_list as $row): ?>
+                                <option value="<?php echo $row['id']; ?>" <?php echo $kerohanian['tingkat_pembuka_id'] == $row['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($row['nama_tingkat']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">✅ Simpan Perubahan</button>
+                        <a href="kerohanian_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </body>

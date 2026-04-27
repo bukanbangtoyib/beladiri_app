@@ -288,114 +288,116 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </style>
 </head>
 <body>
-    <?php renderNavbar('✏️ Edit UKT'); ?>
+    <?php renderNavbar('Edit UKT'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <?php if ($error): ?>
-                <div class="alert alert-error">❌ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✓ <?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <h1>✏️ Edit Data UKT</h1>
-            
-            <div class="info-box">
-                <strong>ℹ️ Catatan:</strong> Anda dapat mengubah informasi dasar UKT. Data peserta dan hasil UKT tidak dapat diubah di sini.
-            </div>
-            
-            <form method="POST">
-                <h3>📋 Informasi UKT</h3>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Tanggal Pelaksanaan <span class="required">*</span></label>
-                        <input type="date" name="tanggal_pelaksanaan" value="<?php echo date('Y-m-d', strtotime($ukt['tanggal_pelaksanaan'])); ?>" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Lokasi <span class="required">*</span></label>
-                        <input type="text" name="lokasi" value="<?php echo htmlspecialchars($ukt['lokasi']); ?>" required placeholder="Contoh: Gedung Olahraga">
-                    </div>
-                </div>
-                
-                <h3>🏛️ Penyelenggara</h3>
-                
-                <?php if ($is_admin): ?>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Jenis Penyelenggara</label>
-                        <select name="jenis_penyelenggara" id="jenisPenyelenggara" onchange="handleJenisPenyelenggaraChange()">
-                            <option value="">-- Pilih Jenis Penyelenggara --</option>
-                            <option value="pusat">Pusat (PP)</option>
-                            <option value="provinsi">Provinsi (PengProv)</option>
-                            <option value="kota">Kota / Kabupaten (PengKot)</option>
-                        </select>
-                        <div class="form-hint">Tingkat organisasi penyelenggara</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Nama Penyelenggara</label>
-                        <select name="penyelenggara_id" id="namaPenyelenggara" disabled>
-                            <option value="">-- Pilih Penyelenggara --</option>
-                        </select>
-                        <div class="form-hint">Organisasi yang menyelenggarakan UKT</div>
-                        <div class="loading" id="loadingPenyelenggara">Memuat data...</div>
-                    </div>
-                </div>
-                <?php else: ?>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Jenis Penyelenggara</label>
-                        <input type="text" value="<?php 
-                            echo match($user_jenis_peny) {
-                                'pusat' => 'Pusat (PP)',
-                                'provinsi' => 'Provinsi (PengProv)',
-                                'kota' => 'Kota / Kabupaten (PengKot)',
-                                default => '-'
-                            }; 
-                        ?>" readonly>
-                        <input type="hidden" name="jenis_penyelenggara" value="<?php echo $user_jenis_peny; ?>">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Nama Penyelenggara</label>
-                        <input type="text" value="<?php echo htmlspecialchars($peny_nama); ?>" readonly>
-                        <input type="hidden" name="penyelenggara_id" value="<?php echo $user_peny_id; ?>">
-                    </div>
-                </div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <?php if ($error): ?>
+                    <div class="alert alert-error">❌ <?php echo $error; ?></div>
                 <?php endif; ?>
                 
-                <div class="form-row full">
-                    <div class="form-group">
-                        <label>Catatan / Keterangan</label>
-                        <textarea name="catatan" placeholder="Catatan tambahan tentang UKT (opsional)"><?php echo htmlspecialchars($ukt['catatan'] ?? ''); ?></textarea>
-                        <div class="form-hint">Informasi tambahan jika diperlukan</div>
-                    </div>
-                </div>
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✓ <?php echo $success; ?></div>
+                <?php endif; ?>
                 
-                <h3>📊 Statistik Peserta</h3>
+                <h1>✏️ Edit Data UKT</h1>
+                
                 <div class="info-box">
-                    <?php 
-                    $stat_result = $conn->query("SELECT 
-                        COUNT(id) as total,
-                        SUM(CASE WHEN status = 'lulus' THEN 1 ELSE 0 END) as lulus,
-                        SUM(CASE WHEN status = 'tidak_lulus' THEN 1 ELSE 0 END) as tidak_lulus
-                        FROM ukt_peserta WHERE ukt_id = $id");
-                    $stats = $stat_result->fetch_assoc();
-                    ?>
-                    <strong>Total Peserta:</strong> <?php echo $stats['total'] ?? 0; ?><br>
-                    <strong>Lulus:</strong> <?php echo $stats['lulus'] ?? 0; ?><br>
-                    <strong>Tidak Lulus:</strong> <?php echo $stats['tidak_lulus'] ?? 0; ?>
+                    <strong>ℹ️ Catatan:</strong> Anda dapat mengubah informasi dasar UKT. Data peserta dan hasil UKT tidak dapat diubah di sini.
                 </div>
                 
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
-                    <a href="ukt_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Kembali</a>
-                </div>
-            </form>
+                <form method="POST">
+                    <h3>📋 Informasi UKT</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tanggal Pelaksanaan <span class="required">*</span></label>
+                            <input type="date" name="tanggal_pelaksanaan" value="<?php echo date('Y-m-d', strtotime($ukt['tanggal_pelaksanaan'])); ?>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Lokasi <span class="required">*</span></label>
+                            <input type="text" name="lokasi" value="<?php echo htmlspecialchars($ukt['lokasi']); ?>" required placeholder="Contoh: Gedung Olahraga">
+                        </div>
+                    </div>
+                    
+                    <h3>🏛️ Penyelenggara</h3>
+                    
+                    <?php if ($is_admin): ?>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Jenis Penyelenggara</label>
+                            <select name="jenis_penyelenggara" id="jenisPenyelenggara" onchange="handleJenisPenyelenggaraChange()">
+                                <option value="">-- Pilih Jenis Penyelenggara --</option>
+                                <option value="pusat">Pusat (PP)</option>
+                                <option value="provinsi">Provinsi (PengProv)</option>
+                                <option value="kota">Kota / Kabupaten (PengKot)</option>
+                            </select>
+                            <div class="form-hint">Tingkat organisasi penyelenggara</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Nama Penyelenggara</label>
+                            <select name="penyelenggara_id" id="namaPenyelenggara" disabled>
+                                <option value="">-- Pilih Penyelenggara --</option>
+                            </select>
+                            <div class="form-hint">Organisasi yang menyelenggarakan UKT</div>
+                            <div class="loading" id="loadingPenyelenggara">Memuat data...</div>
+                        </div>
+                    </div>
+                    <?php else: ?>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Jenis Penyelenggara</label>
+                            <input type="text" value="<?php 
+                                echo match($user_jenis_peny) {
+                                    'pusat' => 'Pusat (PP)',
+                                    'provinsi' => 'Provinsi (PengProv)',
+                                    'kota' => 'Kota / Kabupaten (PengKot)',
+                                    default => '-'
+                                }; 
+                            ?>" readonly>
+                            <input type="hidden" name="jenis_penyelenggara" value="<?php echo $user_jenis_peny; ?>">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Nama Penyelenggara</label>
+                            <input type="text" value="<?php echo htmlspecialchars($peny_nama); ?>" readonly>
+                            <input type="hidden" name="penyelenggara_id" value="<?php echo $user_peny_id; ?>">
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label>Catatan / Keterangan</label>
+                            <textarea name="catatan" placeholder="Catatan tambahan tentang UKT (opsional)"><?php echo htmlspecialchars($ukt['catatan'] ?? ''); ?></textarea>
+                            <div class="form-hint">Informasi tambahan jika diperlukan</div>
+                        </div>
+                    </div>
+                    
+                    <h3>📊 Statistik Peserta</h3>
+                    <div class="info-box">
+                        <?php 
+                        $stat_result = $conn->query("SELECT 
+                            COUNT(id) as total,
+                            SUM(CASE WHEN status = 'lulus' THEN 1 ELSE 0 END) as lulus,
+                            SUM(CASE WHEN status = 'tidak_lulus' THEN 1 ELSE 0 END) as tidak_lulus
+                            FROM ukt_peserta WHERE ukt_id = $id");
+                        $stats = $stat_result->fetch_assoc();
+                        ?>
+                        <strong>Total Peserta:</strong> <?php echo $stats['total'] ?? 0; ?><br>
+                        <strong>Lulus:</strong> <?php echo $stats['lulus'] ?? 0; ?><br>
+                        <strong>Tidak Lulus:</strong> <?php echo $stats['tidak_lulus'] ?? 0; ?>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
+                        <a href="ukt_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Kembali</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     

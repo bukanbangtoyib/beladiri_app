@@ -349,63 +349,65 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('⬆️ Import Unit/Ranting'); ?>
+    <?php renderNavbar('Import Unit/Ranting'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>Import Unit/Ranting dari CSV</h1>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✅ <?php echo $success; ?></div>
-                <?php if (count($import_log) > 0): ?>
-                <div class="log-box">
-                    <strong>📋 Detail Import:</strong><br>
-                    <?php foreach ($import_log as $log): ?>
-                        <div class="log-item"><?php echo htmlspecialchars($log); ?></div>
-                    <?php endforeach; ?>
-                </div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Import Unit/Ranting dari CSV</h1>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
                 <?php endif; ?>
-            <?php endif; ?>
-            
-            <div class="info-box">
-                <h4>📋 Format File CSV</h4>
-                <p class="required-note">* Kode ranting dibuat OTOMATIS oleh sistem (001, 002, 003...)</p>
-                <p><strong>Kolom yang diperlukan:</strong></p>
-                <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
-                    <li style="margin-bottom: 6px;"><strong>Negara Kode</strong> - Kode negara induk (contoh: ID, MY)</li>
-                    <li style="margin-bottom: 6px;"><strong>Provinsi Kode</strong> - Kode provinsi (contoh: 001, 002)</li>
-                    <li style="margin-bottom: 6px;"><strong>Kota Kode</strong> - Kode kota (contoh: 001, 002)</li>
-                    <li style="margin-bottom: 6px;"><strong>Nama</strong> - Nama unit/ranting</li>
-                    <li style="margin-bottom: 6px;"><strong>Jenis</strong> - ukm, unit, atau ranting</li>
-                    <li style="margin-bottom: 6px;"><strong>Tanggal SK</strong> - dd/mm/yyyy</li>
-                    <li style="margin-bottom: 6px;"><strong>No SK</strong> - Nomor SK pembentukan</li>
-                    <li style="margin-bottom: 6px;"><strong>Alamat Sekretariat</strong></li>
-                    <li style="margin-bottom: 6px;"><strong>Nama Ketua</strong> - Nama ketua kota</li>
-                    <li style="margin-bottom: 6px;"><strong>Penanggung Jawab Teknik</strong> - PJT unit/ranting</li>
-                    <li style="margin-bottom: 6px;"><strong>Kontak</strong> - Nomor kontak ranting</li>
-                </ol>
-                <p style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Catatan: <span style="color: #dc3545;">Pastikan data negara, provinsi, dan kota sudah ada sebelum import unit/ranting.</span></strong></p>                              
-            </div>
-            
-            <div class="tab-header" style="justify-content: flex-end;">
-                <a href="?download=ranting" class="template-link" style="background: #28a745; margin-left: 0;">📥 Download Template</a>
-            </div>
-            
-            <form method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="csv_file">Pilih File CSV <span style="color: #dc3545;">*</span></label>
-                    <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✅ <?php echo $success; ?></div>
+                    <?php if (count($import_log) > 0): ?>
+                    <div class="log-box">
+                        <strong>📋 Detail Import:</strong><br>
+                        <?php foreach ($import_log as $log): ?>
+                            <div class="log-item"><?php echo htmlspecialchars($log); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+                
+                <div class="info-box">
+                    <h4>📋 Format File CSV</h4>
+                    <p class="required-note">* Kode ranting dibuat OTOMATIS oleh sistem (001, 002, 003...)</p>
+                    <p><strong>Kolom yang diperlukan:</strong></p>
+                    <ol style="margin-left: 20px; margin-top: 8px; font-size: 13px; color: #333;">
+                        <li style="margin-bottom: 6px;"><strong>Negara Kode</strong> - Kode negara induk (contoh: ID, MY)</li>
+                        <li style="margin-bottom: 6px;"><strong>Provinsi Kode</strong> - Kode provinsi (contoh: 001, 002)</li>
+                        <li style="margin-bottom: 6px;"><strong>Kota Kode</strong> - Kode kota (contoh: 001, 002)</li>
+                        <li style="margin-bottom: 6px;"><strong>Nama</strong> - Nama unit/ranting</li>
+                        <li style="margin-bottom: 6px;"><strong>Jenis</strong> - ukm, unit, atau ranting</li>
+                        <li style="margin-bottom: 6px;"><strong>Tanggal SK</strong> - dd/mm/yyyy</li>
+                        <li style="margin-bottom: 6px;"><strong>No SK</strong> - Nomor SK pembentukan</li>
+                        <li style="margin-bottom: 6px;"><strong>Alamat Sekretariat</strong></li>
+                        <li style="margin-bottom: 6px;"><strong>Nama Ketua</strong> - Nama ketua kota</li>
+                        <li style="margin-bottom: 6px;"><strong>Penanggung Jawab Teknik</strong> - PJT unit/ranting</li>
+                        <li style="margin-bottom: 6px;"><strong>Kontak</strong> - Nomor kontak ranting</li>
+                    </ol>
+                    <p style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Catatan: <span style="color: #dc3545;">Pastikan data negara, provinsi, dan kota sudah ada sebelum import unit/ranting.</span></strong></p>                              
                 </div>
                 
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">⬆️ Upload & Import</button>
-                    <a href="ranting.php" class="btn btn-secondary">Batal</a>
+                <div class="tab-header" style="justify-content: flex-end;">
+                    <a href="?download=ranting" class="template-link" style="background: #28a745; margin-left: 0;">📥 Download Template</a>
                 </div>
-            </form>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="csv_file">Pilih File CSV <span style="color: #dc3545;">*</span></label>
+                        <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">⬆️ Upload & Import</button>
+                        <a href="ranting.php" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </body>

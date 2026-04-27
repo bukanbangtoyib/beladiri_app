@@ -403,86 +403,88 @@ if (!empty($peserta['sertifikat_path'])) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('📜 Upload Sertifikat UKT'); ?>
+    <?php renderNavbar('Upload Sertifikat UKT'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>Upload Sertifikat Kelulusan UKT</h1>
-            <p class="subtitle">Unggah sertifikat PDF untuk peserta yang telah lulus UKT</p>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error"><?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success"><?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <!-- Info Peserta -->
-            <div class="info-card">
-                <div class="info-row">
-                    <div class="label">No Anggota</div>
-                    <div class="value"><?php echo formatNoAnggotaDisplay($peserta['no_anggota'], $pengaturan_nomor); ?></div>
-                </div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Upload Sertifikat Kelulusan UKT</h1>
+                <p class="subtitle">Unggah sertifikat PDF untuk peserta yang telah lulus UKT</p>
                 
-                <div class="info-row">
-                    <div class="label">Nama Anggota</div>
-                    <div class="value highlight"><?php echo htmlspecialchars($peserta['nama_lengkap']); ?></div>
-                </div>
+                <?php if ($error): ?>
+                    <div class="alert alert-error"><?php echo $error; ?></div>
+                <?php endif; ?>
                 
-                <div class="info-row">
-                    <div class="label">Tanggal UKT</div>
-                    <div class="value"><?php echo date('d M Y', strtotime($peserta['tanggal_pelaksanaan'])); ?></div>
-                </div>
+                <?php if ($success): ?>
+                    <div class="alert alert-success"><?php echo $success; ?></div>
+                <?php endif; ?>
                 
-                <div class="info-row">
-                    <div class="label">Tingkat Kenaikan</div>
-                    <div class="value"><?php echo $peserta['tingkat_ke'] ?? '-'; ?></div>
-                </div>
-                
-                <div class="info-row">
-                    <div class="label">Status</div>
-                    <div class="value">
-                        <span class="status-badge status-lulus">✓ LULUS</span>
+                <!-- Info Peserta -->
+                <div class="info-card">
+                    <div class="info-row">
+                        <div class="label">No Anggota</div>
+                        <div class="value"><?php echo formatNoAnggotaDisplay($peserta['no_anggota'], $pengaturan_nomor); ?></div>
                     </div>
-                </div>
-            </div>
-            
-            <?php if ($sertifikat_exists): ?>
-            <!-- Sertifikat Sudah Ada -->
-            <div class="existing-certificate">
-                <h3>📄 Sertifikat Saat Ini</h3>
-                <p class="certificate-info">Sertifikat telah diupload sebelumnya. Anda dapat menggantinya dengan mengunggah file baru.</p>
-                <div class="file-name"><?php echo htmlspecialchars($peserta['sertifikat_path']); ?></div>
-                <a href="<?php echo $sertifikat_path; ?>" class="btn btn-download" target="_blank" download>⬇️ Download Sertifikat</a>
-            </div>
-            
-            <hr>
-            
-            <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
-                Atau unggah sertifikat baru untuk menggantikan yang lama:
-            </p>
-            <?php endif; ?>
-            
-            <!-- Form Upload -->
-            <form method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="sertifikat">
-                        <?php echo $sertifikat_exists ? 'Ganti Sertifikat' : 'Pilih File Sertifikat'; ?> (PDF) <span style="color: #dc3545;">*</span>
-                    </label>
-                    <input type="file" id="sertifikat" name="sertifikat" accept=".pdf" required>
-                    <div class="form-hint">
-                        Format: PDF | Ukuran maksimal: 5MB<br>
-                        Nama file akan otomatis menjadi: <strong>Sert-UKT-DDMMYYYY-NamaLengkap-Ranting.pdf</strong><br>
-                        Contoh: <strong>Sert-UKT-27012026-Budi_Santoso-Ranting_A.pdf</strong>
+                    
+                    <div class="info-row">
+                        <div class="label">Nama Anggota</div>
+                        <div class="value highlight"><?php echo htmlspecialchars($peserta['nama_lengkap']); ?></div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="label">Tanggal UKT</div>
+                        <div class="value"><?php echo date('d M Y', strtotime($peserta['tanggal_pelaksanaan'])); ?></div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="label">Tingkat Kenaikan</div>
+                        <div class="value"><?php echo $peserta['tingkat_ke'] ?? '-'; ?></div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="label">Status</div>
+                        <div class="value">
+                            <span class="status-badge status-lulus">✓ LULUS</span>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">💾 Upload Sertifikat</button>
-                    <a href="ukt_detail.php?id=<?php echo $ukt_id; ?>" class="btn btn-secondary">🔙 Kembali</a>
+                <?php if ($sertifikat_exists): ?>
+                <!-- Sertifikat Sudah Ada -->
+                <div class="existing-certificate">
+                    <h3>📄 Sertifikat Saat Ini</h3>
+                    <p class="certificate-info">Sertifikat telah diupload sebelumnya. Anda dapat menggantinya dengan mengunggah file baru.</p>
+                    <div class="file-name"><?php echo htmlspecialchars($peserta['sertifikat_path']); ?></div>
+                    <a href="<?php echo $sertifikat_path; ?>" class="btn btn-download" target="_blank" download>⬇️ Download Sertifikat</a>
                 </div>
-            </form>
+                
+                <hr>
+                
+                <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
+                    Atau unggah sertifikat baru untuk menggantikan yang lama:
+                </p>
+                <?php endif; ?>
+                
+                <!-- Form Upload -->
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="sertifikat">
+                            <?php echo $sertifikat_exists ? 'Ganti Sertifikat' : 'Pilih File Sertifikat'; ?> (PDF) <span style="color: #dc3545;">*</span>
+                        </label>
+                        <input type="file" id="sertifikat" name="sertifikat" accept=".pdf" required>
+                        <div class="form-hint">
+                            Format: PDF | Ukuran maksimal: 5MB<br>
+                            Nama file akan otomatis menjadi: <strong>Sert-UKT-DDMMYYYY-NamaLengkap-Ranting.pdf</strong><br>
+                            Contoh: <strong>Sert-UKT-27012026-Budi_Santoso-Ranting_A.pdf</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">💾 Upload Sertifikat</button>
+                        <a href="ukt_detail.php?id=<?php echo $ukt_id; ?>" class="btn btn-secondary">🔙 Kembali</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </body>

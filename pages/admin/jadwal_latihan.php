@@ -333,7 +333,7 @@ $is_readonly = $_SESSION['role'] == 'tamu';
     </style>
 </head>
 <body>
-    <?php renderNavbar('⏰ Jadwal Latihan'); ?>
+    <?php renderNavbar('Jadwal Latihan'); ?>
     
     <div class="container">
         <?php if ($error): ?>
@@ -449,7 +449,6 @@ $is_readonly = $_SESSION['role'] == 'tamu';
                             <a href="jadwal_latihan.php" class="btn btn-reset">🔄 Reset</a>
                         </div>
                     </div>
-                </div>
             </form>
         </div>
                 

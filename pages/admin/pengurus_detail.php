@@ -695,337 +695,339 @@ function getRevisionNumber($filename) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('📋 Detail ' . $label_jenis); ?>
+    <?php renderNavbar('Detail ' . $label_jenis); ?>
     
-    <div class="container">
-        <div class="breadcrumb">
-            <a href="pengurus.php">Pengurus</a> > 
-            <a href="pengurus_list.php?jenis=<?php echo $jenis; ?>"><?php echo $label_jenis; ?></a> > 
-            <strong><?php echo htmlspecialchars($pengurus['nama']); ?></strong>
-        </div>
-        
-        <?php if ($error): ?>
-            <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-        <?php endif; ?>
-        
-        <?php if ($success): ?>
-            <div class="alert alert-success">✅ <?php echo $success; ?></div>
-        <?php endif; ?>
-        
-        <!-- Header Card -->
-        <div class="header-card">
-            <div class="header-info">
-                <h1><?php echo htmlspecialchars($pengurus['nama']); ?></h1>
-                <div class="header-stats-grid cols-2">                 
-                    <div>
-                        <span class="badge"><?php echo $label_jenis; ?></span>
-                        <span class="<?php echo $status_class; ?>">● <?php echo $status; ?></span>
-                    </div>
-                     <div>
-<?php
-                          // Check if user can edit this pengurus
-                          $can_edit = false;
-                          if (in_array($_SESSION['role'], ['admin', 'superadmin'])) {
-                              $can_edit = true;
-                          } elseif ($_SESSION['role'] == 'pengprov' && $jenis == 'provinsi' && $id == $_SESSION['pengurus_id']) {
-                              $can_edit = true;
-                          } elseif ($_SESSION['role'] == 'pengkot' && $jenis == 'kota' && $id == $_SESSION['pengurus_id']) {
-                              $can_edit = true;
-                          } elseif ($_SESSION['role'] == 'negara') {
-                              // Negara can edit their own negara and provinces under them, but NOT kota
-                              if ($jenis == 'pusat' && $id == $_SESSION['pengurus_id']) {
-                                  $can_edit = true;
-                              } elseif ($jenis == 'provinsi') {
-                                  // Check if this province belongs to this negara
-                                  $prov = $conn->query("SELECT negara_id FROM provinsi WHERE id = $id")->fetch_assoc();
-                                  if ($prov && $prov['negara_id'] == $_SESSION['pengurus_id']) {
-                                      $can_edit = true;
-                                  }
-                              }
-                              // kota - cannot edit
-                          }
-
-                          if ($can_edit):
-                          ?>
-                         <a href="pengurus_edit.php?id=<?php echo $id; ?>&jenis=<?php echo $jenis; ?>" class="btn btn-warning" style="float: right;">✏️ Edit</a>
-                         <?php endif; ?>
-                     </div>
-                </div>
-            
-                
-                <?php if ($jenis == 'pusat'): // Negara ?>
-                <div class="header-stats-grid cols-4">
-                    <div class="stat-item">
-                        <div class="stat-label">Nama Ketua</div>
-                        <div class="stat-value chairman"><?php echo htmlspecialchars($header_stats['ketua']); ?></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Jumlah Provinsi</div>
-                        <div class="stat-value"><?php echo $header_stats['jml_prov']; ?></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Jumlah Kota</div>
-                        <div class="stat-value"><?php echo $header_stats['jml_kota']; ?></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Total Anggota</div>
-                        <div class="stat-value"><?php echo $header_stats['total_anggota']; ?></div>
-                    </div>
-                </div>
-                <div class="header-stats-grid tingkat-grid">
-                    <?php foreach ($tingkatan_map as $urutan => $nama_tingkat): ?>
-                    <div class="stat-item">
-                        <div class="stat-label"><?php echo htmlspecialchars($nama_tingkat); ?></div>
-                        <div class="stat-value"><?php echo $tingkat_stats[$urutan] ?? 0; ?></div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                
-                <?php elseif ($jenis == 'provinsi'): // Provinsi ?>
-                <div class="header-stats-grid cols-4">
-                    <div class="stat-item">
-                        <div class="stat-label">Nama Ketua</div>
-                        <div class="stat-value chairman"><?php echo htmlspecialchars($header_stats['ketua']); ?></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Jumlah Kota</div>
-                        <div class="stat-value"><?php echo $header_stats['jml_kota']; ?></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Jumlah Unit/Ranting</div>
-                        <div class="stat-value"><?php echo $header_stats['jml_ranting']; ?></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Total Anggota</div>
-                        <div class="stat-value"><?php echo $header_stats['total_anggota']; ?></div>
-                    </div>
-                </div>
-                <div class="header-stats-grid tingkat-grid">
-                    <?php foreach ($tingkatan_map as $urutan => $nama_tingkat): ?>
-                    <div class="stat-item">
-                        <div class="stat-label"><?php echo htmlspecialchars($nama_tingkat); ?></div>
-                        <div class="stat-value"><?php echo $tingkat_stats[$urutan] ?? 0; ?></div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                
-                <?php elseif ($jenis == 'kota'): // Kota ?>
-                <div class="header-stats-grid cols-3">
-                    <div class="stat-item">
-                        <div class="stat-label">Nama Ketua</div>
-                        <div class="stat-value chairman"><?php echo htmlspecialchars($header_stats['ketua']); ?></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Jumlah Unit/Ranting</div>
-                        <div class="stat-value"><?php echo $header_stats['ranting_count']; ?></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Total Anggota</div>
-                        <div class="stat-value"><?php echo $header_stats['total_anggota']; ?></div>
-                    </div>
-                </div>
-                <div class="header-stats-grid tingkat-grid">
-                    <?php foreach ($tingkatan_map as $urutan => $nama_tingkat): ?>
-                    <div class="stat-item">
-                        <div class="stat-label"><?php echo htmlspecialchars($nama_tingkat); ?></div>
-                        <div class="stat-value"><?php echo $tingkat_stats[$urutan] ?? 0; ?></div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
-        
-        <!-- Informasi Dasar -->
-        <div class="info-card">
-            <h3>📌 Informasi Dasar</h3>
-            
-            <div class="info-row">
-                <div class="label">Jenis Pengurus</div>
-                <div class="value"><?php echo $label_jenis; ?></div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="breadcrumb">
+                <a href="pengurus.php">Pengurus</a> > 
+                <a href="pengurus_list.php?jenis=<?php echo $jenis; ?>"><?php echo $label_jenis; ?></a> > 
+                <strong><?php echo htmlspecialchars($pengurus['nama']); ?></strong>
             </div>
             
-            <div class="info-row">
-                <div class="label">No SK</div>
-                <div class="value"><?php echo htmlspecialchars($pengurus['sk_kepengurusan'] ?? '-'); ?></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Periode</div>
-                <div class="value"><?php echo formatTanggal($pengurus['periode_mulai']); ?> - <?php echo formatTanggal($pengurus['periode_akhir']); ?></div>
-            </div>
-            
-            <?php if (isset($pengurus['pengurus_induk']) && $pengurus['pengurus_induk']): ?>
-            <div class="info-row">
-                <div class="label">Pengurus Induk</div>
-                <div class="value">
-                    <a href="pengurus_detail.php?id=<?php echo $pengurus['pengurus_induk_id']; ?>" class="link-nav">
-                        <?php echo htmlspecialchars($pengurus['pengurus_induk']); ?> →
-                    </a>
-                </div>
-            </div>
-            <?php endif; ?>
-        </div>
-        
-        <!-- SK Pembentukan Section -->
-        <div class="info-card">
-            <h3>📄 SK Pembentukan</h3>
-            
-            <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
-            <div class="sk-upload-form">
-                <form method="POST" enctype="multipart/form-data">
-                    <label>Upload SK Baru (PDF)</label>
-                    <input type="file" name="sk_file" accept=".pdf" required>
-                    <div style="font-size: 12px; color: #999; margin-top: 8px;">
-                        Format: PDF | Ukuran maksimal: 5MB<br>
-                        Setiap upload baru akan otomatis menambah nomor revisi
-                    </div>
-                    <button type="submit" class="btn btn-download" style="margin-top: 10px;">📁 Upload SK</button>
-                </form>
-            </div>
+            <?php if ($error): ?>
+                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
             <?php endif; ?>
             
-            <div class="sk-section">
-                <?php if (count($sk_files) > 0): ?>
-                    <?php foreach ($sk_files as $sk_file): 
-                        $file_path = $upload_dir . $sk_file;
-                        $file_size = filesize($file_path);
-                        $file_size_kb = round($file_size / 1024, 2);
-                        $revisi = getRevisionNumber($sk_file);
-                        $upload_time = filectime($file_path);
-                    ?>
-                    <div class="sk-card">
-                        <div class="sk-info">
-                            <div class="sk-name">
-                                📄 <?php echo htmlspecialchars($sk_file); ?>
-                            </div>
-                            <div class="sk-meta">
-                                <strong>Revisi:</strong> <?php echo str_pad($revisi, 2, '0', STR_PAD_LEFT); ?> | 
-                                <strong>Upload:</strong> <?php echo formatTanggal(date('Y-m-d', $upload_time)); ?> | 
-                                <strong>Ukuran:</strong> <?php echo $file_size_kb; ?> KB
-                            </div>
+            <?php if ($success): ?>
+                <div class="alert alert-success">✅ <?php echo $success; ?></div>
+            <?php endif; ?>
+            
+            <!-- Header Card -->
+            <div class="header-card">
+                <div class="header-info">
+                    <h1><?php echo htmlspecialchars($pengurus['nama']); ?></h1>
+                    <div class="header-stats-grid cols-2">                 
+                        <div>
+                            <span class="badge"><?php echo $label_jenis; ?></span>
+                            <span class="<?php echo $status_class; ?>">● <?php echo $status; ?></span>
                         </div>
-                        <div class="sk-actions">
-                            <a href="sk_download_pengurus.php?file=<?php echo urlencode($sk_file); ?>&id=<?php echo $id; ?>" 
-                               class="btn btn-download">📥 Download</a>
-                            <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
-                            <a href="pengurus_detail.php?id=<?php echo $id; ?>&delete_sk=<?php echo urlencode($sk_file); ?>" 
-                               class="btn btn-danger-small" onclick="return confirm('Hapus SK ini?')">Hapus</a>
+                        <div>
+                            <?php
+                            // Check if user can edit this pengurus
+                            $can_edit = false;
+                            if (in_array($_SESSION['role'], ['admin', 'superadmin'])) {
+                                $can_edit = true;
+                            } elseif ($_SESSION['role'] == 'pengprov' && $jenis == 'provinsi' && $id == $_SESSION['pengurus_id']) {
+                                $can_edit = true;
+                            } elseif ($_SESSION['role'] == 'pengkot' && $jenis == 'kota' && $id == $_SESSION['pengurus_id']) {
+                                $can_edit = true;
+                            } elseif ($_SESSION['role'] == 'negara') {
+                                // Negara can edit their own negara and provinces under them, but NOT kota
+                                if ($jenis == 'pusat' && $id == $_SESSION['pengurus_id']) {
+                                    $can_edit = true;
+                                } elseif ($jenis == 'provinsi') {
+                                    // Check if this province belongs to this negara
+                                    $prov = $conn->query("SELECT negara_id FROM provinsi WHERE id = $id")->fetch_assoc();
+                                    if ($prov && $prov['negara_id'] == $_SESSION['pengurus_id']) {
+                                        $can_edit = true;
+                                    }
+                                }
+                                // kota - cannot edit
+                            }
+
+                            if ($can_edit):
+                            ?>
+                            <a href="pengurus_edit.php?id=<?php echo $id; ?>&jenis=<?php echo $jenis; ?>" class="btn btn-warning" style="float: right;">✏️ Edit</a>
                             <?php endif; ?>
                         </div>
                     </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <p>Belum ada SK pembentukan yang diupload</p>
+                
+                    
+                    <?php if ($jenis == 'pusat'): // Negara ?>
+                    <div class="header-stats-grid cols-4">
+                        <div class="stat-item">
+                            <div class="stat-label">Nama Ketua</div>
+                            <div class="stat-value chairman"><?php echo htmlspecialchars($header_stats['ketua']); ?></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Jumlah Provinsi</div>
+                            <div class="stat-value"><?php echo $header_stats['jml_prov']; ?></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Jumlah Kota</div>
+                            <div class="stat-value"><?php echo $header_stats['jml_kota']; ?></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Total Anggota</div>
+                            <div class="stat-value"><?php echo $header_stats['total_anggota']; ?></div>
+                        </div>
                     </div>
+                    <div class="header-stats-grid tingkat-grid">
+                        <?php foreach ($tingkatan_map as $urutan => $nama_tingkat): ?>
+                        <div class="stat-item">
+                            <div class="stat-label"><?php echo htmlspecialchars($nama_tingkat); ?></div>
+                            <div class="stat-value"><?php echo $tingkat_stats[$urutan] ?? 0; ?></div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    
+                    <?php elseif ($jenis == 'provinsi'): // Provinsi ?>
+                    <div class="header-stats-grid cols-4">
+                        <div class="stat-item">
+                            <div class="stat-label">Nama Ketua</div>
+                            <div class="stat-value chairman"><?php echo htmlspecialchars($header_stats['ketua']); ?></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Jumlah Kota</div>
+                            <div class="stat-value"><?php echo $header_stats['jml_kota']; ?></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Jumlah Unit/Ranting</div>
+                            <div class="stat-value"><?php echo $header_stats['jml_ranting']; ?></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Total Anggota</div>
+                            <div class="stat-value"><?php echo $header_stats['total_anggota']; ?></div>
+                        </div>
+                    </div>
+                    <div class="header-stats-grid tingkat-grid">
+                        <?php foreach ($tingkatan_map as $urutan => $nama_tingkat): ?>
+                        <div class="stat-item">
+                            <div class="stat-label"><?php echo htmlspecialchars($nama_tingkat); ?></div>
+                            <div class="stat-value"><?php echo $tingkat_stats[$urutan] ?? 0; ?></div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    
+                    <?php elseif ($jenis == 'kota'): // Kota ?>
+                    <div class="header-stats-grid cols-3">
+                        <div class="stat-item">
+                            <div class="stat-label">Nama Ketua</div>
+                            <div class="stat-value chairman"><?php echo htmlspecialchars($header_stats['ketua']); ?></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Jumlah Unit/Ranting</div>
+                            <div class="stat-value"><?php echo $header_stats['ranting_count']; ?></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Total Anggota</div>
+                            <div class="stat-value"><?php echo $header_stats['total_anggota']; ?></div>
+                        </div>
+                    </div>
+                    <div class="header-stats-grid tingkat-grid">
+                        <?php foreach ($tingkatan_map as $urutan => $nama_tingkat): ?>
+                        <div class="stat-item">
+                            <div class="stat-label"><?php echo htmlspecialchars($nama_tingkat); ?></div>
+                            <div class="stat-value"><?php echo $tingkat_stats[$urutan] ?? 0; ?></div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <!-- Informasi Dasar -->
+            <div class="info-card">
+                <h3>📌 Informasi Dasar</h3>
+                
+                <div class="info-row">
+                    <div class="label">Jenis Pengurus</div>
+                    <div class="value"><?php echo $label_jenis; ?></div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="label">No SK</div>
+                    <div class="value"><?php echo htmlspecialchars($pengurus['sk_kepengurusan'] ?? '-'); ?></div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="label">Periode</div>
+                    <div class="value"><?php echo formatTanggal($pengurus['periode_mulai']); ?> - <?php echo formatTanggal($pengurus['periode_akhir']); ?></div>
+                </div>
+                
+                <?php if (isset($pengurus['pengurus_induk']) && $pengurus['pengurus_induk']): ?>
+                <div class="info-row">
+                    <div class="label">Pengurus Induk</div>
+                    <div class="value">
+                        <a href="pengurus_detail.php?id=<?php echo $pengurus['pengurus_induk_id']; ?>" class="link-nav">
+                            <?php echo htmlspecialchars($pengurus['pengurus_induk']); ?> →
+                        </a>
+                    </div>
+                </div>
                 <?php endif; ?>
             </div>
-        </div>
-        
-        <!-- Struktur Organisasi -->
-        <div class="info-card">
-            <h3>👥 Struktur Organisasi</h3>
             
-            <div class="info-row">
-                <div class="label">Ketua</div>
-                <div class="value"><?php echo htmlspecialchars($pengurus['ketua_nama'] ?? '-'); ?></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Alamat Sekretariat</div>
-                <div class="value"><?php echo nl2br(htmlspecialchars($pengurus['alamat_sekretariat'] ?? '-')); ?></div>
-            </div>
-        </div>
-        
-        <!-- Struktur yang Dinaungi -->
-        <?php if ($jenis != 'kota' && $anak_result && $anak_result->num_rows > 0): ?>
-        <div class="info-card">
-            <h3>📊 Struktur yang Dinaungi</h3>
-            
-            <div class="stat-grid">
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo $anak_result->num_rows; ?></div>
-                    <div class="stat-label">
-                        <?php 
-                        if ($jenis == 'pusat') {
-                            echo 'Pengurus Provinsi';
-                        } else {
-                            echo 'Pengurus Kota';
-                        }
+            <!-- SK Pembentukan Section -->
+            <div class="info-card">
+                <h3>📄 SK Pembentukan</h3>
+                
+                <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
+                <div class="sk-upload-form">
+                    <form method="POST" enctype="multipart/form-data">
+                        <label>Upload SK Baru (PDF)</label>
+                        <input type="file" name="sk_file" accept=".pdf" required>
+                        <div style="font-size: 12px; color: #999; margin-top: 8px;">
+                            Format: PDF | Ukuran maksimal: 5MB<br>
+                            Setiap upload baru akan otomatis menambah nomor revisi
+                        </div>
+                        <button type="submit" class="btn btn-download" style="margin-top: 10px;">📁 Upload SK</button>
+                    </form>
+                </div>
+                <?php endif; ?>
+                
+                <div class="sk-section">
+                    <?php if (count($sk_files) > 0): ?>
+                        <?php foreach ($sk_files as $sk_file): 
+                            $file_path = $upload_dir . $sk_file;
+                            $file_size = filesize($file_path);
+                            $file_size_kb = round($file_size / 1024, 2);
+                            $revisi = getRevisionNumber($sk_file);
+                            $upload_time = filectime($file_path);
                         ?>
+                        <div class="sk-card">
+                            <div class="sk-info">
+                                <div class="sk-name">
+                                    📄 <?php echo htmlspecialchars($sk_file); ?>
+                                </div>
+                                <div class="sk-meta">
+                                    <strong>Revisi:</strong> <?php echo str_pad($revisi, 2, '0', STR_PAD_LEFT); ?> | 
+                                    <strong>Upload:</strong> <?php echo formatTanggal(date('Y-m-d', $upload_time)); ?> | 
+                                    <strong>Ukuran:</strong> <?php echo $file_size_kb; ?> KB
+                                </div>
+                            </div>
+                            <div class="sk-actions">
+                                <a href="sk_download_pengurus.php?file=<?php echo urlencode($sk_file); ?>&id=<?php echo $id; ?>" 
+                                class="btn btn-download">📥 Download</a>
+                                <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
+                                <a href="pengurus_detail.php?id=<?php echo $id; ?>&delete_sk=<?php echo urlencode($sk_file); ?>" 
+                                class="btn btn-danger-small" onclick="return confirm('Hapus SK ini?')">Hapus</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>Belum ada SK pembentukan yang diupload</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <!-- Struktur Organisasi -->
+            <div class="info-card">
+                <h3>👥 Struktur Organisasi</h3>
+                
+                <div class="info-row">
+                    <div class="label">Ketua</div>
+                    <div class="value"><?php echo htmlspecialchars($pengurus['ketua_nama'] ?? '-'); ?></div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="label">Alamat Sekretariat</div>
+                    <div class="value"><?php echo nl2br(htmlspecialchars($pengurus['alamat_sekretariat'] ?? '-')); ?></div>
+                </div>
+            </div>
+            
+            <!-- Struktur yang Dinaungi -->
+            <?php if ($jenis != 'kota' && $anak_result && $anak_result->num_rows > 0): ?>
+            <div class="info-card">
+                <h3>📊 Struktur yang Dinaungi</h3>
+                
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-number"><?php echo $anak_result->num_rows; ?></div>
+                        <div class="stat-label">
+                            <?php 
+                            if ($jenis == 'pusat') {
+                                echo 'Pengurus Provinsi';
+                            } else {
+                                echo 'Pengurus Kota';
+                            }
+                            ?>
+                        </div>
                     </div>
                 </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama</th>
+                            <th>Jenis</th>
+                            <th>Ketua</th>
+                            <th>Periode</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $anak_result->data_seek(0);
+                        while ($row = $anak_result->fetch_assoc()): 
+                            $child_table = ($jenis == 'pusat' ? 'provinsi' : 'kota');
+                            $child_detail = $conn->query("SELECT nama, kode, ketua_nama, periode_mulai, periode_akhir FROM $child_table WHERE id = " . $row['id'])->fetch_assoc();
+                        ?>
+                        <tr>
+                            <td><strong><a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis == 'pusat' ? 'provinsi' : 'kota'; ?>" class="link-nav"><?php echo htmlspecialchars($row['nama']); ?></a></strong></td>
+                            <td><?php echo $label_jenis_text[$jenis]; ?></td>
+                            <td><?php echo htmlspecialchars($child_detail['ketua_nama'] ?? '-'); ?></td>
+                            <td><?php echo formatTanggal($child_detail['periode_mulai'] ?? ''); ?> - <?php echo formatTanggal($child_detail['periode_akhir'] ?? ''); ?></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
             </div>
+            <?php endif; ?>
             
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nama</th>
-                        <th>Jenis</th>
-                        <th>Ketua</th>
-                        <th>Periode</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $anak_result->data_seek(0);
-                    while ($row = $anak_result->fetch_assoc()): 
-                        $child_table = ($jenis == 'pusat' ? 'provinsi' : 'kota');
-                        $child_detail = $conn->query("SELECT nama, kode, ketua_nama, periode_mulai, periode_akhir FROM $child_table WHERE id = " . $row['id'])->fetch_assoc();
-                    ?>
-                    <tr>
-                        <td><strong><a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis == 'pusat' ? 'provinsi' : 'kota'; ?>" class="link-nav"><?php echo htmlspecialchars($row['nama']); ?></a></strong></td>
-                        <td><?php echo $label_jenis_text[$jenis]; ?></td>
-                        <td><?php echo htmlspecialchars($child_detail['ketua_nama'] ?? '-'); ?></td>
-                        <td><?php echo formatTanggal($child_detail['periode_mulai'] ?? ''); ?> - <?php echo formatTanggal($child_detail['periode_akhir'] ?? ''); ?></td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-        </div>
-        <?php endif; ?>
-        
-        <!-- Unit/Ranting yang Dinaungi (khusus Pengurus Kota) -->
-        <?php if ($jenis == 'kota'): ?>
-        <div class="info-card">
-            <h3>🌳 Unit / Ranting yang Dinaungi</h3>
-            
-            <?php if ($ranting_count > 0): ?>
-            <div class="stat-grid">
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo $ranting_count; ?></div>
-                    <div class="stat-label">Unit / Ranting Aktif</div>
+            <!-- Unit/Ranting yang Dinaungi (khusus Pengurus Kota) -->
+            <?php if ($jenis == 'kota'): ?>
+            <div class="info-card">
+                <h3>🌳 Unit / Ranting yang Dinaungi</h3>
+                
+                <?php if ($ranting_count > 0): ?>
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-number"><?php echo $ranting_count; ?></div>
+                        <div class="stat-label">Unit / Ranting Aktif</div>
+                    </div>
                 </div>
-            </div>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nama Unit/Ranting</th>
-                        <th>Jenis</th>
-                        <th>Ketua</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $ranting_result->fetch_assoc()): ?>
-                    <tr>
-                        <td><strong><a href="ranting_detail.php?id=<?php echo $row['id']; ?>" class="link-nav"><?php echo htmlspecialchars($row['nama_ranting']); ?></a></strong></td>
-                        <td><span class="badge badge-<?php echo $row['jenis']; ?>"><?php echo strtoupper($row['jenis']); ?></span></td>
-                        <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="empty-state">
-                <div class="empty-state-icon">🌳</div>
-                <p>Belum ada unit/ranting yang dinaungi</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama Unit/Ranting</th>
+                            <th>Jenis</th>
+                            <th>Ketua</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $ranting_result->fetch_assoc()): ?>
+                        <tr>
+                            <td><strong><a href="ranting_detail.php?id=<?php echo $row['id']; ?>" class="link-nav"><?php echo htmlspecialchars($row['nama_ranting']); ?></a></strong></td>
+                            <td><span class="badge badge-<?php echo $row['jenis']; ?>"><?php echo strtoupper($row['jenis']); ?></span></td>
+                            <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="empty-state">
+                    <div class="empty-state-icon">🌳</div>
+                    <p>Belum ada unit/ranting yang dinaungi</p>
+                </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
         </div>
-        <?php endif; ?>
     </div>
 </body>
 </html>

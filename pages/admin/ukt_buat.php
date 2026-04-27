@@ -237,100 +237,102 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </style>
 </head>
 <body>
-    <?php renderNavbar('➕ Buat UKT Baru'); ?>
+    <?php renderNavbar('Buat UKT Baru'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>📋 Formulir Pembuatan UKT Baru</h1>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✓ <?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <form method="POST" id="formBuatUKT">
-                <h3>📋 Informasi UKT</h3>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Formulir Pembuatan UKT Baru</h1>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✓ <?php echo $success; ?></div>
+                <?php endif; ?>
+                
+                <form method="POST" id="formBuatUKT">
+                    <h3>📋 Informasi UKT</h3>
 
-                <div class="form-group">
-                    <label>Tanggal Pelaksanaan <span class="required">*</span></label>
-                    <input type="date" name="tanggal_pelaksanaan" required>
-                    <div class="form-hint">Tanggal kapan UKT akan dilaksanakan</div>
-                </div>
-                
-                <div class="form-group">
-                    <label>Lokasi Pelaksanaan <span class="required">*</span></label>
-                    <input type="text" name="lokasi" required placeholder="Contoh: Gedung Olahraga Jakarta">
-                    <div class="form-hint">Tempat dimana UKT akan diselenggarakan</div>
-                </div>
-                
-                <div class="form-group">
-                    <h3>🏛️ Penyelenggara</h3>
+                    <div class="form-group">
+                        <label>Tanggal Pelaksanaan <span class="required">*</span></label>
+                        <input type="date" name="tanggal_pelaksanaan" required>
+                        <div class="form-hint">Tanggal kapan UKT akan dilaksanakan</div>
+                    </div>
                     
-                    <?php
-                    // Determine which options to show based on role
-                    $show_pusat = in_array($_SESSION['role'], ['admin', 'superadmin', 'negara']);
-                    $show_provinsi = in_array($_SESSION['role'], ['admin', 'superadmin', 'negara', 'pengprov']);
-                    $show_kota = in_array($_SESSION['role'], ['admin', 'superadmin', 'negara', 'pengprov', 'pengkot']);
+                    <div class="form-group">
+                        <label>Lokasi Pelaksanaan <span class="required">*</span></label>
+                        <input type="text" name="lokasi" required placeholder="Contoh: Gedung Olahraga Jakarta">
+                        <div class="form-hint">Tempat dimana UKT akan diselenggarakan</div>
+                    </div>
                     
-                    // For non-admin, show as read-only
-                    $is_readonly = !$is_admin;
-                    ?>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Jenis Penyelenggara</label>
-                            <?php if ($is_readonly && $user_jenis_peny): ?>
-                                <input type="hidden" name="jenis_penyelenggara" value="<?php echo htmlspecialchars($user_jenis_peny); ?>">
-                                <input type="text" value="<?php 
-                                    if ($user_jenis_peny === 'pusat') echo 'Pusat (PP)';
-                                    elseif ($user_jenis_peny === 'provinsi') echo 'Provinsi';
-                                    elseif ($user_jenis_peny === 'kota') echo 'Kota / Kabupaten';
-                                ?>" readonly style="background:#e9ecef;">
-                            <?php else: ?>
-                            <select name="jenis_penyelenggara" id="jenisPenyelenggara" onchange="handleJenisPenyelenggaraChange()">
-                                <option value="">-- Pilih Jenis Penyelenggara --</option>
-                                <?php if ($show_pusat): ?>
-                                <option value="pusat" <?php echo $user_jenis_peny === 'pusat' ? 'selected' : ''; ?>>Pusat (PP)</option>
-                                <?php endif; ?>
-                                <?php if ($show_provinsi): ?>
-                                <option value="provinsi" <?php echo $user_jenis_peny === 'provinsi' ? 'selected' : ''; ?>>Provinsi (PengProv)</option>
-                                <?php endif; ?>
-                                <?php if ($show_kota): ?>
-                                <option value="kota" <?php echo $user_jenis_peny === 'kota' ? 'selected' : ''; ?>>Kota / Kabupaten (PengKot)</option>
-                                <?php endif; ?>
-                            </select>
-                            <?php endif; ?>
-                            <div class="form-hint">Tingkat organisasi penyelenggara</div>
-                        </div>
+                    <div class="form-group">
+                        <h3>🏛️ Penyelenggara</h3>
                         
-                        <div class="form-group">
-                            <label>Nama Penyelenggara</label>
-                            <?php if ($is_readonly && $user_peny_id && $peny_nama): ?>
-                                <input type="hidden" name="penyelenggara_id" value="<?php echo (int)$user_peny_id; ?>">
-                                <input type="text" value="<?php echo htmlspecialchars($peny_nama); ?>" readonly style="background:#e9ecef;">
-                            <?php else: ?>
-                            <select name="penyelenggara_id" id="namaPenyelenggara" <?php echo $user_peny_id ? '' : 'disabled'; ?>>
-                                <?php if ($user_peny_id): ?>
-                                <option value="<?php echo $user_peny_id; ?>">-- Terpilih --</option>
+                        <?php
+                        // Determine which options to show based on role
+                        $show_pusat = in_array($_SESSION['role'], ['admin', 'superadmin', 'negara']);
+                        $show_provinsi = in_array($_SESSION['role'], ['admin', 'superadmin', 'negara', 'pengprov']);
+                        $show_kota = in_array($_SESSION['role'], ['admin', 'superadmin', 'negara', 'pengprov', 'pengkot']);
+                        
+                        // For non-admin, show as read-only
+                        $is_readonly = !$is_admin;
+                        ?>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Jenis Penyelenggara</label>
+                                <?php if ($is_readonly && $user_jenis_peny): ?>
+                                    <input type="hidden" name="jenis_penyelenggara" value="<?php echo htmlspecialchars($user_jenis_peny); ?>">
+                                    <input type="text" value="<?php 
+                                        if ($user_jenis_peny === 'pusat') echo 'Pusat (PP)';
+                                        elseif ($user_jenis_peny === 'provinsi') echo 'Provinsi';
+                                        elseif ($user_jenis_peny === 'kota') echo 'Kota / Kabupaten';
+                                    ?>" readonly style="background:#e9ecef;">
                                 <?php else: ?>
-                                <option value="">-- Pilih Penyelenggara --</option>
+                                <select name="jenis_penyelenggara" id="jenisPenyelenggara" onchange="handleJenisPenyelenggaraChange()">
+                                    <option value="">-- Pilih Jenis Penyelenggara --</option>
+                                    <?php if ($show_pusat): ?>
+                                    <option value="pusat" <?php echo $user_jenis_peny === 'pusat' ? 'selected' : ''; ?>>Pusat (PP)</option>
+                                    <?php endif; ?>
+                                    <?php if ($show_provinsi): ?>
+                                    <option value="provinsi" <?php echo $user_jenis_peny === 'provinsi' ? 'selected' : ''; ?>>Provinsi (PengProv)</option>
+                                    <?php endif; ?>
+                                    <?php if ($show_kota): ?>
+                                    <option value="kota" <?php echo $user_jenis_peny === 'kota' ? 'selected' : ''; ?>>Kota / Kabupaten (PengKot)</option>
+                                    <?php endif; ?>
+                                </select>
                                 <?php endif; ?>
-                            </select>
-                            <?php endif; ?>
-                            <div class="form-hint">Organisasi yang menyelenggarakan UKT</div>
-                            <div class="loading" id="loadingPenyelenggara">Memuat data...</div>
+                                <div class="form-hint">Tingkat organisasi penyelenggara</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Nama Penyelenggara</label>
+                                <?php if ($is_readonly && $user_peny_id && $peny_nama): ?>
+                                    <input type="hidden" name="penyelenggara_id" value="<?php echo (int)$user_peny_id; ?>">
+                                    <input type="text" value="<?php echo htmlspecialchars($peny_nama); ?>" readonly style="background:#e9ecef;">
+                                <?php else: ?>
+                                <select name="penyelenggara_id" id="namaPenyelenggara" <?php echo $user_peny_id ? '' : 'disabled'; ?>>
+                                    <?php if ($user_peny_id): ?>
+                                    <option value="<?php echo $user_peny_id; ?>">-- Terpilih --</option>
+                                    <?php else: ?>
+                                    <option value="">-- Pilih Penyelenggara --</option>
+                                    <?php endif; ?>
+                                </select>
+                                <?php endif; ?>
+                                <div class="form-hint">Organisasi yang menyelenggarakan UKT</div>
+                                <div class="loading" id="loadingPenyelenggara">Memuat data...</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">✓ Buat UKT</button>
-                    <a href="ukt.php" class="btn btn-secondary">Batal</a>
-                </div>
-            </form>
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">✓ Buat UKT</button>
+                        <a href="ukt.php" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     

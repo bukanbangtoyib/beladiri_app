@@ -309,148 +309,150 @@ if (in_array($user_role, ['admin', 'superadmin'])) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('📋 ' . $label_jenis); ?>
-    
-    <div class="container">
-        <div class="breadcrumb">
-            <a href="pengurus.php">Pengurus</a> > <strong><?php echo $label_jenis; ?></strong>
-        </div>
-        
-        <div class="header">
-            <div>
-                <h1><?php echo $label_jenis; ?></h1>
-                <p style="color: #666;">Total: <strong><?php echo $total; ?></strong></p>
+    <?php renderNavbar('' . $label_jenis); ?>
+
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="breadcrumb">
+                <a href="pengurus.php">Pengurus</a> > <strong><?php echo $label_jenis; ?></strong>
             </div>
-            <?php if ($can_add): ?>
-            <a href="pengurus_tambah.php?jenis=<?php echo $jenis; ?>" class="btn btn-primary">+ Tambah <?php echo $label_jenis; ?></a>
-            <?php endif; ?>
-        </div>
-        
-        <div class="search-filter">
-            <form method="GET" style="display: flex; gap: 10px;">
-                <input type="hidden" name="jenis" value="<?php echo $jenis; ?>">
-                
-                <?php if ($jenis == 'provinsi' || $jenis == 'kota'): ?>
-                <select name="filter_negara" id="filter_negara" onchange="updateProvinsi()">
-                    <option value="">-- Semua Negara --</option>
-                    <?php foreach ($negara_list as $n): ?>
-                        <option value="<?php echo $n['id']; ?>" <?php echo $filter_negara == $n['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($n['nama']); ?></option>
-                    <?php endforeach; ?>
-                </select>
+            
+            <div class="header">
+                <div>
+                    <h1><?php echo $label_jenis; ?></h1>
+                    <p style="color: #666;">Total: <strong><?php echo $total; ?></strong></p>
+                </div>
+                <?php if ($can_add): ?>
+                <a href="pengurus_tambah.php?jenis=<?php echo $jenis; ?>" class="btn btn-primary">+ Tambah <?php echo $label_jenis; ?></a>
                 <?php endif; ?>
-                
-                <?php if ($jenis == 'kota'): ?>
-                <select name="filter_provinsi" id="filter_provinsi" <?php
-                    // Disable provinsi dropdown until negara is selected
-                    echo $filter_negara > 0 ? '' : 'disabled';
-                ?>>
-                    <option value="">-- Semua Provinsi --</option>
-                    <?php
-                    // Show provinces based on selected negara
-                    foreach ($provinsi_list as $p): ?>
-                        <option value="<?php echo $p['id']; ?>" <?php echo $filter_provinsi == $p['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($p['nama']); ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <?php endif; ?>
-                
-                <input type="text" name="search" placeholder="Cari nama..." value="<?php echo htmlspecialchars($search); ?>">
-                <a href="pengurus_list.php?jenis=<?php echo $jenis; ?>" class="btn" style="background: #6c757d; color: white;">🔄 Reset</a>
-            </form>
-        </div>
-        
-        <div class="table-container">
-            <?php if ($total > 0): ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Kode</th>
-                        <th>Nama</th>
-                        <th>Ketua</th>
-                        <th>Periode</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $result->fetch_assoc()): 
-                        // Calculate status based on period dates (same logic as detail page)
-                        $periode_akhir = $row['periode_akhir'] ?? null;
-                        $is_active = !empty($periode_akhir) && strtotime($periode_akhir) >= strtotime(date('Y-m-d'));
-                        $status = $is_active ? 'Aktif' : 'Tidak Aktif';
-                        $status_class = $is_active ? 'status-aktif' : 'status-tidak';
-                        
-                        // Get negara_id and provinsi_id for filtering
-                        $row_negara_id = $row['negara_id'] ?? 0;
-                        $row_provinsi_id = $row['provinsi_id'] ?? 0;
-                    ?>
-                    <tr data-negara="<?php echo $row_negara_id; ?>" data-provinsi="<?php echo $row_provinsi_id; ?>" data-nama="<?php echo strtolower(htmlspecialchars($row['nama'])); ?>">
-                        <td><strong><?php echo htmlspecialchars($row['kode'] ?? '-'); ?></strong></td>
-                        <td><strong><?php echo htmlspecialchars($row['nama']); ?></strong></td>
-                        <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
-                        <td><?php echo date('Y', strtotime($row['periode_mulai'] ?? '2000-01-01')); ?> - <?php echo date('Y', strtotime($row['periode_akhir'] ?? '2000-01-01')); ?></td>
-                        <td><span class="<?php echo $status_class; ?>"><?php echo $status; ?></span></td>
-                        <td>
-                            <a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="icon-btn icon-view" title="Lihat"><i class="fas fa-eye"></i></a>
-                            <?php 
-                            // Determine if we should show edit/delete buttons based on ownership
-                            $show_actions = false;
-                            $show_delete = false;
-                            $row_id = $row['id'];
+            </div>
+            
+            <div class="search-filter">
+                <form method="GET" style="display: flex; gap: 10px;">
+                    <input type="hidden" name="jenis" value="<?php echo $jenis; ?>">
+                    
+                    <?php if ($jenis == 'provinsi' || $jenis == 'kota'): ?>
+                    <select name="filter_negara" id="filter_negara" onchange="updateProvinsi()">
+                        <option value="">-- Semua Negara --</option>
+                        <?php foreach ($negara_list as $n): ?>
+                            <option value="<?php echo $n['id']; ?>" <?php echo $filter_negara == $n['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($n['nama']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php endif; ?>
+                    
+                    <?php if ($jenis == 'kota'): ?>
+                    <select name="filter_provinsi" id="filter_provinsi" <?php
+                        // Disable provinsi dropdown until negara is selected
+                        echo $filter_negara > 0 ? '' : 'disabled';
+                    ?>>
+                        <option value="">-- Semua Provinsi --</option>
+                        <?php
+                        // Show provinces based on selected negara
+                        foreach ($provinsi_list as $p): ?>
+                            <option value="<?php echo $p['id']; ?>" <?php echo $filter_provinsi == $p['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($p['nama']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php endif; ?>
+                    
+                    <input type="text" name="search" placeholder="Cari nama..." value="<?php echo htmlspecialchars($search); ?>">
+                    <a href="pengurus_list.php?jenis=<?php echo $jenis; ?>" class="btn" style="background: #6c757d; color: white;">🔄 Reset</a>
+                </form>
+            </div>
+            
+            <div class="table-container">
+                <?php if ($total > 0): ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Nama</th>
+                            <th>Ketua</th>
+                            <th>Periode</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $result->fetch_assoc()): 
+                            // Calculate status based on period dates (same logic as detail page)
+                            $periode_akhir = $row['periode_akhir'] ?? null;
+                            $is_active = !empty($periode_akhir) && strtotime($periode_akhir) >= strtotime(date('Y-m-d'));
+                            $status = $is_active ? 'Aktif' : 'Tidak Aktif';
+                            $status_class = $is_active ? 'status-aktif' : 'status-tidak';
+                            
+                            // Get negara_id and provinsi_id for filtering
                             $row_negara_id = $row['negara_id'] ?? 0;
                             $row_provinsi_id = $row['provinsi_id'] ?? 0;
-                            
-                            if (in_array($user_role, ['admin', 'superadmin'])) {
-                                // Admin can do everything
-                                $show_actions = true;
-                                $show_delete = true;
-                            } elseif ($user_role === 'negara') {
-                                if ($jenis === 'negara') {
-                                    // Can only edit their own negara, cannot delete
-                                    $show_actions = ($row_id == $user_pengurus_id);
-                                    $show_delete = false;
-                                } elseif ($jenis === 'provinsi') {
-                                    // Can edit/delete provinces in their negara
-                                    $show_actions = ($row_negara_id == $user_pengurus_id);
-                                    $show_delete = ($row_negara_id == $user_pengurus_id);
-                                } elseif ($jenis === 'kota') {
-                                    // Negara CANNOT edit kota - hanya bisa melihat
-                                    $show_actions = false;
-                                    $show_delete = false;
+                        ?>
+                        <tr data-negara="<?php echo $row_negara_id; ?>" data-provinsi="<?php echo $row_provinsi_id; ?>" data-nama="<?php echo strtolower(htmlspecialchars($row['nama'])); ?>">
+                            <td><strong><?php echo htmlspecialchars($row['kode'] ?? '-'); ?></strong></td>
+                            <td><strong><?php echo htmlspecialchars($row['nama']); ?></strong></td>
+                            <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
+                            <td><?php echo date('Y', strtotime($row['periode_mulai'] ?? '2000-01-01')); ?> - <?php echo date('Y', strtotime($row['periode_akhir'] ?? '2000-01-01')); ?></td>
+                            <td><span class="<?php echo $status_class; ?>"><?php echo $status; ?></span></td>
+                            <td>
+                                <a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="icon-btn icon-view" title="Lihat"><i class="fas fa-eye"></i></a>
+                                <?php 
+                                // Determine if we should show edit/delete buttons based on ownership
+                                $show_actions = false;
+                                $show_delete = false;
+                                $row_id = $row['id'];
+                                $row_negara_id = $row['negara_id'] ?? 0;
+                                $row_provinsi_id = $row['provinsi_id'] ?? 0;
+                                
+                                if (in_array($user_role, ['admin', 'superadmin'])) {
+                                    // Admin can do everything
+                                    $show_actions = true;
+                                    $show_delete = true;
+                                } elseif ($user_role === 'negara') {
+                                    if ($jenis === 'negara') {
+                                        // Can only edit their own negara, cannot delete
+                                        $show_actions = ($row_id == $user_pengurus_id);
+                                        $show_delete = false;
+                                    } elseif ($jenis === 'provinsi') {
+                                        // Can edit/delete provinces in their negara
+                                        $show_actions = ($row_negara_id == $user_pengurus_id);
+                                        $show_delete = ($row_negara_id == $user_pengurus_id);
+                                    } elseif ($jenis === 'kota') {
+                                        // Negara CANNOT edit kota - hanya bisa melihat
+                                        $show_actions = false;
+                                        $show_delete = false;
+                                    }
+                                } elseif ($user_role === 'pengprov') {
+                                    if ($jenis === 'provinsi') {
+                                        // Can edit their own provinsi, cannot delete
+                                        $show_actions = ($row_id == $user_pengurus_id);
+                                        $show_delete = false;
+                                    } elseif ($jenis === 'kota') {
+                                        $show_actions = ($row_provinsi_id == $user_pengurus_id);
+                                        $show_delete = ($row_provinsi_id == $user_pengurus_id);
+                                    }
+                                } elseif ($user_role === 'pengkot') {
+                                    if ($jenis === 'kota') {
+                                        // Can edit their own kota, but cannot delete
+                                        $show_actions = ($row_id == $user_pengurus_id);
+                                        $show_delete = false;
+                                    }
                                 }
-                            } elseif ($user_role === 'pengprov') {
-                                if ($jenis === 'provinsi') {
-                                    // Can edit their own provinsi, cannot delete
-                                    $show_actions = ($row_id == $user_pengurus_id);
-                                    $show_delete = false;
-                                } elseif ($jenis === 'kota') {
-                                    $show_actions = ($row_provinsi_id == $user_pengurus_id);
-                                    $show_delete = ($row_provinsi_id == $user_pengurus_id);
-                                }
-                            } elseif ($user_role === 'pengkot') {
-                                if ($jenis === 'kota') {
-                                    // Can edit their own kota, but cannot delete
-                                    $show_actions = ($row_id == $user_pengurus_id);
-                                    $show_delete = false;
-                                }
-                            }
-                            
-                            if ($show_actions): ?>
-                            <a href="pengurus_edit.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="icon-btn icon-edit" title="Edit"><i class="fas fa-edit"></i></a>
-                            <?php if ($show_delete): ?>
-                            <a href="pengurus_hapus.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin?')"><i class="fas fa-trash"></i></a>
-                            <?php endif; ?>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="no-data">📭 Tidak ada data <?php echo strtolower($label_jenis); ?></div>
-            <?php endif; ?>
+                                
+                                if ($show_actions): ?>
+                                <a href="pengurus_edit.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="icon-btn icon-edit" title="Edit"><i class="fas fa-edit"></i></a>
+                                <?php if ($show_delete): ?>
+                                <a href="pengurus_hapus.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin?')"><i class="fas fa-trash"></i></a>
+                                <?php endif; ?>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="no-data">📭 Tidak ada data <?php echo strtolower($label_jenis); ?></div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
-    
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const negaraSelect = document.getElementById('filter_negara');

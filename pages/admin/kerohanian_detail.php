@@ -153,70 +153,72 @@ $age = $birthDate->diff($today)->y;
     </style>
 </head>
 <body>
-    <?php renderNavbar('🙏 Detail Kerohanian'); ?>
+    <?php renderNavbar('Detail Kerohanian'); ?>
 
-    <div class="container">
-        <div class="card">
-            <h1>Detail Pembukaan Kerohanian</h1>
-            
-            <div class="info-row">
-                <div class="label">No Anggota</div>
-                <div class="value"><strong><a href="anggota_detail.php?id=<?php echo $kerohanian['anggota_id']; ?>" style="color: #667eea; text-decoration: none;"><?php echo htmlspecialchars(formatNoAnggotaDisplay($kerohanian['no_anggota'], $pengaturan_nomor)); ?></a></strong></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Nama Anggota</div>
-                <div class="value"><strong><?php echo htmlspecialchars($kerohanian['nama_lengkap']); ?></strong></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Umur</div>
-                <div class="value"><?php echo $age; ?> tahun</div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Jenis Kelamin</div>
-                <div class="value"><?php echo ($kerohanian['jenis_kelamin'] == 'L') ? 'Laki-laki' : 'Perempuan'; ?></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Tingkat Saat Pembukaan</div>
-                <div class="value"><span class="badge"><?php echo $kerohanian['tingkat_saat_pembukaan']; ?></span></div>
-            </div>
-
-            <div class="info-row">
-                <div class="label">Penyelenggara</div>
-                <div class="value"><?php echo htmlspecialchars($kerohanian['penyelenggara']); ?></div>
-            </div>
-
-            <div class="info-row">
-                <div class="label">Tanggal Pembukaan</div>
-                <div class="value"><strong><?php echo date('d M Y', strtotime($kerohanian['tanggal_pembukaan'])); ?></strong></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Lokasi Pembukaan</div>
-                <div class="value"><?php echo htmlspecialchars($kerohanian['lokasi']); ?></div>
-            </div>
-            
-            <div class="info-row">
-                <div class="label">Nama Pembuka</div>
-                <div class="value"><?php echo htmlspecialchars($kerohanian['pembuka_nama']); ?></div>
-            </div>
-
-            <div class="info-row">
-                <div class="label">Tingkat Pembuka</div>
-                <div class="value"><span class="badge"><?php echo $kerohanian['tingkat_pembuka_nama']; ?></span></div>
-            </div>         
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="card">
+                <h1>Detail Pembukaan Kerohanian</h1>
                 
-            <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
-            <div class="button-group">
-                <button onclick="window.print()" class="btn btn-warning" style="background: #6c757d;">
-                    🖨️ Print Detail
-                </button>
-                <a href="kerohanian_edit.php?id=<?php echo $id; ?>" class="btn btn-warning">✏️ Edit</a>
+                <div class="info-row">
+                    <div class="label">No Anggota</div>
+                    <div class="value"><strong><a href="anggota_detail.php?id=<?php echo $kerohanian['anggota_id']; ?>" style="color: #667eea; text-decoration: none;"><?php echo htmlspecialchars(formatNoAnggotaDisplay($kerohanian['no_anggota'], $pengaturan_nomor)); ?></a></strong></div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="label">Nama Anggota</div>
+                    <div class="value"><strong><?php echo htmlspecialchars($kerohanian['nama_lengkap']); ?></strong></div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="label">Umur</div>
+                    <div class="value"><?php echo $age; ?> tahun</div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="label">Jenis Kelamin</div>
+                    <div class="value"><?php echo ($kerohanian['jenis_kelamin'] == 'L') ? 'Laki-laki' : 'Perempuan'; ?></div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="label">Tingkat Saat Pembukaan</div>
+                    <div class="value"><span class="badge"><?php echo $kerohanian['tingkat_saat_pembukaan']; ?></span></div>
+                </div>
+
+                <div class="info-row">
+                    <div class="label">Penyelenggara</div>
+                    <div class="value"><?php echo htmlspecialchars($kerohanian['penyelenggara']); ?></div>
+                </div>
+
+                <div class="info-row">
+                    <div class="label">Tanggal Pembukaan</div>
+                    <div class="value"><strong><?php echo date('d M Y', strtotime($kerohanian['tanggal_pembukaan'])); ?></strong></div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="label">Lokasi Pembukaan</div>
+                    <div class="value"><?php echo htmlspecialchars($kerohanian['lokasi']); ?></div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="label">Nama Pembuka</div>
+                    <div class="value"><?php echo htmlspecialchars($kerohanian['pembuka_nama']); ?></div>
+                </div>
+
+                <div class="info-row">
+                    <div class="label">Tingkat Pembuka</div>
+                    <div class="value"><span class="badge"><?php echo $kerohanian['tingkat_pembuka_nama']; ?></span></div>
+                </div>         
+                    
+                <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
+                <div class="button-group">
+                    <button onclick="window.print()" class="btn btn-warning" style="background: #6c757d;">
+                        🖨️ Print Detail
+                    </button>
+                    <a href="kerohanian_edit.php?id=<?php echo $id; ?>" class="btn btn-warning">✏️ Edit</a>
+                </div>
+                <?php endif; ?>
             </div>
-            <?php endif; ?>
         </div>
     </div>
 </body>

@@ -513,144 +513,146 @@ if ($print_mode) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('📋 Detail Pelaksanaan UKT'); ?>
+    <?php renderNavbar('Detail Pelaksanaan UKT'); ?>
     
-    <div class="container">
-        <div class="info-card">
-            <h3 style="color: #333; margin-bottom: 20px;">Informasi UKT</h3>
-            
-            <div class="info-row">
-                <div class="label">Tanggal Pelaksanaan</div>
-                <div class="value"><strong><?php echo date('d M Y', strtotime($ukt['tanggal_pelaksanaan'])); ?></strong></div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="info-card">
+                <h3 style="color: #333; margin-bottom: 20px;">Informasi UKT</h3>
+                
+                <div class="info-row">
+                    <div class="label">Tanggal Pelaksanaan</div>
+                    <div class="value"><strong><?php echo date('d M Y', strtotime($ukt['tanggal_pelaksanaan'])); ?></strong></div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="label">Lokasi</div>
+                    <div class="value"><?php echo htmlspecialchars($ukt['lokasi']); ?></div>
+                </div>
+                
+                <?php if ($ukt['nama_penyelenggara']): ?>
+                <div class="info-row">
+                    <div class="label">Penyelenggara</div>
+                    <div class="value"><?php echo htmlspecialchars($ukt['nama_penyelenggara']); ?></div>
+                </div>
+                <?php endif; ?>
+                
+                <div class="info-row">
+                    <div class="label">Dibuat Pada</div>
+                    <div class="value"><?php echo date('d M Y H:i', strtotime($ukt['created_at'])); ?></div>
+                </div>
             </div>
             
-            <div class="info-row">
-                <div class="label">Lokasi</div>
-                <div class="value"><?php echo htmlspecialchars($ukt['lokasi']); ?></div>
+            <div class="section">
+                <div class="info-box">
+                    <strong>ℹ️ Catatan:</strong> <?php echo htmlspecialchars($ukt['catatan'] ?? '-'); ?>
+                </div>
             </div>
-            
-            <?php if ($ukt['nama_penyelenggara']): ?>
-            <div class="info-row">
-                <div class="label">Penyelenggara</div>
-                <div class="value"><?php echo htmlspecialchars($ukt['nama_penyelenggara']); ?></div>
-            </div>
-            <?php endif; ?>
-            
-            <div class="info-row">
-                <div class="label">Dibuat Pada</div>
-                <div class="value"><?php echo date('d M Y H:i', strtotime($ukt['created_at'])); ?></div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <div class="info-box">
-                <strong>ℹ️ Catatan:</strong> <?php echo htmlspecialchars($ukt['catatan'] ?? '-'); ?>
-            </div>
-        </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $total_peserta; ?></div>
-                <div class="stat-label">Total Peserta</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $total_peserta; ?></div>
+                    <div class="stat-label">Total Peserta</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #27ae60;"><?php echo $stat_lulus['count']; ?></div>
+                    <div class="stat-label">Lulus</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #e74c3c;"><?php echo $stat_tidak['count']; ?></div>
+                    <div class="stat-label">Tidak Lulus</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number" style="color: #27ae60;"><?php echo $stat_lulus['count']; ?></div>
-                <div class="stat-label">Lulus</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" style="color: #e74c3c;"><?php echo $stat_tidak['count']; ?></div>
-                <div class="stat-label">Tidak Lulus</div>
-            </div>
-        </div>
-        
-        <div class="info-card">
-            <h3 style="color: #333; margin-bottom: 20px;">Daftar Peserta UKT</h3>
             
-            <?php if (!$is_readonly): ?>
-            <div class="btn-group">
-                <a href="ukt_tambah_peserta.php?id=<?php echo $id; ?>" class="btn btn-primary">+ Tambah Peserta</a>
-                <a href="ukt_input_nilai.php?id=<?php echo $id; ?>" class="btn btn-warning">📝 Input Nilai</a>
-                <a href="?id=<?php echo $id; ?>&print=1" class="btn btn-print">🖨️ Cetak Peserta</a>
-            </div>
-            <?php endif; ?>
-            
-            <?php if ($total_peserta > 0): ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>No Anggota</th>
-                        <th>Nama Anggota</th>
-                        <th>Dari Tingkat</th>
-                        <th>Ke Tingkat</th>
-                        <th>Nilai Rata-rata</th>
-                        <th>Status</th>
-                        <?php if (!$is_readonly): ?>
-                        <th>Sertifikat</th>
-                        <th>Aksi</th>
-                        <?php endif; ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $peserta_result->fetch_assoc()): ?>
-                    <tr>
-                        <td><a href="anggota_detail.php?id=<?php echo $row['anggota_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 600;"><?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?></a></td>
-                        <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
-                        <td><?php echo $row['tingkat_dari'] ?? '-'; ?></td>
-                        <td><?php echo $row['tingkat_ke'] ?? '-'; ?></td>
-                        <td><?php echo $row['rata_rata'] ? number_format($row['rata_rata'], 2) : '-'; ?></td>
-                        <td>
-                            <?php 
-                            if ($row['status'] == 'lulus') echo '<span class="status-lulus">✓ LULUS</span>';
-                            else if ($row['status'] == 'tidak_lulus') echo '<span class="status-tidak">✗ TIDAK LULUS</span>';
-                            else echo '<span style="color: #3498db;">• PESERTA</span>';
-                            ?>
-                        </td>
-                        <?php if (!$is_readonly): ?>
-                        <td>
-                            <?php 
-                            if ($row['status'] == 'lulus') {
-                                if (!empty($row['sertifikat_path'])) {
-                                    echo '<span class="sertifikat-status sertifikat-ada">✓ Ada</span>';
+            <div class="info-card">
+                <h3 style="color: #333; margin-bottom: 20px;">Daftar Peserta UKT</h3>
+                
+                <?php if (!$is_readonly): ?>
+                <div class="btn-group">
+                    <a href="ukt_tambah_peserta.php?id=<?php echo $id; ?>" class="btn btn-primary">+ Tambah Peserta</a>
+                    <a href="ukt_input_nilai.php?id=<?php echo $id; ?>" class="btn btn-warning">📝 Input Nilai</a>
+                    <a href="?id=<?php echo $id; ?>&print=1" class="btn btn-print">🖨️ Cetak Peserta</a>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($total_peserta > 0): ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No Anggota</th>
+                            <th>Nama Anggota</th>
+                            <th>Dari Tingkat</th>
+                            <th>Ke Tingkat</th>
+                            <th>Nilai Rata-rata</th>
+                            <th>Status</th>
+                            <?php if (!$is_readonly): ?>
+                            <th>Sertifikat</th>
+                            <th>Aksi</th>
+                            <?php endif; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $peserta_result->fetch_assoc()): ?>
+                        <tr>
+                            <td><a href="anggota_detail.php?id=<?php echo $row['anggota_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 600;"><?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?></a></td>
+                            <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
+                            <td><?php echo $row['tingkat_dari'] ?? '-'; ?></td>
+                            <td><?php echo $row['tingkat_ke'] ?? '-'; ?></td>
+                            <td><?php echo $row['rata_rata'] ? number_format($row['rata_rata'], 2) : '-'; ?></td>
+                            <td>
+                                <?php 
+                                if ($row['status'] == 'lulus') echo '<span class="status-lulus">✓ LULUS</span>';
+                                else if ($row['status'] == 'tidak_lulus') echo '<span class="status-tidak">✗ TIDAK LULUS</span>';
+                                else echo '<span style="color: #3498db;">• PESERTA</span>';
+                                ?>
+                            </td>
+                            <?php if (!$is_readonly): ?>
+                            <td>
+                                <?php 
+                                if ($row['status'] == 'lulus') {
+                                    if (!empty($row['sertifikat_path'])) {
+                                        echo '<span class="sertifikat-status sertifikat-ada">✓ Ada</span>';
+                                    } else {
+                                        echo '<span class="sertifikat-status sertifikat-belum">❌ Belum</span>';
+                                    }
                                 } else {
-                                    echo '<span class="sertifikat-status sertifikat-belum">❌ Belum</span>';
+                                    echo '-';
                                 }
-                            } else {
-                                echo '-';
-                            }
-                            ?>
-                        </td>
-                        <td>
-                            <div class="action-icons">
-                                <a href="ukt_detail_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
-                                   class="icon-btn icon-view" title="Lihat">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                
-                                <?php if ($row['status'] == 'lulus'): ?>
-                                    <a href="ukt_input_sertifikat.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
-                                       class="icon-btn icon-cert" title="Upload Sertifikat">
-                                        <i class="fas fa-certificate"></i>
+                                ?>
+                            </td>
+                            <td>
+                                <div class="action-icons">
+                                    <a href="ukt_detail_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
+                                    class="icon-btn icon-view" title="Lihat">
+                                        <i class="fas fa-eye"></i>
                                     </a>
-                                <?php else: ?>
-                                    <button class="icon-btn icon-cert btn-disabled" disabled title="Hanya peserta yang lulus dapat upload sertifikat">
-                                        <i class="fas fa-certificate"></i>
-                                    </button>
-                                <?php endif; ?>
-                                
-                                <a href="ukt_hapus_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
-                                   class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Hapus peserta?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </div>
-                        </td>
-                        <?php endif; ?>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="no-data">📭 Belum ada peserta UKT</div>
-            <?php endif; ?>
+                                    
+                                    <?php if ($row['status'] == 'lulus'): ?>
+                                        <a href="ukt_input_sertifikat.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
+                                        class="icon-btn icon-cert" title="Upload Sertifikat">
+                                            <i class="fas fa-certificate"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <button class="icon-btn icon-cert btn-disabled" disabled title="Hanya peserta yang lulus dapat upload sertifikat">
+                                            <i class="fas fa-certificate"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                    
+                                    <a href="ukt_hapus_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>" 
+                                    class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Hapus peserta?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                            <?php endif; ?>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="no-data">📭 Belum ada peserta UKT</div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </body>

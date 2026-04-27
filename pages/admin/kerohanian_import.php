@@ -347,87 +347,89 @@ $tingkatan_list = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
     </style>
 </head>
 <body>
-    <?php renderNavbar('📥 Import Kerohanian'); ?>
+    <?php renderNavbar('Import Kerohanian'); ?>
 
-    <div class="container">
-        <div class="form-container">
-            <h1>Import Kerohanian dari CSV</h1>
-            <p style="color: #666; margin-bottom: 20px;">Upload file CSV untuk menambahkan data pembukaan kerohanian secara massal.</p>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Import Kerohanian dari CSV</h1>
+                <p style="color: #666; margin-bottom: 20px;">Upload file CSV untuk menambahkan data pembukaan kerohanian secara massal.</p>
 
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
+                <?php endif; ?>
 
-            <?php if ($success): ?>
-                <div class="alert alert-success">✅ <?php echo $success; ?></div>
-                <?php if (count($import_log) > 0): ?>
-                <div class="log-box">
-                    <strong>📋 Detail Import:</strong><br>
-                    <?php foreach ($import_log as $log): ?>
-                        <div class="log-item"><?php echo htmlspecialchars($log); ?></div>
-                    <?php endforeach; ?>
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✅ <?php echo $success; ?></div>
+                    <?php if (count($import_log) > 0): ?>
+                    <div class="log-box">
+                        <strong>📋 Detail Import:</strong><br>
+                        <?php foreach ($import_log as $log): ?>
+                            <div class="log-item"><?php echo htmlspecialchars($log); ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+
+                <div class="info-box">
+                    <h4>📋 Format File CSV</h4>
+                    <p><strong>Kolom yang diperlukan dalam file CSV:</strong></p>
+                    <ol>
+                        <li><strong>anggota_id</strong> <span style="color:#dc3545;">*</span> — ID anggota (angka, mis: <code>5</code>) <strong>atau</strong> No. Anggota (mis: <code>ID001001.002-2017003</code>)</li>
+                        <li><strong>tanggal_pembukaan</strong> <span style="color:#dc3545;">*</span> — Format: YYYY-MM-DD atau DD/MM/YYYY</li>
+                        <li><strong>lokasi</strong> <span style="color:#dc3545;">*</span> — Tempat pelaksanaan pembukaan</li>
+                        <li><strong>pembuka_nama</strong> <span style="color:#dc3545;">*</span> — Nama pembuka kerohanian</li>
+                        <li><strong>penyelenggara</strong> — Nama penyelenggara</li>
+                        <li><strong>tingkat_pembuka_id</strong> — ID tingkat pembuka (lihat tabel referensi)</li>
+                        <li><strong>tingkat_id</strong> — ID tingkat anggota saat pembukaan (lihat tabel referensi)</li>
+                    </ol>
+
+                    <p style="margin-top: 12px; font-size: 12px; color: #666;">
+                        <span style="color: #dc3545;">*</span> = Kolom wajib diisi
+                    </p>
+
+                    <div class="note-box">
+                        ⚠️ <strong>Catatan:</strong> Anggota yang sudah memiliki data kerohanian akan dilewati (tidak ditimpa).
+                        Gunakan fitur Edit jika ingin mengubah data yang sudah ada.
+                    </div>
+                </div>
+
+                <?php if ($tingkatan_list && $tingkatan_list->num_rows > 0): ?>
+                <div class="info-box" style="margin-bottom: 20px;">
+                    <h4>📊 Referensi ID Tingkatan</h4>
+                    <p style="font-size: 12px; color: #555; margin-bottom: 8px;">Gunakan ID berikut untuk kolom <strong>tingkat_pembuka_id</strong> dan <strong>tingkat_id</strong>:</p>
+                    <table class="ref-table">
+                        <thead>
+                            <tr><th>ID</th><th>Nama Tingkat</th></tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($t = $tingkatan_list->fetch_assoc()): ?>
+                            <tr>
+                                <td><?php echo $t['id']; ?></td>
+                                <td><?php echo htmlspecialchars($t['nama_tingkat']); ?></td>
+                            </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
                 </div>
                 <?php endif; ?>
-            <?php endif; ?>
 
-            <div class="info-box">
-                <h4>📋 Format File CSV</h4>
-                <p><strong>Kolom yang diperlukan dalam file CSV:</strong></p>
-                <ol>
-                    <li><strong>anggota_id</strong> <span style="color:#dc3545;">*</span> — ID anggota (angka, mis: <code>5</code>) <strong>atau</strong> No. Anggota (mis: <code>ID001001.002-2017003</code>)</li>
-                    <li><strong>tanggal_pembukaan</strong> <span style="color:#dc3545;">*</span> — Format: YYYY-MM-DD atau DD/MM/YYYY</li>
-                    <li><strong>lokasi</strong> <span style="color:#dc3545;">*</span> — Tempat pelaksanaan pembukaan</li>
-                    <li><strong>pembuka_nama</strong> <span style="color:#dc3545;">*</span> — Nama pembuka kerohanian</li>
-                    <li><strong>penyelenggara</strong> — Nama penyelenggara</li>
-                    <li><strong>tingkat_pembuka_id</strong> — ID tingkat pembuka (lihat tabel referensi)</li>
-                    <li><strong>tingkat_id</strong> — ID tingkat anggota saat pembukaan (lihat tabel referensi)</li>
-                </ol>
-
-                <p style="margin-top: 12px; font-size: 12px; color: #666;">
-                    <span style="color: #dc3545;">*</span> = Kolom wajib diisi
-                </p>
-
-                <div class="note-box">
-                    ⚠️ <strong>Catatan:</strong> Anggota yang sudah memiliki data kerohanian akan dilewati (tidak ditimpa).
-                    Gunakan fitur Edit jika ingin mengubah data yang sudah ada.
-                </div>
-            </div>
-
-            <?php if ($tingkatan_list && $tingkatan_list->num_rows > 0): ?>
-            <div class="info-box" style="margin-bottom: 20px;">
-                <h4>📊 Referensi ID Tingkatan</h4>
-                <p style="font-size: 12px; color: #555; margin-bottom: 8px;">Gunakan ID berikut untuk kolom <strong>tingkat_pembuka_id</strong> dan <strong>tingkat_id</strong>:</p>
-                <table class="ref-table">
-                    <thead>
-                        <tr><th>ID</th><th>Nama Tingkat</th></tr>
-                    </thead>
-                    <tbody>
-                        <?php while ($t = $tingkatan_list->fetch_assoc()): ?>
-                        <tr>
-                            <td><?php echo $t['id']; ?></td>
-                            <td><?php echo htmlspecialchars($t['nama_tingkat']); ?></td>
-                        </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
-
-            <div class="tab-header">
-                <a href="?download=kerohanian" class="template-link">📥 Download Template</a>
-            </div>
-
-            <form method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="csv_file">Pilih File CSV <span style="color: #dc3545;">*</span></label>
-                    <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+                <div class="tab-header">
+                    <a href="?download=kerohanian" class="template-link">📥 Download Template</a>
                 </div>
 
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">⬆️ Upload &amp; Import</button>
-                    <a href="kerohanian.php" class="btn btn-secondary">Batal</a>
-                </div>
-            </form>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="csv_file">Pilih File CSV <span style="color: #dc3545;">*</span></label>
+                        <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">⬆️ Upload &amp; Import</button>
+                        <a href="kerohanian.php" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </body>

@@ -467,7 +467,7 @@ if ($print_mode) {
         }
         
         .container {
-            max-width: 1600px;
+            max-width: 1500px;
             margin: 20px auto;
             padding: 0 20px;
         }
@@ -720,545 +720,547 @@ if ($print_mode) {
     <link rel="stylesheet" href="../../styles/print.css">
 </head>
 <body>
-    <?php renderNavbar('👥 Manajemen Anggota'); ?>
+    <?php renderNavbar('Manajemen Anggota'); ?>
 
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1>Daftar Anggota</h1>
-                <p style="color: #666; margin-top: 5px;">Total: <strong><?php echo $total_anggota; ?> anggota</strong></p>
-            </div>
-            <div class="button-row">
-                <?php if (!$is_readonly && $can_add): ?>
-                <a href="anggota_tambah.php" class="btn btn-primary">+ Tambah Anggota</a>
-                <?php endif; ?>
-                <?php if (!$is_readonly && $can_import): ?>
-                <a href="anggota_import.php" class="btn btn-success">⬆️ Import CSV</a>
-                <?php endif; ?>
-                <button onclick="window.location.href='?<?php echo http_build_query($_GET); ?>&print=1'" class="btn btn-print">🖨️ Cetak</button>
-            </div>
-        </div>
-        
-        <!-- Search & Filter -->
-        <div class="search-filter">
-            <form method="GET" action="" id="filterForm">
-                <!-- Pencarian Nama/No Anggota -->
-                <div class="filter-section-title">🔍 Cari Anggota</div>
-                <div class="filter-row">
-                    <div style="position: relative;">
-                        <input type="text" id="anggota_search" placeholder="Ketik nama atau no anggota..." autocomplete="off" value="<?php echo htmlspecialchars($search); ?>">
-                        <input type="hidden" id="search_hidden" name="search" value="<?php echo htmlspecialchars($search); ?>">
-                        <div id="anggota_suggestions" class="suggestions-box"></div>
-                    </div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="header">
+                <div>
+                    <h1>Daftar Anggota</h1>
+                    <p style="color: #666; margin-top: 5px;">Total: <strong><?php echo $total_anggota; ?> anggota</strong></p>
                 </div>
+                <div class="button-row">
+                    <?php if (!$is_readonly && $can_add): ?>
+                    <a href="anggota_tambah.php" class="btn btn-primary">+ Tambah Anggota</a>
+                    <?php endif; ?>
+                    <?php if (!$is_readonly && $can_import): ?>
+                    <a href="anggota_import.php" class="btn btn-success">⬆️ Import CSV</a>
+                    <?php endif; ?>
+                    <button onclick="window.location.href='?<?php echo http_build_query($_GET); ?>&print=1'" class="btn btn-print">🖨️ Cetak</button>
+                </div>
+            </div>
+            
+            <!-- Search & Filter -->
+            <div class="search-filter">
+                <form method="GET" action="" id="filterForm">
+                    <!-- Pencarian Nama/No Anggota -->
+                    <div class="filter-section-title">🔍 Cari Anggota</div>
+                    <div class="filter-row">
+                        <div style="position: relative;">
+                            <input type="text" id="anggota_search" placeholder="Ketik nama atau no anggota..." autocomplete="off" value="<?php echo htmlspecialchars($search); ?>">
+                            <input type="hidden" id="search_hidden" name="search" value="<?php echo htmlspecialchars($search); ?>">
+                            <div id="anggota_suggestions" class="suggestions-box"></div>
+                        </div>
+                    </div>
 
-                <!-- Filter Regional dengan CASCADE -->
-                <div class="filter-section-title">📋 Filter Regional (Cascade)</div>
-                
-                <div class="filter-row">
-                    <!-- Filter 1: Negara -->
-                    <div>
-                        <select name="filter_negara" id="filter_negara" onchange="updateProvinsiKotaRanting()">
-                            <option value="">-- Semua Negara --</option>
+                    <!-- Filter Regional dengan CASCADE -->
+                    <div class="filter-section-title">📋 Filter Regional (Cascade)</div>
+                    
+                    <div class="filter-row">
+                        <!-- Filter 1: Negara -->
+                        <div>
+                            <select name="filter_negara" id="filter_negara" onchange="updateProvinsiKotaRanting()">
+                                <option value="">-- Semua Negara --</option>
+                                <?php 
+                                $negara_result = $conn->query("SELECT id, nama FROM negara ORDER BY nama");
+                                while ($row = $negara_result->fetch_assoc()): 
+                                ?>
+                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_negara == $row['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($row['nama']); ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+
+                        <!-- Filter 2: Provinsi (CASCADE) -->
+                        <div>
+                            <select name="filter_provinsi" id="filter_provinsi" onchange="updateKotaRanting()" <?php echo $filter_negara == 0 ? 'disabled' : ''; ?>>
+                                <option value="">-- Semua Provinsi --</option>
+                                <?php 
+                                if ($filter_negara > 0) {
+                                    $provinsi_result = $conn->query("SELECT id, nama FROM provinsi WHERE negara_id = $filter_negara ORDER BY nama");
+                                    while ($row = $provinsi_result->fetch_assoc()): 
+                                ?>
+                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_provinsi == $row['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($row['nama']); ?>
+                                        </option>
+                                    <?php endwhile;
+                                }
+                                ?>
+                            </select>
+                        </div>
+
+                        <!-- Filter 3: Kota (CASCADE) -->
+                        <div>
+                            <select name="filter_kota" id="filter_kota" onchange="updateRanting()" <?php echo $filter_provinsi == 0 ? 'disabled' : ''; ?>>
+                                <option value="">-- Semua Kota --</option>
+                                <?php 
+                                if ($filter_provinsi > 0) {
+                                    $kota_result = $conn->query("SELECT id, nama FROM kota WHERE provinsi_id = $filter_provinsi ORDER BY nama");
+                                    while ($row = $kota_result->fetch_assoc()): 
+                                ?>
+                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_kota == $row['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($row['nama']); ?>
+                                        </option>
+                                    <?php endwhile;
+                                }
+                                ?>
+                            </select>
+                        </div>
+
+                        <!-- Filter 4: Ranting (CASCADE) -->
+                        <div>
+                            <select name="filter_ranting" id="filter_ranting" onchange="this.form.submit()" <?php echo $filter_kota == 0 ? 'disabled' : ''; ?>>
+                                <option value="">-- Semua Ranting --</option>
+                                <?php 
+                                if ($filter_kota > 0) {
+                                    $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting WHERE kota_id = $filter_kota ORDER BY nama_ranting");
+                                    while ($row = $ranting_result->fetch_assoc()): 
+                                ?>
+                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_ranting == $row['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($row['nama_ranting']); ?>
+                                        </option>
+                                    <?php endwhile;
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Filter Teknis -->
+                    <div class="filter-section-title">⚙️ Filter Teknis</div>
+                    <div class="filter-row">
+                        <select name="filter_tingkat" id="filter_tingkat" onchange="this.form.submit()">
+                            <option value="">-- Semua Tingkat --</option>
                             <?php 
-                            $negara_result = $conn->query("SELECT id, nama FROM negara ORDER BY nama");
-                            while ($row = $negara_result->fetch_assoc()): 
+                            foreach ($filter_tingkatan as $ting): 
                             ?>
-                                <option value="<?php echo $row['id']; ?>" <?php echo $filter_negara == $row['id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($row['nama']); ?>
+                                <option value="<?php echo $ting['urutan']; ?>" <?php echo $filter_tingkat == $ting['urutan'] ? 'selected' : ''; ?>>
+                                    <?php echo !empty($ting['singkatan']) ? $ting['singkatan'] : $ting['nama_tingkat']; ?> (<?php echo $ting['nama_tingkat']; ?>)
                                 </option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
+                        </select>
+
+                        <select name="filter_layak_ukt" id="filter_layak_ukt" onchange="this.form.submit()">
+                            <option value="">-- Semua Layak UKT --</option>
+                            <option value="ya" <?php echo $filter_layak_ukt == 'ya' ? 'selected' : ''; ?>>✓ Layak UKT</option>
+                            <option value="tidak" <?php echo $filter_layak_ukt == 'tidak' ? 'selected' : ''; ?>>✗ Belum Layak</option>
+                        </select>
+
+                        <select name="filter_kerohanian" id="filter_kerohanian" onchange="this.form.submit()">
+                            <option value="">-- Semua Kerohanian --</option>
+                            <option value="sudah" <?php echo $filter_kerohanian == 'sudah' ? 'selected' : ''; ?>>✓ Sudah</option>
+                            <option value="belum" <?php echo $filter_kerohanian == 'belum' ? 'selected' : ''; ?>>✗ Belum</option>
                         </select>
                     </div>
 
-                    <!-- Filter 2: Provinsi (CASCADE) -->
-                    <div>
-                        <select name="filter_provinsi" id="filter_provinsi" onchange="updateKotaRanting()" <?php echo $filter_negara == 0 ? 'disabled' : ''; ?>>
-                            <option value="">-- Semua Provinsi --</option>
-                            <?php 
-                            if ($filter_negara > 0) {
-                                $provinsi_result = $conn->query("SELECT id, nama FROM provinsi WHERE negara_id = $filter_negara ORDER BY nama");
-                                while ($row = $provinsi_result->fetch_assoc()): 
-                            ?>
-                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_provinsi == $row['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($row['nama']); ?>
-                                    </option>
-                                <?php endwhile;
-                            }
-                            ?>
-                        </select>
+                    <!-- Tombol Aksi -->
+                    <div class="filter-row">
+                        <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;" onclick="resetFilters()">🔄 Reset Filter</button>
                     </div>
+                </form>
+            </div>
 
-                    <!-- Filter 3: Kota (CASCADE) -->
-                    <div>
-                        <select name="filter_kota" id="filter_kota" onchange="updateRanting()" <?php echo $filter_provinsi == 0 ? 'disabled' : ''; ?>>
-                            <option value="">-- Semua Kota --</option>
-                            <?php 
-                            if ($filter_provinsi > 0) {
-                                $kota_result = $conn->query("SELECT id, nama FROM kota WHERE provinsi_id = $filter_provinsi ORDER BY nama");
-                                while ($row = $kota_result->fetch_assoc()): 
-                            ?>
-                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_kota == $row['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($row['nama']); ?>
-                                    </option>
-                                <?php endwhile;
-                            }
-                            ?>
-                        </select>
-                    </div>
-
-                    <!-- Filter 4: Ranting (CASCADE) -->
-                    <div>
-                        <select name="filter_ranting" id="filter_ranting" onchange="this.form.submit()" <?php echo $filter_kota == 0 ? 'disabled' : ''; ?>>
-                            <option value="">-- Semua Ranting --</option>
-                            <?php 
-                            if ($filter_kota > 0) {
-                                $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting WHERE kota_id = $filter_kota ORDER BY nama_ranting");
-                                while ($row = $ranting_result->fetch_assoc()): 
-                            ?>
-                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_ranting == $row['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($row['nama_ranting']); ?>
-                                    </option>
-                                <?php endwhile;
-                            }
-                            ?>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Filter Teknis -->
-                <div class="filter-section-title">⚙️ Filter Teknis</div>
-                <div class="filter-row">
-                    <select name="filter_tingkat" id="filter_tingkat" onchange="this.form.submit()">
-                        <option value="">-- Semua Tingkat --</option>
-                        <?php 
-                        foreach ($filter_tingkatan as $ting): 
-                        ?>
-                            <option value="<?php echo $ting['urutan']; ?>" <?php echo $filter_tingkat == $ting['urutan'] ? 'selected' : ''; ?>>
-                                <?php echo !empty($ting['singkatan']) ? $ting['singkatan'] : $ting['nama_tingkat']; ?> (<?php echo $ting['nama_tingkat']; ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-
-                    <select name="filter_layak_ukt" id="filter_layak_ukt" onchange="this.form.submit()">
-                        <option value="">-- Semua Layak UKT --</option>
-                        <option value="ya" <?php echo $filter_layak_ukt == 'ya' ? 'selected' : ''; ?>>✓ Layak UKT</option>
-                        <option value="tidak" <?php echo $filter_layak_ukt == 'tidak' ? 'selected' : ''; ?>>✗ Belum Layak</option>
-                    </select>
-
-                    <select name="filter_kerohanian" id="filter_kerohanian" onchange="this.form.submit()">
-                        <option value="">-- Semua Kerohanian --</option>
-                        <option value="sudah" <?php echo $filter_kerohanian == 'sudah' ? 'selected' : ''; ?>>✓ Sudah</option>
-                        <option value="belum" <?php echo $filter_kerohanian == 'belum' ? 'selected' : ''; ?>>✗ Belum</option>
-                    </select>
-                </div>
-
-                <!-- Tombol Aksi -->
-                <div class="filter-row">
-                    <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;" onclick="resetFilters()">🔄 Reset Filter</button>
-                </div>
-            </form>
-        </div>
-
-        <script>
-            // Function untuk update dropdown Provinsi, Kota, Ranting via AJAX
-            function updateProvinsiKotaRanting() {
-                const negaraSelect = document.getElementById('filter_negara');
-                const provinsiSelect = document.getElementById('filter_provinsi');
-                const kotaSelect = document.getElementById('filter_kota');
-                const rantingSelect = document.getElementById('filter_ranting');
-                
-                const negaraId = negaraSelect.value;
-                
-                // Reset semua dropdown di bawahnya
-                provinsiSelect.innerHTML = '<option value="">-- Semua Provinsi --</option>';
-                kotaSelect.innerHTML = '<option value="">-- Semua Kota --</option>';
-                rantingSelect.innerHTML = '<option value="">-- Semua Ranting --</option>';
-                provinsiSelect.disabled = true;
-                kotaSelect.disabled = true;
-                rantingSelect.disabled = true;
-                
-                if (negaraId === '') {
-                    // Submit form untuk filter dengan nilai kosong
-                    document.getElementById('filterForm').submit();
-                    return;
-                }
-                
-                // Fetch provinsi yang ada di bawah negara ini
-                fetch('../../api/get_provinsi.php?negara_id=' + negaraId)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            let html = '<option value="">-- Semua Provinsi --</option>';
-                            data.data.forEach(provinsi => {
-                                html += '<option value="' + provinsi.id + '">' + provinsi.nama + '</option>';
-                            });
-                            provinsiSelect.innerHTML = html;
-                            provinsiSelect.disabled = false;
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-                
-                // Submit form untuk update tabel
-                document.getElementById('filterForm').submit();
-            }
-            
-            // Function untuk update dropdown Kota dan Ranting via AJAX
-            function updateKotaRanting() {
-                const provinsiSelect = document.getElementById('filter_provinsi');
-                const kotaSelect = document.getElementById('filter_kota');
-                const rantingSelect = document.getElementById('filter_ranting');
-                
-                const provinsiId = provinsiSelect.value;
-                
-                // Reset dropdown di bawahnya
-                kotaSelect.innerHTML = '<option value="">-- Semua Kota --</option>';
-                rantingSelect.innerHTML = '<option value="">-- Semua Ranting --</option>';
-                kotaSelect.disabled = true;
-                rantingSelect.disabled = true;
-                
-                if (provinsiId === '') {
-                    // Submit form untuk filter dengan nilai kosong
-                    document.getElementById('filterForm').submit();
-                    return;
-                }
-                
-                // Fetch kota yang ada di bawah provinsi ini
-                fetch('../../api/get_kota.php?provinsi_id=' + provinsiId)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            let html = '<option value="">-- Semua Kota --</option>';
-                            data.data.forEach(kota => {
-                                html += '<option value="' + kota.id + '">' + kota.nama + '</option>';
-                            });
-                            kotaSelect.innerHTML = html;
-                            kotaSelect.disabled = false;
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-                
-                // Submit form untuk update tabel
-                document.getElementById('filterForm').submit();
-            }
-            
-            // Function untuk update dropdown Ranting via AJAX
-            function updateRanting() {
-                const kotaSelect = document.getElementById('filter_kota');
-                const rantingSelect = document.getElementById('filter_ranting');
-                
-                const kotaId = kotaSelect.value;
-                
-                // Reset dropdown ranting
-                rantingSelect.innerHTML = '<option value="">-- Semua Ranting --</option>';
-                rantingSelect.disabled = true;
-                
-                if (kotaId === '') {
-                    // Submit form untuk filter dengan nilai kosong
-                    document.getElementById('filterForm').submit();
-                    return;
-                }
-                
-                // Fetch ranting yang ada di bawah kota ini
-                fetch('../../api/get_ranting.php?kota_id=' + kotaId)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            let html = '<option value="">-- Semua Ranting --</option>';
-                            data.data.forEach(ranting => {
-                                html += '<option value="' + ranting.id + '">' + ranting.nama_ranting + '</option>';
-                            });
-                            rantingSelect.innerHTML = html;
-                            rantingSelect.disabled = false;
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-                
-                // Submit form untuk update tabel
-                document.getElementById('filterForm').submit();
-            }
-            
-            // Reset Filter function
-            function resetFilters() {
-                document.getElementById('anggota_search').value = '';
-                document.getElementById('search_hidden').value = '';
-                document.getElementById('filter_tingkat').value = '';
-                document.getElementById('filter_negara').value = '';
-                document.getElementById('filter_provinsi').value = '';
-                document.getElementById('filter_kota').value = '';
-                document.getElementById('filter_ranting').value = '';
-                document.getElementById('filter_layak_ukt').value = '';
-                document.getElementById('filter_kerohanian').value = '';
-                
-                // Reset regional dropdowns
-                const provinsiSelect = document.getElementById('filter_provinsi');
-                const kotaSelect = document.getElementById('filter_kota');
-                const rantingSelect = document.getElementById('filter_ranting');
-                
-                provinsiSelect.innerHTML = '<option value="">-- Semua Provinsi --</option>';
-                kotaSelect.innerHTML = '<option value="">-- Semua Kota --</option>';
-                rantingSelect.innerHTML = '<option value="">-- Semua Ranting --</option>';
-                provinsiSelect.disabled = true;
-                kotaSelect.disabled = true;
-                rantingSelect.disabled = true;
-                
-                // Submit form untuk reset
-                document.getElementById('filterForm').submit();
-            }
-            
-            // LIVE SEARCH untuk Nama Anggota
-            const anggotaSearch = document.getElementById('anggota_search');
-            let debounceTimer;
-
-            anggotaSearch.addEventListener('input', function() {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    applyFilters();
-                }, 300);
-            });
-
-            function applyFilters() {
-                const search = document.getElementById('anggota_search').value;
-                const tingkat = document.getElementById('filter_tingkat').value;
-                const negara = document.getElementById('filter_negara').value;
-                const provinsi = document.getElementById('filter_provinsi').value;
-                const kota = document.getElementById('filter_kota').value;
-                const ranting = document.getElementById('filter_ranting').value;
-                const ukt = document.getElementById('filter_layak_ukt').value;
-                const krh = document.getElementById('filter_kerohanian').value;
-
-                let url = '?ajax=1';
-                if (search) url += `&search=${encodeURIComponent(search)}`;
-                if (tingkat) url += `&filter_tingkat=${tingkat}`;
-                if (negara) url += `&filter_negara=${negara}`;
-                if (provinsi) url += `&filter_provinsi=${provinsi}`;
-                if (kota) url += `&filter_kota=${kota}`;
-                if (ranting) url += `&filter_ranting=${ranting}`;
-                if (ukt) url += `&filter_layak_ukt=${ukt}`;
-                if (krh) url += `&filter_kerohanian=${krh}`;
-
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            updateTable(data.data);
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-            }
-
-            function updateTable(data) {
-                const tbody = document.getElementById('anggota-tbody');
-                const totalCount = document.querySelector('.header p strong');
-                const isReadonly = <?php echo $is_readonly ? 'true' : 'false'; ?>;
-                const userRole = '<?php echo $user_role; ?>';
-                const userRantingId = <?php echo (int)$user_ranting_id; ?>;
-                
-                if (!tbody) return;
-
-                if (data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="10" class="no-data">🔍 Tidak ada data anggota</td></tr>';
-                    if (totalCount) totalCount.textContent = '0 anggota';
-                    return;
-                }
-
-                if (totalCount) totalCount.textContent = data.length + ' anggota';
-
-                let html = '';
-                data.forEach(row => {
-                    let uktBadge = '';
-                    if (row.urutan_tingkat === 13) {
-                        uktBadge = '<span class="badge badge-pke">PKE</span>';
-                    } else if (row.is_eligible) {
-                        uktBadge = '<span class="badge badge-layak">✓ Layak</span>';
-                    } else {
-                        uktBadge = `<span class="badge badge-tidak-layak">✗ ${row.hari_tersisa}h</span>`;
+            <script>
+                // Function untuk update dropdown Provinsi, Kota, Ranting via AJAX
+                function updateProvinsiKotaRanting() {
+                    const negaraSelect = document.getElementById('filter_negara');
+                    const provinsiSelect = document.getElementById('filter_provinsi');
+                    const kotaSelect = document.getElementById('filter_kota');
+                    const rantingSelect = document.getElementById('filter_ranting');
+                    
+                    const negaraId = negaraSelect.value;
+                    
+                    // Reset semua dropdown di bawahnya
+                    provinsiSelect.innerHTML = '<option value="">-- Semua Provinsi --</option>';
+                    kotaSelect.innerHTML = '<option value="">-- Semua Kota --</option>';
+                    rantingSelect.innerHTML = '<option value="">-- Semua Ranting --</option>';
+                    provinsiSelect.disabled = true;
+                    kotaSelect.disabled = true;
+                    rantingSelect.disabled = true;
+                    
+                    if (negaraId === '') {
+                        // Submit form untuk filter dengan nilai kosong
+                        document.getElementById('filterForm').submit();
+                        return;
                     }
-
-                    let krhBadge = `<span class="badge ${row.status_kerohanian === 'sudah' ? 'badge-yes' : 'badge-no'}">${row.status_kerohanian === 'sudah' ? '✓' : '✗'}</span>`;
-
-                    let actions = `
-                        <div class="action-icons">
-                            <a href="anggota_detail.php?id=${row.id}" class="icon-btn icon-view" title="Lihat">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                    `;
-                    if (!isReadonly) {
-                        // For ranting role, only allow edit/delete for their own members
-                        const memberRantingId = parseInt(row.ranting_id) || 0;
-                        const currentUserRantingId = parseInt(userRantingId) || 0;
-                        const canEditDelete = (userRole !== 'ranting') || (memberRantingId === currentUserRantingId);
-                        if (canEditDelete) {
-                            actions += `
-                                <a href="anggota_edit.php?id=${row.id}" class="icon-btn icon-edit" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="anggota_hapus.php?id=${row.id}" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus data anggota ini?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            `;
-                        }
+                    
+                    // Fetch provinsi yang ada di bawah negara ini
+                    fetch('../../api/get_provinsi.php?negara_id=' + negaraId)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                let html = '<option value="">-- Semua Provinsi --</option>';
+                                data.data.forEach(provinsi => {
+                                    html += '<option value="' + provinsi.id + '">' + provinsi.nama + '</option>';
+                                });
+                                provinsiSelect.innerHTML = html;
+                                provinsiSelect.disabled = false;
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                    
+                    // Submit form untuk update tabel
+                    document.getElementById('filterForm').submit();
+                }
+                
+                // Function untuk update dropdown Kota dan Ranting via AJAX
+                function updateKotaRanting() {
+                    const provinsiSelect = document.getElementById('filter_provinsi');
+                    const kotaSelect = document.getElementById('filter_kota');
+                    const rantingSelect = document.getElementById('filter_ranting');
+                    
+                    const provinsiId = provinsiSelect.value;
+                    
+                    // Reset dropdown di bawahnya
+                    kotaSelect.innerHTML = '<option value="">-- Semua Kota --</option>';
+                    rantingSelect.innerHTML = '<option value="">-- Semua Ranting --</option>';
+                    kotaSelect.disabled = true;
+                    rantingSelect.disabled = true;
+                    
+                    if (provinsiId === '') {
+                        // Submit form untuk filter dengan nilai kosong
+                        document.getElementById('filterForm').submit();
+                        return;
                     }
-                    actions += '</div>';
+                    
+                    // Fetch kota yang ada di bawah provinsi ini
+                    fetch('../../api/get_kota.php?provinsi_id=' + provinsiId)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                let html = '<option value="">-- Semua Kota --</option>';
+                                data.data.forEach(kota => {
+                                    html += '<option value="' + kota.id + '">' + kota.nama + '</option>';
+                                });
+                                kotaSelect.innerHTML = html;
+                                kotaSelect.disabled = false;
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                    
+                    // Submit form untuk update tabel
+                    document.getElementById('filterForm').submit();
+                }
+                
+                // Function untuk update dropdown Ranting via AJAX
+                function updateRanting() {
+                    const kotaSelect = document.getElementById('filter_kota');
+                    const rantingSelect = document.getElementById('filter_ranting');
+                    
+                    const kotaId = kotaSelect.value;
+                    
+                    // Reset dropdown ranting
+                    rantingSelect.innerHTML = '<option value="">-- Semua Ranting --</option>';
+                    rantingSelect.disabled = true;
+                    
+                    if (kotaId === '') {
+                        // Submit form untuk filter dengan nilai kosong
+                        document.getElementById('filterForm').submit();
+                        return;
+                    }
+                    
+                    // Fetch ranting yang ada di bawah kota ini
+                    fetch('../../api/get_ranting.php?kota_id=' + kotaId)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                let html = '<option value="">-- Semua Ranting --</option>';
+                                data.data.forEach(ranting => {
+                                    html += '<option value="' + ranting.id + '">' + ranting.nama_ranting + '</option>';
+                                });
+                                rantingSelect.innerHTML = html;
+                                rantingSelect.disabled = false;
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                    
+                    // Submit form untuk update tabel
+                    document.getElementById('filterForm').submit();
+                }
+                
+                // Reset Filter function
+                function resetFilters() {
+                    document.getElementById('anggota_search').value = '';
+                    document.getElementById('search_hidden').value = '';
+                    document.getElementById('filter_tingkat').value = '';
+                    document.getElementById('filter_negara').value = '';
+                    document.getElementById('filter_provinsi').value = '';
+                    document.getElementById('filter_kota').value = '';
+                    document.getElementById('filter_ranting').value = '';
+                    document.getElementById('filter_layak_ukt').value = '';
+                    document.getElementById('filter_kerohanian').value = '';
+                    
+                    // Reset regional dropdowns
+                    const provinsiSelect = document.getElementById('filter_provinsi');
+                    const kotaSelect = document.getElementById('filter_kota');
+                    const rantingSelect = document.getElementById('filter_ranting');
+                    
+                    provinsiSelect.innerHTML = '<option value="">-- Semua Provinsi --</option>';
+                    kotaSelect.innerHTML = '<option value="">-- Semua Kota --</option>';
+                    rantingSelect.innerHTML = '<option value="">-- Semua Ranting --</option>';
+                    provinsiSelect.disabled = true;
+                    kotaSelect.disabled = true;
+                    rantingSelect.disabled = true;
+                    
+                    // Submit form untuk reset
+                    document.getElementById('filterForm').submit();
+                }
+                
+                // LIVE SEARCH untuk Nama Anggota
+                const anggotaSearch = document.getElementById('anggota_search');
+                let debounceTimer;
 
-                    html += `
-                        <tr>
-                            <td><a href="anggota_detail.php?id=${row.id}" class="data-link">${row.no_anggota_display}</a></td>
-                            <td><a href="anggota_detail.php?id=${row.id}" class="data-link">${row.nama_lengkap}</a></td>
-                            <td>${row.jenis_kelamin}</td>
-                            <td><a href="anggota.php?filter_tingkat=${row.tingkat_id || ''}" class="data-link">${row.nama_tingkat_singkat}</a></td>
-                            <td><a href="anggota.php?filter_ranting=${row.ranting_id || ''}" class="data-link">${row.nama_ranting}</a></td>
-                            <td>${row.kota_nama}</td>
-                            <td>${row.provinsi_nama}</td>
-                            <td>${uktBadge}</td>
-                            <td>${krhBadge}</td>
-                            <td>${actions}</td>
-                        </tr>
-                    `;
+                anggotaSearch.addEventListener('input', function() {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        applyFilters();
+                    }, 300);
                 });
-                tbody.innerHTML = html;
-            }
 
-            // Hapus atau Update autocomplete lama
-            const suggestionsBox = document.getElementById('anggota_suggestions');
-            // Pastikan suggestion box tidak muncul lagi karena kita sudah pakai live search tabel
-            if (suggestionsBox) suggestionsBox.style.display = 'none';
-        </script>
+                function applyFilters() {
+                    const search = document.getElementById('anggota_search').value;
+                    const tingkat = document.getElementById('filter_tingkat').value;
+                    const negara = document.getElementById('filter_negara').value;
+                    const provinsi = document.getElementById('filter_provinsi').value;
+                    const kota = document.getElementById('filter_kota').value;
+                    const ranting = document.getElementById('filter_ranting').value;
+                    const ukt = document.getElementById('filter_layak_ukt').value;
+                    const krh = document.getElementById('filter_kerohanian').value;
 
-        <style>
-            select:disabled {
-                background-color: #f5f5f5;
-                cursor: not-allowed;
-                opacity: 0.6;
-            }
-            
-            .suggestions-box {
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: white;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                max-height: 200px;
-                overflow-y: auto;
-                z-index: 1000;
-                display: none;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            
-            .suggestions-box.show { display: block; }
-            
-            .suggestion-item {
-                padding: 10px 15px;
-                cursor: pointer;
-                border-bottom: 1px solid #eee;
-            }
-            
-            .suggestion-item:hover { background: #f5f5f5; }
-            .suggestion-item:last-child { border-bottom: none; }
-        </style>
+                    let url = '?ajax=1';
+                    if (search) url += `&search=${encodeURIComponent(search)}`;
+                    if (tingkat) url += `&filter_tingkat=${tingkat}`;
+                    if (negara) url += `&filter_negara=${negara}`;
+                    if (provinsi) url += `&filter_provinsi=${provinsi}`;
+                    if (kota) url += `&filter_kota=${kota}`;
+                    if (ranting) url += `&filter_ranting=${ranting}`;
+                    if (ukt) url += `&filter_layak_ukt=${ukt}`;
+                    if (krh) url += `&filter_kerohanian=${krh}`;
 
-        
-        <!-- Tabel Anggota -->
-        <div class="table-container">
-            <?php if ($total_anggota > 0): ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>No Anggota</th>
-                        <th>Nama Lengkap</th>
-                        <th>JK</th>
-                        <th>Tingkat</th>
-                        <th>Unit/Ranting</th>
-                        <th>Kota/Kab</th>
-                        <th>Provinsi</th>
-                        <th>Layak UKT</th>
-                        <th>Kerohanian</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="anggota-tbody">
-                    <?php foreach ($filtered_results as $row): 
-                        $jk = ($row['jenis_kelamin'] == 'L') ? 'L' : 'P';
-                    ?>
-                    <tr>
-                        <td>
-                            <a href="anggota_detail.php?id=<?php echo $row['id']; ?>" class="data-link">
-                                <?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?>
-                            </a>
-                        </td>
-                        <td>
-                            <a href="anggota_detail.php?id=<?php echo $row['id']; ?>" class="data-link">
-                                <?php echo htmlspecialchars($row['nama_lengkap']); ?>
-                            </a>
-                        </td>
-                        <td><?php echo $jk; ?></td>
-                        <td>
-                            <a href="anggota.php?filter_tingkat=<?php echo $row['tingkat_id'] ?? ''; ?>" class="data-link">
-                                <?php echo !empty($row['singkatan']) ? $row['singkatan'] : $row['nama_tingkat']; ?>
-                            </a>
-                        </td>
-                        <td>
-                            <a href="anggota.php?filter_ranting=<?php echo $row['ranting_saat_ini_id'] ?? ''; ?>" class="data-link">
-                                <?php echo $row['nama_ranting'] ?? '-'; ?>
-                            </a>
-                        </td>
-                        <td>
-                            <?php echo $row['kota_nama'] ?? '-'; ?>
-                        </td>
-                        <td>
-                            <?php echo $row['provinsi_nama'] ?? '-'; ?>
-                        </td>
-                        <td>
-                            <?php if ($row['urutan'] == 13): ?>
-                                <span class="badge badge-pke">PKE</span>
-                            <?php elseif ($row['is_eligible']): ?>
-                                <span class="badge badge-layak">✓ Layak</span>
-                            <?php else: ?>
-                                <span class="badge badge-tidak-layak">✗ <?php echo $row['eligibility']['hari_tersisa']; ?> hari</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?php 
-                            $kerohanian = isset($row['status_kerohanian']) ? $row['status_kerohanian'] : 'belum';
-                            $badge_krh = ($kerohanian == 'sudah') ? 'badge-yes' : 'badge-no';
-                            $krh_text = ($kerohanian == 'sudah') ? '✓' : '✗';
-                            ?>
-                            <span class="badge <?php echo $badge_krh; ?>"><?php echo $krh_text; ?></span>
-                        </td>
-                        <td>
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                updateTable(data.data);
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                }
+
+                function updateTable(data) {
+                    const tbody = document.getElementById('anggota-tbody');
+                    const totalCount = document.querySelector('.header p strong');
+                    const isReadonly = <?php echo $is_readonly ? 'true' : 'false'; ?>;
+                    const userRole = '<?php echo $user_role; ?>';
+                    const userRantingId = <?php echo (int)$user_ranting_id; ?>;
+                    
+                    if (!tbody) return;
+
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="10" class="no-data">🔍 Tidak ada data anggota</td></tr>';
+                        if (totalCount) totalCount.textContent = '0 anggota';
+                        return;
+                    }
+
+                    if (totalCount) totalCount.textContent = data.length + ' anggota';
+
+                    let html = '';
+                    data.forEach(row => {
+                        let uktBadge = '';
+                        if (row.urutan_tingkat === 13) {
+                            uktBadge = '<span class="badge badge-pke">PKE</span>';
+                        } else if (row.is_eligible) {
+                            uktBadge = '<span class="badge badge-layak">✓ Layak</span>';
+                        } else {
+                            uktBadge = `<span class="badge badge-tidak-layak">✗ ${row.hari_tersisa}h</span>`;
+                        }
+
+                        let krhBadge = `<span class="badge ${row.status_kerohanian === 'sudah' ? 'badge-yes' : 'badge-no'}">${row.status_kerohanian === 'sudah' ? '✓' : '✗'}</span>`;
+
+                        let actions = `
                             <div class="action-icons">
-                                <a href="anggota_detail.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-view" title="Lihat">
+                                <a href="anggota_detail.php?id=${row.id}" class="icon-btn icon-view" title="Lihat">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <?php
-                                // For ranting/unit role, only show edit/delete for their own members
-                                $can_edit_delete = !$is_readonly;
-                                if ($user_role === 'ranting' || $user_role === 'unit') {
-                                    $member_ranting_id = (int)($row['ranting_saat_ini_id'] ?? 0);
-                                    $can_edit_delete = ($member_ranting_id === (int)$user_ranting_id);
-                                }
-                                if ($can_edit_delete):
-                                ?>
-                                <a href="anggota_edit.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-edit" title="Edit">
-                                    <i class="fas fa-edit"></i>
+                        `;
+                        if (!isReadonly) {
+                            // For ranting role, only allow edit/delete for their own members
+                            const memberRantingId = parseInt(row.ranting_id) || 0;
+                            const currentUserRantingId = parseInt(userRantingId) || 0;
+                            const canEditDelete = (userRole !== 'ranting') || (memberRantingId === currentUserRantingId);
+                            if (canEditDelete) {
+                                actions += `
+                                    <a href="anggota_edit.php?id=${row.id}" class="icon-btn icon-edit" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="anggota_hapus.php?id=${row.id}" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus data anggota ini?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                `;
+                            }
+                        }
+                        actions += '</div>';
+
+                        html += `
+                            <tr>
+                                <td><a href="anggota_detail.php?id=${row.id}" class="data-link">${row.no_anggota_display}</a></td>
+                                <td><a href="anggota_detail.php?id=${row.id}" class="data-link">${row.nama_lengkap}</a></td>
+                                <td>${row.jenis_kelamin}</td>
+                                <td><a href="anggota.php?filter_tingkat=${row.tingkat_id || ''}" class="data-link">${row.nama_tingkat_singkat}</a></td>
+                                <td><a href="anggota.php?filter_ranting=${row.ranting_id || ''}" class="data-link">${row.nama_ranting}</a></td>
+                                <td>${row.kota_nama}</td>
+                                <td>${row.provinsi_nama}</td>
+                                <td>${uktBadge}</td>
+                                <td>${krhBadge}</td>
+                                <td>${actions}</td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                }
+
+                // Hapus atau Update autocomplete lama
+                const suggestionsBox = document.getElementById('anggota_suggestions');
+                // Pastikan suggestion box tidak muncul lagi karena kita sudah pakai live search tabel
+                if (suggestionsBox) suggestionsBox.style.display = 'none';
+            </script>
+
+            <style>
+                select:disabled {
+                    background-color: #f5f5f5;
+                    cursor: not-allowed;
+                    opacity: 0.6;
+                }
+                
+                .suggestions-box {
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    right: 0;
+                    background: white;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    max-height: 200px;
+                    overflow-y: auto;
+                    z-index: 1000;
+                    display: none;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                
+                .suggestions-box.show { display: block; }
+                
+                .suggestion-item {
+                    padding: 10px 15px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #eee;
+                }
+                
+                .suggestion-item:hover { background: #f5f5f5; }
+                .suggestion-item:last-child { border-bottom: none; }
+            </style>
+
+            
+            <!-- Tabel Anggota -->
+            <div class="table-container">
+                <?php if ($total_anggota > 0): ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No Anggota</th>
+                            <th>Nama Lengkap</th>
+                            <th>JK</th>
+                            <th>Tingkat</th>
+                            <th>Unit/Ranting</th>
+                            <th>Kota/Kab</th>
+                            <th>Provinsi</th>
+                            <th>Layak UKT</th>
+                            <th>Kerohanian</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="anggota-tbody">
+                        <?php foreach ($filtered_results as $row): 
+                            $jk = ($row['jenis_kelamin'] == 'L') ? 'L' : 'P';
+                        ?>
+                        <tr>
+                            <td>
+                                <a href="anggota_detail.php?id=<?php echo $row['id']; ?>" class="data-link">
+                                    <?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?>
                                 </a>
-                                <a href="anggota_hapus.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus data anggota ini?')">
-                                    <i class="fas fa-trash"></i>
+                            </td>
+                            <td>
+                                <a href="anggota_detail.php?id=<?php echo $row['id']; ?>" class="data-link">
+                                    <?php echo htmlspecialchars($row['nama_lengkap']); ?>
                                 </a>
+                            </td>
+                            <td><?php echo $jk; ?></td>
+                            <td>
+                                <a href="anggota.php?filter_tingkat=<?php echo $row['tingkat_id'] ?? ''; ?>" class="data-link">
+                                    <?php echo !empty($row['singkatan']) ? $row['singkatan'] : $row['nama_tingkat']; ?>
+                                </a>
+                            </td>
+                            <td>
+                                <a href="anggota.php?filter_ranting=<?php echo $row['ranting_saat_ini_id'] ?? ''; ?>" class="data-link">
+                                    <?php echo $row['nama_ranting'] ?? '-'; ?>
+                                </a>
+                            </td>
+                            <td>
+                                <?php echo $row['kota_nama'] ?? '-'; ?>
+                            </td>
+                            <td>
+                                <?php echo $row['provinsi_nama'] ?? '-'; ?>
+                            </td>
+                            <td>
+                                <?php if ($row['urutan'] == 13): ?>
+                                    <span class="badge badge-pke">PKE</span>
+                                <?php elseif ($row['is_eligible']): ?>
+                                    <span class="badge badge-layak">✓ Layak</span>
+                                <?php else: ?>
+                                    <span class="badge badge-tidak-layak">✗ <?php echo $row['eligibility']['hari_tersisa']; ?> hari</span>
                                 <?php endif; ?>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="no-data">
-                <p>🔍 Tidak ada data anggota</p>
+                            </td>
+                            <td>
+                                <?php 
+                                $kerohanian = isset($row['status_kerohanian']) ? $row['status_kerohanian'] : 'belum';
+                                $badge_krh = ($kerohanian == 'sudah') ? 'badge-yes' : 'badge-no';
+                                $krh_text = ($kerohanian == 'sudah') ? '✓' : '✗';
+                                ?>
+                                <span class="badge <?php echo $badge_krh; ?>"><?php echo $krh_text; ?></span>
+                            </td>
+                            <td>
+                                <div class="action-icons">
+                                    <a href="anggota_detail.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-view" title="Lihat">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <?php
+                                    // For ranting/unit role, only show edit/delete for their own members
+                                    $can_edit_delete = !$is_readonly;
+                                    if ($user_role === 'ranting' || $user_role === 'unit') {
+                                        $member_ranting_id = (int)($row['ranting_saat_ini_id'] ?? 0);
+                                        $can_edit_delete = ($member_ranting_id === (int)$user_ranting_id);
+                                    }
+                                    if ($can_edit_delete):
+                                    ?>
+                                    <a href="anggota_edit.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-edit" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="anggota_hapus.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus data anggota ini?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="no-data">
+                    <p>🔍 Tidak ada data anggota</p>
+                </div>
+                <?php endif; ?>
             </div>
-            <?php endif; ?>
         </div>
     </div>
 </body>

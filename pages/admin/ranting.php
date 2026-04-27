@@ -328,7 +328,7 @@ if ($print_mode) {
             align-items: center;
         }
         
-        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         .header h1 { color: #333; }
         
@@ -501,174 +501,176 @@ if ($print_mode) {
     <link rel="stylesheet" href="../../styles/print.css">
 </head>
 <body>
-    <?php renderNavbar('🏢 Manajemen Unit / Ranting'); ?>
+    <?php renderNavbar('Manajemen Unit / Ranting'); ?>
     
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1>Daftar Unit / Ranting</h1>
-                <p style="color: #666; margin-top: 5px;">Total: <strong id="total-count"><?php echo $total_ranting; ?></strong></p>
-            </div>
-            <div class="button-group">
-                <?php if ($can_add): ?>
-                <a href="ranting_tambah.php" class="btn btn-primary">+ Tambah Unit / Ranting</a>
-                <a href="ranting_import.php" class="btn btn-success">⬆️ Impor CSV</a>
-                <?php endif; ?>
-                <button onclick="window.location.href='ranting.php?print=true' + getFilterParams()" class="btn btn-print">🖨️ Cetak</button>
-            </div>
-        </div>
-        
-        <!-- Filter Cascade -->
-        <div class="search-filter">
-            <form method="GET" action="" id="rantingForm" onsubmit="return false;">
-                <div class="filter-section-title">🔍 Pencarian & Filter</div>
-                <div class="filter-row">
-                    <div>
-                        <input type="text" id="search_name" placeholder="Cari nama unit/ranting..." autocomplete="off">
-                    </div>
-                    
-                    <div>
-                        <select name="filter_jenis" id="filter_jenis" onchange="applyFilters()">
-                            <option value="">-- Semua Jenis --</option>
-                            <option value="ukm" <?php echo $filter_jenis == 'ukm' ? 'selected' : ''; ?>>UKM</option>
-                            <option value="ranting" <?php echo $filter_jenis == 'ranting' ? 'selected' : ''; ?>>Ranting</option>
-                            <option value="unit" <?php echo $filter_jenis == 'unit' ? 'selected' : ''; ?>>Unit</option>
-                        </select>
-                    </div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="header">
+                <div>
+                    <h1>Daftar Unit / Ranting</h1>
+                    <p style="color: #666; margin-top: 5px;">Total: <strong id="total-count"><?php echo $total_ranting; ?></strong></p>
                 </div>
-
-                <div class="filter-section-title">📋 Filter Regional (Cascade)</div>
-                <div class="filter-row">
-                    <?php if ($show_negara_filter): ?>
-                    <div>
-                        <select name="filter_negara" id="filter_negara" onchange="updateProvinsiKota()">
-                             <option value="">-- Semua Negara --</option>
-                            <?php 
-                            $negara_result->data_seek(0);
-                            while ($row = $negara_result->fetch_assoc()): 
-                            ?>
-                                <option value="<?php echo $row['id']; ?>" <?php echo $filter_negara == $row['id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($row['nama']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
+                <div class="button-group">
+                    <?php if ($can_add): ?>
+                    <a href="ranting_tambah.php" class="btn btn-primary">+ Tambah Unit / Ranting</a>
+                    <a href="ranting_import.php" class="btn btn-success">⬆️ Impor CSV</a>
                     <?php endif; ?>
+                    <button onclick="window.location.href='ranting.php?print=true' + getFilterParams()" class="btn btn-print">🖨️ Cetak</button>
+                </div>
+            </div>
+            
+            <!-- Filter Cascade -->
+            <div class="search-filter">
+                <form method="GET" action="" id="rantingForm" onsubmit="return false;">
+                    <div class="filter-section-title">🔍 Pencarian & Filter</div>
+                    <div class="filter-row">
+                        <div>
+                            <input type="text" id="search_name" placeholder="Cari nama unit/ranting..." autocomplete="off">
+                        </div>
+                        
+                        <div>
+                            <select name="filter_jenis" id="filter_jenis" onchange="applyFilters()">
+                                <option value="">-- Semua Jenis --</option>
+                                <option value="ukm" <?php echo $filter_jenis == 'ukm' ? 'selected' : ''; ?>>UKM</option>
+                                <option value="ranting" <?php echo $filter_jenis == 'ranting' ? 'selected' : ''; ?>>Ranting</option>
+                                <option value="unit" <?php echo $filter_jenis == 'unit' ? 'selected' : ''; ?>>Unit</option>
+                            </select>
+                        </div>
+                    </div>
 
-                    <?php if ($show_provinsi_filter): ?>
-                    <div>
-                        <select name="filter_provinsi" id="filter_provinsi" onchange="updateKota()" <?php echo $filter_negara > 0 ? '' : 'disabled'; ?>>
-                            <option value="">-- Semua Provinsi --</option>
-                            <?php
-                            if ($provinsi_result) {
-                                $provinsi_result->data_seek(0);
-                                while ($row = $provinsi_result->fetch_assoc()):
+                    <div class="filter-section-title">📋 Filter Regional (Cascade)</div>
+                    <div class="filter-row">
+                        <?php if ($show_negara_filter): ?>
+                        <div>
+                            <select name="filter_negara" id="filter_negara" onchange="updateProvinsiKota()">
+                                <option value="">-- Semua Negara --</option>
+                                <?php 
+                                $negara_result->data_seek(0);
+                                while ($row = $negara_result->fetch_assoc()): 
                                 ?>
-                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_provinsi == $row['id'] ? 'selected' : ''; ?>>
+                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_negara == $row['id'] ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($row['nama']); ?>
                                     </option>
-                                <?php endwhile;
-                            }
-                            ?>
-                        </select>
-                    </div>
-                    <?php endif; ?>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                        <?php endif; ?>
 
-                    <?php if ($show_kota_filter): ?>
-                    <div>
-                        <select name="filter_kota" id="filter_kota" onchange="applyFilters()" <?php echo $filter_provinsi > 0 ? '' : 'disabled'; ?>>
-                            <option value="">-- Semua Kota --</option>
-                            <?php
-                            if ($kota_result) {
-                                $kota_result->data_seek(0);
-                                while ($row = $kota_result->fetch_assoc()):
-                                ?>
-                                    <option value="<?php echo $row['id']; ?>" <?php echo $filter_kota == $row['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($row['nama']); ?>
-                                    </option>
-                                <?php endwhile;
-                            }
-                            ?>
-                        </select>
-                    </div>
-                    <?php endif; ?>
-                </div>
-
-                <div class="filter-row" style="margin-top: 15px;">
-                    <a href="ranting.php" class="btn btn-reset">Reset</a>
-                </div>
-            </form>
-        </div>
-
-        <!-- Tabel Ranting -->
-        <div class="table-container">
-            <?php if ($total_ranting > 0): ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nama Unit / Ranting</th>
-                        <th>Jenis</th>
-                        <th>Ketua</th>
-                        <th>Alamat</th>
-                        <th>Kontak</th>
-                        <th>Pengurus Kota</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="ranting-tbody">
-                    <?php while ($row = $result->fetch_assoc()): ?>
-                    <tr>
-                        <td><strong><?php echo htmlspecialchars($row['nama_ranting']); ?></strong></td>
-                        <td><span class="badge badge-<?php echo $row['jenis']; ?>"><?php echo strtoupper($row['jenis']); ?></span></td>
-                        <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
-                        <td><?php echo htmlspecialchars(substr($row['alamat'] ?? '-', 0, 40)); ?></td>
-                        <td><?php echo htmlspecialchars($row['no_kontak'] ?? '-'); ?></td>
-                        <td><?php echo htmlspecialchars($row['nama_kota'] ?? '-'); ?></td>
-                        <td>
-                            <div class="action-icons">
-                                <a href="ranting_detail.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-view" title="Lihat">
-                                    <i class="fas fa-eye"></i>
-                                </a>
+                        <?php if ($show_provinsi_filter): ?>
+                        <div>
+                            <select name="filter_provinsi" id="filter_provinsi" onchange="updateKota()" <?php echo $filter_negara > 0 ? '' : 'disabled'; ?>>
+                                <option value="">-- Semua Provinsi --</option>
                                 <?php
-                                // Show edit for those with permission
-                                // Hierarchy: admin > pengkot > ranting/unit
-                                // negara and pengprov cannot edit ranting
-                                $show_actions = false;
-                                $show_delete = false;
-                                
-                                if (in_array($user_role, ['admin', 'superadmin'])) {
-                                    $show_actions = true;
-                                    $show_delete = true;
-                                } elseif ($user_role === 'pengkot') {
-                                    // Pengkot can edit ranting in their city
-                                    $show_actions = ($row['kota_id'] ?? 0) == $user_pengurus_id;
-                                    $show_delete = ($row['kota_id'] ?? 0) == $user_pengurus_id;
-                                } elseif ($user_role === 'ranting' || $user_role === 'unit') {
-                                    // Ranting/unit can only edit their own ranting
-                                    $show_actions = ($row['id'] == $user_ranting_id);
-                                    $show_delete = false;
+                                if ($provinsi_result) {
+                                    $provinsi_result->data_seek(0);
+                                    while ($row = $provinsi_result->fetch_assoc()):
+                                    ?>
+                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_provinsi == $row['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($row['nama']); ?>
+                                        </option>
+                                    <?php endwhile;
                                 }
-                                
-                                if ($show_actions):
                                 ?>
-                                <a href="ranting_edit.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-edit" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <?php if ($show_delete): ?>
-                                <a href="ranting_hapus.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                                <?php endif; ?>
-                                <?php endif; ?>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <?php else: ?>
-            <div class="no-data">🔍 Tidak ada data unit / ranting</div>
-            <?php endif; ?>
+                            </select>
+                        </div>
+                        <?php endif; ?>
+
+                        <?php if ($show_kota_filter): ?>
+                        <div>
+                            <select name="filter_kota" id="filter_kota" onchange="applyFilters()" <?php echo $filter_provinsi > 0 ? '' : 'disabled'; ?>>
+                                <option value="">-- Semua Kota --</option>
+                                <?php
+                                if ($kota_result) {
+                                    $kota_result->data_seek(0);
+                                    while ($row = $kota_result->fetch_assoc()):
+                                    ?>
+                                        <option value="<?php echo $row['id']; ?>" <?php echo $filter_kota == $row['id'] ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($row['nama']); ?>
+                                        </option>
+                                    <?php endwhile;
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="filter-row" style="margin-top: 15px;">
+                        <a href="ranting.php" class="btn btn-reset">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabel Ranting -->
+            <div class="table-container">
+                <?php if ($total_ranting > 0): ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama Unit / Ranting</th>
+                            <th>Jenis</th>
+                            <th>Ketua</th>
+                            <th>Alamat</th>
+                            <th>Kontak</th>
+                            <th>Pengurus Kota</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranting-tbody">
+                        <?php while ($row = $result->fetch_assoc()): ?>
+                        <tr>
+                            <td><strong><?php echo htmlspecialchars($row['nama_ranting']); ?></strong></td>
+                            <td><span class="badge badge-<?php echo $row['jenis']; ?>"><?php echo strtoupper($row['jenis']); ?></span></td>
+                            <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars(substr($row['alamat'] ?? '-', 0, 40)); ?></td>
+                            <td><?php echo htmlspecialchars($row['no_kontak'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars($row['nama_kota'] ?? '-'); ?></td>
+                            <td>
+                                <div class="action-icons">
+                                    <a href="ranting_detail.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-view" title="Lihat">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <?php
+                                    // Show edit for those with permission
+                                    // Hierarchy: admin > pengkot > ranting/unit
+                                    // negara and pengprov cannot edit ranting
+                                    $show_actions = false;
+                                    $show_delete = false;
+                                    
+                                    if (in_array($user_role, ['admin', 'superadmin'])) {
+                                        $show_actions = true;
+                                        $show_delete = true;
+                                    } elseif ($user_role === 'pengkot') {
+                                        // Pengkot can edit ranting in their city
+                                        $show_actions = ($row['kota_id'] ?? 0) == $user_pengurus_id;
+                                        $show_delete = ($row['kota_id'] ?? 0) == $user_pengurus_id;
+                                    } elseif ($user_role === 'ranting' || $user_role === 'unit') {
+                                        // Ranting/unit can only edit their own ranting
+                                        $show_actions = ($row['id'] == $user_ranting_id);
+                                        $show_delete = false;
+                                    }
+                                    
+                                    if ($show_actions):
+                                    ?>
+                                    <a href="ranting_edit.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-edit" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <?php if ($show_delete): ?>
+                                    <a href="ranting_hapus.php?id=<?php echo $row['id']; ?>" class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Yakin hapus?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <div class="no-data">🔍 Tidak ada data unit / ranting</div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 

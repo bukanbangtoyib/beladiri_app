@@ -310,121 +310,123 @@ $is_readonly = !$can_update;
     </style>
 </head>
 <body>
-    <?php renderNavbar('📝 Ujian Kenaikan Tingkat (UKT)'); ?>
+    <?php renderNavbar('Ujian Kenaikan Tingkat (UKT)'); ?>
     
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1>Daftar Pelaksanaan UKT</h1>
-                <p style="color: #666;">Total: <strong id="total-count"><?php echo $total_ukt; ?> pelaksanaan</strong></p>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="header">
+                <div>
+                    <h1>Daftar Pelaksanaan UKT</h1>
+                    <p style="color: #666;">Total: <strong id="total-count"><?php echo $total_ukt; ?> pelaksanaan</strong></p>
+                </div>
+                <?php if ($can_create): ?>
+                <a href="ukt_buat.php" class="btn btn-primary">+ Buat UKT Baru</a>
+                <?php endif; ?>
             </div>
-            <?php if ($can_create): ?>
-            <a href="ukt_buat.php" class="btn btn-primary">+ Buat UKT Baru</a>
-            <?php endif; ?>
-        </div>
-        
-        <!-- Filter Section -->
-        <div class="filter-container">
-            <h3 style="margin-bottom: 15px; color: #333;">🔍 Filter Data</h3>
             
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label>Tahun Pelaksanaan</label>
-                    <select id="filter-tahun">
-                        <option value="">-- Semua Tahun --</option>
-                        <?php while ($row = $tahun_result->fetch_assoc()): ?>
-                            <option value="<?php echo $row['tahun']; ?>"><?php echo $row['tahun']; ?></option>
-                        <?php endwhile; ?>
-                    </select>
-                </div>
+            <!-- Filter Section -->
+            <div class="filter-container">
+                <h3 style="margin-bottom: 15px; color: #333;">🔍 Filter Data</h3>
                 
-                <div class="filter-group">
-                    <label>Lokasi (Pencarian Langsung)</label>
-                    <input type="text" id="filter-lokasi" placeholder="Ketik untuk mencari lokasi...">
-                </div>
-                
-                <div class="filter-group">
-                    <label>Jenis Penyelenggara</label>
-                    <select id="filter-jenis-penyelenggara" onchange="handleJenisFilterChange()">
-                        <option value="">-- Semua Jenis --</option>
-                        <option value="pusat">Pusat (PP)</option>
-                        <option value="provinsi">Provinsi (PengProv)</option>
-                        <option value="kota">Kota / Kabupaten (PengKot)</option>
-                    </select>
-                </div>
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>Tahun Pelaksanaan</label>
+                        <select id="filter-tahun">
+                            <option value="">-- Semua Tahun --</option>
+                            <?php while ($row = $tahun_result->fetch_assoc()): ?>
+                                <option value="<?php echo $row['tahun']; ?>"><?php echo $row['tahun']; ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Lokasi (Pencarian Langsung)</label>
+                        <input type="text" id="filter-lokasi" placeholder="Ketik untuk mencari lokasi...">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Jenis Penyelenggara</label>
+                        <select id="filter-jenis-penyelenggara" onchange="handleJenisFilterChange()">
+                            <option value="">-- Semua Jenis --</option>
+                            <option value="pusat">Pusat (PP)</option>
+                            <option value="provinsi">Provinsi (PengProv)</option>
+                            <option value="kota">Kota / Kabupaten (PengKot)</option>
+                        </select>
+                    </div>
 
-                <div class="filter-group">
-                    <label>Nama Penyelenggara</label>
-                    <select id="filter-nama-penyelenggara" disabled>
-                        <option value="">-- Pilih Penyelenggara --</option>
-                    </select>
-                    <div id="loadingFilterPenyelenggara" style="display:none; font-size:10px; color:#999;">Memuat...</div>
+                    <div class="filter-group">
+                        <label>Nama Penyelenggara</label>
+                        <select id="filter-nama-penyelenggara" disabled>
+                            <option value="">-- Pilih Penyelenggara --</option>
+                        </select>
+                        <div id="loadingFilterPenyelenggara" style="display:none; font-size:10px; color:#999;">Memuat...</div>
+                    </div>
+                </div>
+                
+                <div class="filter-buttons">
+                    <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;" onclick="resetFilters()">🔄 Reset Filter</button>
                 </div>
             </div>
             
-            <div class="filter-buttons">
-                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;" onclick="resetFilters()">🔄 Reset Filter</button>
-            </div>
-        </div>
-        
-        <!-- Table Section -->
-        <div class="table-container">
-            <table id="ukt-table">
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Lokasi</th>
-                        <th>Penyelenggara</th>
-                        <th>Total Peserta</th>
-                        <th>Lulus / Tidak Lulus</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="ukt-tbody">
-                    <?php while ($row = $result->fetch_assoc()): 
-                        // Ambil statistik untuk setiap row
-                        $stat_sql = "SELECT 
-                            COUNT(id) as total_peserta,
-                            SUM(CASE WHEN status = 'lulus' THEN 1 ELSE 0 END) as peserta_lulus,
-                            SUM(CASE WHEN status = 'tidak_lulus' THEN 1 ELSE 0 END) as peserta_tidak_lulus
-                            FROM ukt_peserta WHERE ukt_id = " . $row['id'];
-                        $stat_result = $conn->query($stat_sql);
-                        $stats = $stat_result->fetch_assoc();
-                    ?>
-                    <tr>
-                        <td><strong><?php echo date('d-m-Y', strtotime($row['tanggal_pelaksanaan'])); ?></strong></td>
-                        <td><?php echo htmlspecialchars($row['lokasi']); ?></td>
-                        <td>
-                            <?php if ($row['nama_penyelenggara']): ?>
-                                <?php echo htmlspecialchars($row['nama_penyelenggara']); ?>
-                            <?php else: ?>
-                                <em style="color: #999;">-</em>
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo $stats['total_peserta'] ?? 0; ?></td>
-                        <td>
-                            <span class="stat-number stat-lulus">✓ <?php echo $stats['peserta_lulus'] ?? 0; ?></span> / 
-                            <span class="stat-number stat-tidak">✗ <?php echo $stats['peserta_tidak_lulus'] ?? 0; ?></span>
-                        </td>
-                        <td><span class="badge badge-completed">✓ Selesai</span></td>
-                        <td>
-                            <div class="action-buttons">
-                                <a href="ukt_detail.php?id=<?php echo $row['id']; ?>" class="btn btn-info btn-small">Lihat</a>
-                                <?php 
-                                $can_manage_this = $permission_manager->canManageUKT('ukt_update', $row['jenis_penyelenggara'], $row['penyelenggara_id']);
-                                if ($can_manage_this): 
-                                ?>
-                                <a href="ukt_edit.php?id=<?php echo $row['id']; ?>" class="btn btn-info btn-small" style="background: #ffc107; color: black;">Edit</a>
-                                <a href="ukt_hapus.php?id=<?php echo $row['id']; ?>" class="btn btn-info btn-small" style="background: #dc3545;" onclick="return confirm('Yakin hapus UKT ini?')">Hapus</a>
+            <!-- Table Section -->
+            <div class="table-container">
+                <table id="ukt-table">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Lokasi</th>
+                            <th>Penyelenggara</th>
+                            <th>Total Peserta</th>
+                            <th>Lulus / Tidak Lulus</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ukt-tbody">
+                        <?php while ($row = $result->fetch_assoc()): 
+                            // Ambil statistik untuk setiap row
+                            $stat_sql = "SELECT 
+                                COUNT(id) as total_peserta,
+                                SUM(CASE WHEN status = 'lulus' THEN 1 ELSE 0 END) as peserta_lulus,
+                                SUM(CASE WHEN status = 'tidak_lulus' THEN 1 ELSE 0 END) as peserta_tidak_lulus
+                                FROM ukt_peserta WHERE ukt_id = " . $row['id'];
+                            $stat_result = $conn->query($stat_sql);
+                            $stats = $stat_result->fetch_assoc();
+                        ?>
+                        <tr>
+                            <td><strong><?php echo date('d-m-Y', strtotime($row['tanggal_pelaksanaan'])); ?></strong></td>
+                            <td><?php echo htmlspecialchars($row['lokasi']); ?></td>
+                            <td>
+                                <?php if ($row['nama_penyelenggara']): ?>
+                                    <?php echo htmlspecialchars($row['nama_penyelenggara']); ?>
+                                <?php else: ?>
+                                    <em style="color: #999;">-</em>
                                 <?php endif; ?>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <div class="no-data" id="no-data" style="display: none;">📭 Tidak ada data UKT yang sesuai</div>
+                            </td>
+                            <td><?php echo $stats['total_peserta'] ?? 0; ?></td>
+                            <td>
+                                <span class="stat-number stat-lulus">✓ <?php echo $stats['peserta_lulus'] ?? 0; ?></span> / 
+                                <span class="stat-number stat-tidak">✗ <?php echo $stats['peserta_tidak_lulus'] ?? 0; ?></span>
+                            </td>
+                            <td><span class="badge badge-completed">✓ Selesai</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="ukt_detail.php?id=<?php echo $row['id']; ?>" class="btn btn-info btn-small">Lihat</a>
+                                    <?php 
+                                    $can_manage_this = $permission_manager->canManageUKT('ukt_update', $row['jenis_penyelenggara'], $row['penyelenggara_id']);
+                                    if ($can_manage_this): 
+                                    ?>
+                                    <a href="ukt_edit.php?id=<?php echo $row['id']; ?>" class="btn btn-info btn-small" style="background: #ffc107; color: black;">Edit</a>
+                                    <a href="ukt_hapus.php?id=<?php echo $row['id']; ?>" class="btn btn-info btn-small" style="background: #dc3545;" onclick="return confirm('Yakin hapus UKT ini?')">Hapus</a>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+                <div class="no-data" id="no-data" style="display: none;">📭 Tidak ada data UKT yang sesuai</div>
+            </div>
         </div>
     </div>
     

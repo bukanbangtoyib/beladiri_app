@@ -347,102 +347,104 @@ $total_peserta = $peserta_result->num_rows;
     </style>
 </head>
 <body>
-    <?php renderNavbar('📊 Input Nilai UKT'); ?>
+    <?php renderNavbar('Input Nilai UKT'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>Input Nilai Peserta UKT</h1>
-            <p style="color: #666; font-size: 14px; margin-bottom: 25px;">UKT: <strong><?php echo date('d M Y', strtotime($ukt['tanggal_pelaksanaan'])); ?> - <?php echo htmlspecialchars($ukt['lokasi']); ?></strong></p>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✓ <?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <div class="info-box">
-                <strong>ℹ️ Catatan:</strong> Rata-rata dihitung hanya dari kolom yang ada nilai. Peserta dinyatakan LULUS jika rata-rata ≥ 60. Jika LULUS, tingkat anggota otomatis naik 1 level dan ukt_terakhir terupdate.
-            </div>
-            
-            <!-- Action buttons untuk import CSV -->
-            <div class="action-buttons">
-                <a href="ukt_import_nilai.php?ukt_id=<?php echo $id; ?>" class="btn btn-success">
-                    📥 Import CSV
-                </a>
-            </div>
-            
-            
-            <!-- Form Input Manual -->
-            <div id="manual-form" style="display: block;">
-                <?php if ($total_peserta > 0): ?>
-                <form method="POST">
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="text-align: left; width: 180px;">No Anggota</th>
-                                    <th style="text-align: left; width: 200px;">Nama Anggota</th>
-                                    <th>A</th>
-                                    <th>B</th>
-                                    <th>C</th>
-                                    <th>D</th>
-                                    <th>E</th>
-                                    <th>F</th>
-                                    <th>G</th>
-                                    <th>H</th>
-                                    <th>I</th>
-                                    <th>J</th>
-                                    <th style="width: 80px;">Rata-rata</th>
-                                    <th style="width: 100px;">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($row = $peserta_result->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?></td>
-                                    <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
-
-                                    <?php $letters = ['a','b','c','d','e','f','g','h','i','j']; ?>
-                                    <?php foreach ($letters as $l): ?>
-                                        <td>
-                                            <input type="text" inputmode="decimal" pattern="^[0-9]+(\.[0-9]+)?$" 
-                                                   name="peserta[<?php echo $row['id']; ?>][<?php echo $l; ?>]" 
-                                                   class="materi" data-id="<?php echo $row['id']; ?>"
-                                                   value="<?php echo isset($row['nilai_'.$l]) && $row['nilai_'.$l] !== null ? $row['nilai_'.$l] : ''; ?>">
-                                        </td>
-                                    <?php endforeach; ?>
-
-                                    <td class="rata-rata-cell">
-                                        <span class="rata" id="rata-<?php echo $row['id']; ?>">
-                                            <?php echo isset($row['rata_rata']) && $row['rata_rata'] !== null ? round($row['rata_rata'], 2) : '-'; ?>
-                                        </span>
-                                    </td>
-
-                                    <td style="text-align: center;">
-                                        <input type="hidden" name="peserta[<?php echo $row['id']; ?>][status]" 
-                                               id="status-input-<?php echo $row['id']; ?>" 
-                                               value="<?php echo $row['status']; ?>">
-                                        <span class="status-display status-<?php echo $row['id']; ?> <?php echo strtolower($row['status']); ?>" 
-                                              id="status-<?php echo $row['id']; ?>">
-                                            <?php echo ucfirst($row['status']); ?>
-                                        </span>
-                                    </td>
-                                </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="button-group">
-                        <button type="submit" class="btn btn-primary">💾 Simpan Nilai</button>
-                        <a href="ukt_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Batal</a>
-                    </div>
-                </form>
-                <?php else: ?>
-                <div class="no-data">🔭 Belum ada peserta UKT</div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Input Nilai Peserta UKT</h1>
+                <p style="color: #666; font-size: 14px; margin-bottom: 25px;">UKT: <strong><?php echo date('d M Y', strtotime($ukt['tanggal_pelaksanaan'])); ?> - <?php echo htmlspecialchars($ukt['lokasi']); ?></strong></p>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
                 <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✓ <?php echo $success; ?></div>
+                <?php endif; ?>
+                
+                <div class="info-box">
+                    <strong>ℹ️ Catatan:</strong> Rata-rata dihitung hanya dari kolom yang ada nilai. Peserta dinyatakan LULUS jika rata-rata ≥ 60. Jika LULUS, tingkat anggota otomatis naik 1 level dan ukt_terakhir terupdate.
+                </div>
+                
+                <!-- Action buttons untuk import CSV -->
+                <div class="action-buttons">
+                    <a href="ukt_import_nilai.php?ukt_id=<?php echo $id; ?>" class="btn btn-success">
+                        📥 Import CSV
+                    </a>
+                </div>
+                
+                
+                <!-- Form Input Manual -->
+                <div id="manual-form" style="display: block;">
+                    <?php if ($total_peserta > 0): ?>
+                    <form method="POST">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="text-align: left; width: 180px;">No Anggota</th>
+                                        <th style="text-align: left; width: 200px;">Nama Anggota</th>
+                                        <th>A</th>
+                                        <th>B</th>
+                                        <th>C</th>
+                                        <th>D</th>
+                                        <th>E</th>
+                                        <th>F</th>
+                                        <th>G</th>
+                                        <th>H</th>
+                                        <th>I</th>
+                                        <th>J</th>
+                                        <th style="width: 80px;">Rata-rata</th>
+                                        <th style="width: 100px;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php while ($row = $peserta_result->fetch_assoc()): ?>
+                                    <tr>
+                                        <td><?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?></td>
+                                        <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
+
+                                        <?php $letters = ['a','b','c','d','e','f','g','h','i','j']; ?>
+                                        <?php foreach ($letters as $l): ?>
+                                            <td>
+                                                <input type="text" inputmode="decimal" pattern="^[0-9]+(\.[0-9]+)?$" 
+                                                    name="peserta[<?php echo $row['id']; ?>][<?php echo $l; ?>]" 
+                                                    class="materi" data-id="<?php echo $row['id']; ?>"
+                                                    value="<?php echo isset($row['nilai_'.$l]) && $row['nilai_'.$l] !== null ? $row['nilai_'.$l] : ''; ?>">
+                                            </td>
+                                        <?php endforeach; ?>
+
+                                        <td class="rata-rata-cell">
+                                            <span class="rata" id="rata-<?php echo $row['id']; ?>">
+                                                <?php echo isset($row['rata_rata']) && $row['rata_rata'] !== null ? round($row['rata_rata'], 2) : '-'; ?>
+                                            </span>
+                                        </td>
+
+                                        <td style="text-align: center;">
+                                            <input type="hidden" name="peserta[<?php echo $row['id']; ?>][status]" 
+                                                id="status-input-<?php echo $row['id']; ?>" 
+                                                value="<?php echo $row['status']; ?>">
+                                            <span class="status-display status-<?php echo $row['id']; ?> <?php echo strtolower($row['status']); ?>" 
+                                                id="status-<?php echo $row['id']; ?>">
+                                                <?php echo ucfirst($row['status']); ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">💾 Simpan Nilai</button>
+                            <a href="ukt_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Batal</a>
+                        </div>
+                    </form>
+                    <?php else: ?>
+                    <div class="no-data">🔭 Belum ada peserta UKT</div>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>

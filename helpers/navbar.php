@@ -17,6 +17,9 @@ function renderNavbar($page_title) {
     $is_admin_page = strpos($_SERVER['PHP_SELF'], '/pages/admin/') !== false;
     $base_path = $is_admin_page ? '../../' : './';
     
+    // Include icon sidebar
+    include_once $base_path . 'helpers/icon_sidebar.php';
+    
     $username = htmlspecialchars($_SESSION['nama'] ?? 'User');
     $role_label = isset($GLOBALS['permission_manager']) 
         ? $GLOBALS['permission_manager']->getRoleName()
@@ -209,6 +212,9 @@ function renderSimpleNavbar($page_title) {
     // Tentukan base path
     $is_admin_page = strpos($_SERVER['PHP_SELF'], '/pages/admin/') !== false;
     $base_path = $is_admin_page ? '../../' : './';
+    
+    // Include icon sidebar
+    include_once $base_path . 'helpers/icon_sidebar.php';
     
     ?>
     <div class="navbar">

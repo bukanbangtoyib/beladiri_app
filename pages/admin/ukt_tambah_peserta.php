@@ -344,114 +344,116 @@ $peserta_result = $conn->query($peserta_sql);
     </style>
 </head>
 <body>
-    <?php renderNavbar('➕ Tambah Peserta UKT'); ?>
+    <?php renderNavbar('Tambah Peserta UKT'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>Tambah Peserta UKT</h1>
-            <?php
-            $wilayah_nama = '-';
-            if ($ukt['jenis_penyelenggara'] == 'pusat') {
-                $wilayah_res = $conn->query("SELECT nama FROM negara WHERE id = " . (int)$ukt['penyelenggara_id']);
-                $wilayah_nama = $wilayah_res->fetch_assoc()['nama'] ?? '-';
-            } elseif ($ukt['jenis_penyelenggara'] == 'provinsi') {
-                $wilayah_res = $conn->query("SELECT nama FROM provinsi WHERE id = " . (int)$ukt['penyelenggara_id']);
-                $wilayah_nama = $wilayah_res->fetch_assoc()['nama'] ?? '-';
-            } elseif ($ukt['jenis_penyelenggara'] == 'kota') {
-                $wilayah_res = $conn->query("SELECT nama FROM kota WHERE id = " . (int)$ukt['penyelenggara_id']);
-                $wilayah_nama = $wilayah_res->fetch_assoc()['nama'] ?? '-';
-            }
-            ?>
-            <p style="font-size:14px;color:#666;margin-bottom:25px;">
-                <strong>UKT: <?php echo date('d M Y', strtotime($ukt['tanggal_pelaksanaan'])); ?> - <?php echo htmlspecialchars($ukt['lokasi']); ?> - <?php echo htmlspecialchars($wilayah_nama); ?></strong>
-            </p>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✓ <?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <div class="info-box">
-                <strong>ℹ️ Informasi:</strong> Pilih anggota. Tingkat target akan otomatis naik 1 level dari tingkat saat ini. 
-                Sesuai dengan level UKT ini, Anda hanya dapat menambahkan anggota dengan range tingkat tertentu.
-            </div>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Tambah Peserta UKT</h1>
+                <?php
+                $wilayah_nama = '-';
+                if ($ukt['jenis_penyelenggara'] == 'pusat') {
+                    $wilayah_res = $conn->query("SELECT nama FROM negara WHERE id = " . (int)$ukt['penyelenggara_id']);
+                    $wilayah_nama = $wilayah_res->fetch_assoc()['nama'] ?? '-';
+                } elseif ($ukt['jenis_penyelenggara'] == 'provinsi') {
+                    $wilayah_res = $conn->query("SELECT nama FROM provinsi WHERE id = " . (int)$ukt['penyelenggara_id']);
+                    $wilayah_nama = $wilayah_res->fetch_assoc()['nama'] ?? '-';
+                } elseif ($ukt['jenis_penyelenggara'] == 'kota') {
+                    $wilayah_res = $conn->query("SELECT nama FROM kota WHERE id = " . (int)$ukt['penyelenggara_id']);
+                    $wilayah_nama = $wilayah_res->fetch_assoc()['nama'] ?? '-';
+                }
+                ?>
+                <p style="font-size:14px;color:#666;margin-bottom:25px;">
+                    <strong>UKT: <?php echo date('d M Y', strtotime($ukt['tanggal_pelaksanaan'])); ?> - <?php echo htmlspecialchars($ukt['lokasi']); ?> - <?php echo htmlspecialchars($wilayah_nama); ?></strong>
+                </p>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✓ <?php echo $success; ?></div>
+                <?php endif; ?>
+                
+                <div class="info-box">
+                    <strong>ℹ️ Informasi:</strong> Pilih anggota. Tingkat target akan otomatis naik 1 level dari tingkat saat ini. 
+                    Sesuai dengan level UKT ini, Anda hanya dapat menambahkan anggota dengan range tingkat tertentu.
+                </div>
 
-            <form method="POST">
-                <div class="search-filter">
-                    <div class="filter-section-title">
-                        <i class="fas fa-user-check"></i> Pilih Calon Peserta
-                    </div>
-                    
-                    <div class="filter-row" style="grid-template-columns: 1fr;">
-                        <div>
-                            <label style="font-size: 11px; color: #666; font-weight: 500;">NAMA ANGGOTA <span class="required">*</span></label>
-                            <select name="anggota_id" id="anggota_select" required>
-                                <option value="">-- Pilih Anggota --</option>
-                            </select>
-                            <div class="form-hint" style="font-size:11px; margin-top: 8px;">
-                                <i class="fas fa-info-circle"></i> Hanya menampilkan anggota di wilayah: <strong><?php echo htmlspecialchars($wilayah_nama); ?></strong>
+                <form method="POST">
+                    <div class="search-filter">
+                        <div class="filter-section-title">
+                            <i class="fas fa-user-check"></i> Pilih Calon Peserta
+                        </div>
+                        
+                        <div class="filter-row" style="grid-template-columns: 1fr;">
+                            <div>
+                                <label style="font-size: 11px; color: #666; font-weight: 500;">NAMA ANGGOTA <span class="required">*</span></label>
+                                <select name="anggota_id" id="anggota_select" required>
+                                    <option value="">-- Pilih Anggota --</option>
+                                </select>
+                                <div class="form-hint" style="font-size:11px; margin-top: 8px;">
+                                    <i class="fas fa-info-circle"></i> Hanya menampilkan anggota di wilayah: <strong><?php echo htmlspecialchars($wilayah_nama); ?></strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="anggota-info" class="anggota-info">
+                            <div style="display: flex; gap: 20px;">
+                                <div><strong>Tingkat Saat Ini:</strong> <span id="tingkat-saat-ini">-</span></div>
+                                <div><strong>Tingkat Target:</strong> <span id="tingkat-target">-</span></div>
                             </div>
                         </div>
                     </div>
                     
-                    <div id="anggota-info" class="anggota-info">
-                        <div style="display: flex; gap: 20px;">
-                            <div><strong>Tingkat Saat Ini:</strong> <span id="tingkat-saat-ini">-</span></div>
-                            <div><strong>Tingkat Target:</strong> <span id="tingkat-target">-</span></div>
-                        </div>
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">+ Tambah Peserta</button>
+                        <a href="ukt_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Batal</a>
                     </div>
+                </form>
+
+                <div class="table-container">
+                    <div style="padding: 15px; border-bottom: 1px solid #eee; background: #fafafa; font-weight: 600; font-size: 14px; color: #333;">
+                        👥 Peserta yang Sudah Ditambahkan
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No Anggota</th>
+                                <th>Nama Anggota</th>
+                                <th>Tingkat</th>
+                                <th style="text-align: center;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if ($peserta_result->num_rows > 0): ?>
+                                <?php while ($row = $peserta_result->fetch_assoc()): ?>
+                                <tr>
+                                    <td><strong><?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?></strong></td>
+                                    <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
+                                    <td><span style="font-size: 11px; color: #666;"><?php echo htmlspecialchars($row['tingkat_dari']); ?></span> → <strong><?php echo htmlspecialchars($row['tingkat_ke']); ?></strong></td>
+                                    <td style="text-align: center;">
+                                        <div class="action-icons" style="justify-content: center;">
+                                            <a href="ukt_hapus_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>&return=<?php echo urlencode($_SERVER['REQUEST_URI']); ?>" 
+                                            class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Hapus peserta ini?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="4" class="no-peserta">Belum ada peserta yang ditambahkan</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
                 
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">+ Tambah Peserta</button>
-                    <a href="ukt_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">Batal</a>
+                <div style="margin-top: 25px; text-align: center;">
+                    <a href="ukt_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">← Kembali ke Detail UKT</a>
                 </div>
-            </form>
-
-            <div class="table-container">
-                <div style="padding: 15px; border-bottom: 1px solid #eee; background: #fafafa; font-weight: 600; font-size: 14px; color: #333;">
-                    👥 Peserta yang Sudah Ditambahkan
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No Anggota</th>
-                            <th>Nama Anggota</th>
-                            <th>Tingkat</th>
-                            <th style="text-align: center;">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if ($peserta_result->num_rows > 0): ?>
-                            <?php while ($row = $peserta_result->fetch_assoc()): ?>
-                            <tr>
-                                <td><strong><?php echo formatNoAnggotaDisplay($row['no_anggota'], $pengaturan_nomor); ?></strong></td>
-                                <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td>
-                                <td><span style="font-size: 11px; color: #666;"><?php echo htmlspecialchars($row['tingkat_dari']); ?></span> → <strong><?php echo htmlspecialchars($row['tingkat_ke']); ?></strong></td>
-                                <td style="text-align: center;">
-                                    <div class="action-icons" style="justify-content: center;">
-                                        <a href="ukt_hapus_peserta.php?id=<?php echo $row['id']; ?>&ukt_id=<?php echo $id; ?>&return=<?php echo urlencode($_SERVER['REQUEST_URI']); ?>" 
-                                           class="icon-btn icon-delete" title="Hapus" onclick="return confirm('Hapus peserta ini?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="4" class="no-peserta">Belum ada peserta yang ditambahkan</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-            
-            <div style="margin-top: 25px; text-align: center;">
-                <a href="ukt_detail.php?id=<?php echo $id; ?>" class="btn btn-secondary">← Kembali ke Detail UKT</a>
             </div>
         </div>
     </div>

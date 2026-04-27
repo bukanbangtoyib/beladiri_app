@@ -1,13 +1,20 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'superadmin'])) {
+if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
 include 'config/database.php';
 include 'helpers/navbar.php';
+
+// Load settings for logo
+$logo_path = '';
+if (file_exists('config/settings.php')) {
+    include 'config/settings.php';
+    $logo_path = $settings['logo'] ?? '';
+}
 
 // Get user data from session
 $username = $_SESSION['username'] ?? '';
@@ -155,6 +162,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             display: flex;
             align-items: center;
             gap: 20px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
         }
         
         .user-info {
@@ -337,74 +351,102 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             .header, .form-card {
                 padding: 20px;
             }
+
+            .navbar {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+            
+            .navbar h1 {
+                width: 100%;
+                font-size: 20px;
+            }
+            
+            .navbar-left {
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .navbar-logo {
+                height: 32px;
+            }
+            
+            .navbar-right {
+                width: 100%;
+                justify-content: space-between;
+            }
         }
     </style>
 </head>
 <body>
     <?php renderSimpleNavbar('Akun Saya - Sistem Informasi & Manajemen Perisai Diri'); ?>
     
-    <div class="container">
-        <div class="header">
-            <h1>Akun Saya</h1>
-            <p>Halaman ini memungkinkan Anda mengubah profil akun Anda.</p>
-        </div>
-        
-        <?php if ($error): ?>
-        <div class="alert alert-error"><?php echo $error; ?></div>
-        <?php endif; ?>
-        
-        <?php if ($success): ?>
-        <div class="alert alert-success"><?php echo $success; ?></div>
-        <?php endif; ?>
-        
-        <div class="info-box">
-            <p><strong>ℹ️ Informasi : </strong>Username dan role tidak dapat diubah. Untuk mengubah nama lengkap atau password, silakan isi formulir di bawah ini.</p>
-        </div>
-        
-        <div class="info-box">
-            <p><strong>Detail Akun:</strong> 
-                <a href="<?php echo $detail_link . $detail_params; ?>" class="link-nav">Lihat Detail Akun</a>
-            </p>
-        </div>
-        
-        <div class="form-card">
-            <form method="POST" action="">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($username); ?>" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label for="role">Role</label>
-                    <input type="text" id="role" name="role" value="<?php echo htmlspecialchars($role); ?>" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label for="nama_lengkap">Nama Lengkap</label>
-                    <input type="text" id="nama_lengkap" name="nama_lengkap" value="<?php echo htmlspecialchars($nama_lengkap); ?>">
-                </div>
-                
-                <div class="form-group">
-                    <label for="password_baru">Password Baru</label>
-                    <div class="password-field">
-                        <input type="password" id="password_baru" name="password_baru" placeholder="Isi jika ingin mengganti password">
-                        <i class="fa fa-eye password-toggle" onclick="togglePassword('password_baru', this)"></i>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="header">
+                <h1>Akun Saya</h1>
+                <p>Halaman ini memungkinkan Anda mengubah profil akun Anda.</p>
+            </div>
+            
+            <?php if ($error): ?>
+            <div class="alert alert-error"><?php echo $error; ?></div>
+            <?php endif; ?>
+            
+            <?php if ($success): ?>
+            <div class="alert alert-success"><?php echo $success; ?></div>
+            <?php endif; ?>
+            
+            <div class="info-box">
+                <p><strong>ℹ️ Informasi : </strong>Username dan role tidak dapat diubah. Untuk mengubah nama lengkap atau password, silakan isi formulir di bawah ini.</p>
+            </div>
+            
+            <?php if (!in_array($role, ['admin', 'superadmin'])): ?>
+                        <div class="info-box">
+                            <p><strong>Detail Akun:</strong> 
+                                <a href="<?php echo $detail_link . $detail_params; ?>" class="link-nav">Lihat Detail Akun</a>
+                            </p>
+                        </div>
+            <?php endif; ?>
+            
+            <div class="form-card">
+                <form method="POST" action="">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($username); ?>" readonly>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="konfirmasi_password">Konfirmasi Password Baru</label>
-                    <div class="password-field">
-                        <input type="password" id="konfirmasi_password" name="konfirmasi_password" placeholder="Isi ulang password baru">
-                        <i class="fa fa-eye password-toggle" onclick="togglePassword('konfirmasi_password', this)"></i>
+                    
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <input type="text" id="role" name="role" value="<?php echo htmlspecialchars($role); ?>" readonly>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <button type="submit" class="btn">Simpan Perubahan</button>
-                    <a href="index.php" class="btn btn-secondary">Kembali ke Dashboard</a>
-                </div>
-            </form>
+                    
+                    <div class="form-group">
+                        <label for="nama_lengkap">Nama Lengkap</label>
+                        <input type="text" id="nama_lengkap" name="nama_lengkap" value="<?php echo htmlspecialchars($nama_lengkap); ?>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password_baru">Password Baru</label>
+                        <div class="password-field">
+                            <input type="password" id="password_baru" name="password_baru" placeholder="Isi jika ingin mengganti password">
+                            <i class="fa fa-eye password-toggle" onclick="togglePassword('password_baru', this)"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="konfirmasi_password">Konfirmasi Password Baru</label>
+                        <div class="password-field">
+                            <input type="password" id="konfirmasi_password" name="konfirmasi_password" placeholder="Isi ulang password baru">
+                            <i class="fa fa-eye password-toggle" onclick="togglePassword('konfirmasi_password', this)"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn">Simpan Perubahan</button>
+                        <a href="index.php" class="btn btn-secondary">Kembali ke Dashboard</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     

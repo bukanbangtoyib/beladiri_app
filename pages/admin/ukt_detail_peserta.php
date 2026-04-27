@@ -471,155 +471,157 @@ if ($print_mode) {
     </style>
 </head>
 <body>
-    <?php renderNavbar('📊 Detail Nilai Peserta UKT'); ?>
+    <?php renderNavbar('Detail Nilai Peserta UKT'); ?>
     
-    <div class="container">          
-        <div class="info-card">
-            <h1>📋 Informasi Peserta UKT</h1>
-            
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="label">No Anggota</span>
-                    <span class="value"><a href="anggota_detail.php?id=<?php echo $peserta['anggota_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 700;"><?php echo htmlspecialchars($peserta['no_anggota']); ?></a></span>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="info-card">
+                <h1>📋 Informasi Peserta UKT</h1>
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">No Anggota</span>
+                        <span class="value"><a href="anggota_detail.php?id=<?php echo $peserta['anggota_id']; ?>" style="color: #667eea; text-decoration: none; font-weight: 700;"><?php echo htmlspecialchars($peserta['no_anggota']); ?></a></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Nama Lengkap</span>
+                        <span class="value"><?php echo htmlspecialchars($peserta['nama_lengkap']); ?></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Ranting / Unit</span>
+                        <span class="value"><?php echo $peserta['nama_ranting'] ?? '-'; ?></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Tingkat Dari - Ke</span>
+                        <span class="value"><?php echo ($peserta['tingkat_dari'] ?? '-') . ' → ' . ($peserta['tingkat_ke'] ?? '-'); ?></span>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="label">Nama Lengkap</span>
-                    <span class="value"><?php echo htmlspecialchars($peserta['nama_lengkap']); ?></span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Ranting / Unit</span>
-                    <span class="value"><?php echo $peserta['nama_ranting'] ?? '-'; ?></span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Tingkat Dari - Ke</span>
-                    <span class="value"><?php echo ($peserta['tingkat_dari'] ?? '-') . ' → ' . ($peserta['tingkat_ke'] ?? '-'); ?></span>
-                </div>
-            </div>
-            
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
-            
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="label">Tanggal UKT</span>
-                    <span class="value"><?php echo date('d M Y', strtotime($peserta['tanggal_pelaksanaan'])); ?></span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Lokasi</span>
-                    <span class="value"><?php echo htmlspecialchars($peserta['lokasi']); ?></span>
-                </div>
-                <?php if ($peserta['nama_penyelenggara']): ?>
-                <div class="info-item">
-                    <span class="label">Penyelenggara</span>
-                    <span class="value"><?php echo htmlspecialchars($peserta['nama_penyelenggara']); ?></span>
-                </div>
-                <?php endif; ?>
-                <div class="info-item">
-                    <span class="label">Status</span>
-                    <span>
-                        <?php 
-                        if ($peserta['status'] == 'lulus') {
-                            echo '<span class="status-badge status-lulus">✓ LULUS</span>';
-                        } elseif ($peserta['status'] == 'tidak_lulus') {
-                            echo '<span class="status-badge status-tidak-lulus">✗ TIDAK LULUS</span>';
-                        } else {
-                            echo '<span class="status-badge status-peserta">• PESERTA</span>';
-                        }
-                        ?>
-                    </span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="info-card">
-            <h1>📊 Detail Nilai Penilaian</h1>
-            
-            <h3>Statistik Nilai</h3>
-            <div class="stats-grid">
-                <div class="stat-box">
-                    <div class="stat-box-label">Nilai Rata-rata</div>
-                    <div class="stat-box-value"><?php echo $rata_rata ? number_format($rata_rata, 2) : '-'; ?></div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-box-label">Nilai Tertinggi</div>
-                    <div class="stat-box-value" style="color: #27ae60;"><?php echo $nilai_terisi > 0 ? number_format($nilai_tertinggi, 2) : '-'; ?></div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-box-label">Nilai Terendah</div>
-                    <div class="stat-box-value" style="color: #e74c3c;"><?php echo $nilai_terisi > 0 ? number_format($nilai_terendah, 2) : '-'; ?></div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-box-label">Komponen Terisi</div>
-                    <div class="stat-box-value"><?php echo $nilai_terisi; ?> / 10</div>
-                </div>
-            </div>
-            
-            <h3>Nilai Per Komponen</h3>
-            <table class="nilai-table">
-                <thead>
-                    <tr>
-                        <th>Nilai 1</th>
-                        <th>Nilai 2</th>
-                        <th>Nilai 3</th>
-                        <th>Nilai 4</th>
-                        <th>Nilai 5</th>
-                        <th>Nilai 6</th>
-                        <th>Nilai 7</th>
-                        <th>Nilai 8</th>
-                        <th>Nilai 9</th>
-                        <th>Nilai 10</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="<?php echo $peserta['nilai_a'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
-                            <?php echo $peserta['nilai_a'] !== null ? number_format($peserta['nilai_a'], 2) : '-'; ?>
-                        </td>
-                        <td class="<?php echo $peserta['nilai_b'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
-                            <?php echo $peserta['nilai_b'] !== null ? number_format($peserta['nilai_b'], 2) : '-'; ?>
-                        </td>
-                        <td class="<?php echo $peserta['nilai_c'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
-                            <?php echo $peserta['nilai_c'] !== null ? number_format($peserta['nilai_c'], 2) : '-'; ?>
-                        </td>
-                        <td class="<?php echo $peserta['nilai_d'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
-                            <?php echo $peserta['nilai_d'] !== null ? number_format($peserta['nilai_d'], 2) : '-'; ?>
-                        </td>
-                        <td class="<?php echo $peserta['nilai_e'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
-                            <?php echo $peserta['nilai_e'] !== null ? number_format($peserta['nilai_e'], 2) : '-'; ?>
-                        </td>
-                        <td class="<?php echo $peserta['nilai_f'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
-                            <?php echo $peserta['nilai_f'] !== null ? number_format($peserta['nilai_f'], 2) : '-'; ?>
-                        </td>
-                        <td class="<?php echo $peserta['nilai_g'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
-                            <?php echo $peserta['nilai_g'] !== null ? number_format($peserta['nilai_g'], 2) : '-'; ?>
-                        </td>
-                        <td class="<?php echo $peserta['nilai_h'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
-                            <?php echo $peserta['nilai_h'] !== null ? number_format($peserta['nilai_h'], 2) : '-'; ?>
-                        </td>
-                        <td class="<?php echo $peserta['nilai_i'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
-                            <?php echo $peserta['nilai_i'] !== null ? number_format($peserta['nilai_i'], 2) : '-'; ?>
-                        </td>
-                        <td class="<?php echo $peserta['nilai_j'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
-                            <?php echo $peserta['nilai_j'] !== null ? number_format($peserta['nilai_j'], 2) : '-'; ?>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            
-            <div class="note-box">
-                <p>
-                    <strong>📝 Catatan:</strong>
-                    Peserta ini memiliki 
-                    <strong><?php echo $nilai_terisi; ?> dari 10 komponen</strong> 
-                    yang sudah dinilai.
-                    <?php if ($nilai_kosong > 0): ?>
-                        Masih ada <strong><?php echo $nilai_kosong; ?> komponen</strong> yang belum dinilai.
-                    <?php else: ?>
-                        <span style="color: #27ae60;">✓ Semua komponen sudah dinilai!</span>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Tanggal UKT</span>
+                        <span class="value"><?php echo date('d M Y', strtotime($peserta['tanggal_pelaksanaan'])); ?></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Lokasi</span>
+                        <span class="value"><?php echo htmlspecialchars($peserta['lokasi']); ?></span>
+                    </div>
+                    <?php if ($peserta['nama_penyelenggara']): ?>
+                    <div class="info-item">
+                        <span class="label">Penyelenggara</span>
+                        <span class="value"><?php echo htmlspecialchars($peserta['nama_penyelenggara']); ?></span>
+                    </div>
                     <?php endif; ?>
-                </p>
+                    <div class="info-item">
+                        <span class="label">Status</span>
+                        <span>
+                            <?php 
+                            if ($peserta['status'] == 'lulus') {
+                                echo '<span class="status-badge status-lulus">✓ LULUS</span>';
+                            } elseif ($peserta['status'] == 'tidak_lulus') {
+                                echo '<span class="status-badge status-tidak-lulus">✗ TIDAK LULUS</span>';
+                            } else {
+                                echo '<span class="status-badge status-peserta">• PESERTA</span>';
+                            }
+                            ?>
+                        </span>
+                    </div>
+                </div>
             </div>
             
-            <button onclick="window.location.href='?<?php echo http_build_query($_GET); ?>&print=1'" class="btn btn-print">🖨️ Cetak</button>
+            <div class="info-card">
+                <h1>📊 Detail Nilai Penilaian</h1>
+                
+                <h3>Statistik Nilai</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-box-label">Nilai Rata-rata</div>
+                        <div class="stat-box-value"><?php echo $rata_rata ? number_format($rata_rata, 2) : '-'; ?></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">Nilai Tertinggi</div>
+                        <div class="stat-box-value" style="color: #27ae60;"><?php echo $nilai_terisi > 0 ? number_format($nilai_tertinggi, 2) : '-'; ?></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">Nilai Terendah</div>
+                        <div class="stat-box-value" style="color: #e74c3c;"><?php echo $nilai_terisi > 0 ? number_format($nilai_terendah, 2) : '-'; ?></div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">Komponen Terisi</div>
+                        <div class="stat-box-value"><?php echo $nilai_terisi; ?> / 10</div>
+                    </div>
+                </div>
+                
+                <h3>Nilai Per Komponen</h3>
+                <table class="nilai-table">
+                    <thead>
+                        <tr>
+                            <th>Nilai 1</th>
+                            <th>Nilai 2</th>
+                            <th>Nilai 3</th>
+                            <th>Nilai 4</th>
+                            <th>Nilai 5</th>
+                            <th>Nilai 6</th>
+                            <th>Nilai 7</th>
+                            <th>Nilai 8</th>
+                            <th>Nilai 9</th>
+                            <th>Nilai 10</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="<?php echo $peserta['nilai_a'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
+                                <?php echo $peserta['nilai_a'] !== null ? number_format($peserta['nilai_a'], 2) : '-'; ?>
+                            </td>
+                            <td class="<?php echo $peserta['nilai_b'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
+                                <?php echo $peserta['nilai_b'] !== null ? number_format($peserta['nilai_b'], 2) : '-'; ?>
+                            </td>
+                            <td class="<?php echo $peserta['nilai_c'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
+                                <?php echo $peserta['nilai_c'] !== null ? number_format($peserta['nilai_c'], 2) : '-'; ?>
+                            </td>
+                            <td class="<?php echo $peserta['nilai_d'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
+                                <?php echo $peserta['nilai_d'] !== null ? number_format($peserta['nilai_d'], 2) : '-'; ?>
+                            </td>
+                            <td class="<?php echo $peserta['nilai_e'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
+                                <?php echo $peserta['nilai_e'] !== null ? number_format($peserta['nilai_e'], 2) : '-'; ?>
+                            </td>
+                            <td class="<?php echo $peserta['nilai_f'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
+                                <?php echo $peserta['nilai_f'] !== null ? number_format($peserta['nilai_f'], 2) : '-'; ?>
+                            </td>
+                            <td class="<?php echo $peserta['nilai_g'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
+                                <?php echo $peserta['nilai_g'] !== null ? number_format($peserta['nilai_g'], 2) : '-'; ?>
+                            </td>
+                            <td class="<?php echo $peserta['nilai_h'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
+                                <?php echo $peserta['nilai_h'] !== null ? number_format($peserta['nilai_h'], 2) : '-'; ?>
+                            </td>
+                            <td class="<?php echo $peserta['nilai_i'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
+                                <?php echo $peserta['nilai_i'] !== null ? number_format($peserta['nilai_i'], 2) : '-'; ?>
+                            </td>
+                            <td class="<?php echo $peserta['nilai_j'] !== null ? 'nilai-ada' : 'nilai-kosong'; ?>">
+                                <?php echo $peserta['nilai_j'] !== null ? number_format($peserta['nilai_j'], 2) : '-'; ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="note-box">
+                    <p>
+                        <strong>📝 Catatan:</strong>
+                        Peserta ini memiliki 
+                        <strong><?php echo $nilai_terisi; ?> dari 10 komponen</strong> 
+                        yang sudah dinilai.
+                        <?php if ($nilai_kosong > 0): ?>
+                            Masih ada <strong><?php echo $nilai_kosong; ?> komponen</strong> yang belum dinilai.
+                        <?php else: ?>
+                            <span style="color: #27ae60;">✓ Semua komponen sudah dinilai!</span>
+                        <?php endif; ?>
+                    </p>
+                </div>
+                
+                <button onclick="window.location.href='?<?php echo http_build_query($_GET); ?>&print=1'" class="btn btn-print">🖨️ Cetak</button>
+            </div>
         </div>
     </div>
 </body>

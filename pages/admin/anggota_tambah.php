@@ -710,284 +710,286 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
     </style>
 </head>
 <body>
-    <?php renderNavbar('➕ Tambah Anggota Baru'); ?>
+    <?php renderNavbar('Tambah Anggota Baru'); ?>
     
-    <div class="container">
-        <div class="form-container">
-            <h1>Formulir Pendaftaran Anggota Baru</h1>
-            <p class="form-subtitle">Silahkan isi semua kolom yang bertanda bintang merah (*)</p>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success">✓ <?php echo $success; ?></div>
-            <?php endif; ?>
-            
-            <form method="POST" enctype="multipart/form-data" onsubmit="return enableRantingBeforeSubmit()">
-                <!-- Bagian 1: Data Organisasi -->
-                <h3>🏢 Data Organisasi</h3>
+    <div style="display: flex; justify-content: center;">
+        <div class="container" style="width: 100%;">
+            <div class="form-container">
+                <h1>Formulir Pendaftaran Anggota Baru</h1>
+                <p class="form-subtitle">Silahkan isi semua kolom yang bertanda bintang merah (*)</p>
                 
-                <!-- Cascade Filter: Negara -> Provinsi -> Kota -> Ranting -->
-                <div class="form-row">
+                <?php if ($error): ?>
+                    <div class="alert alert-error">⚠️ <?php echo $error; ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success">✓ <?php echo $success; ?></div>
+                <?php endif; ?>
+                
+                <form method="POST" enctype="multipart/form-data" onsubmit="return enableRantingBeforeSubmit()">
+                    <!-- Bagian 1: Data Organisasi -->
+                    <h3>🏢 Data Organisasi</h3>
+                    
+                    <!-- Cascade Filter: Negara -> Provinsi -> Kota -> Ranting -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Negara</label>
+                            <?php if ($is_ranting_role && !empty($ranting_negara_id)): ?>
+                                <input type="text" value="Indonesia" readonly>
+                                <input type="hidden" name="filter_negara" id="filter_negara" value="<?php echo $ranting_negara_id; ?>">
+                            <?php else: ?>
+                                <select name="filter_negara" id="filter_negara" onchange="updateProvinsiForm()" class="select2-searchable">
+                                    <option value="">-- Pilih Negara --</option>
+                                    <?php 
+                                    $negara_result->data_seek(0);
+                                    while ($row = $negara_result->fetch_assoc()): 
+                                    ?>
+                                        <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama']); ?></option>
+                                    <?php endwhile; ?>
+                                </select>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kode Negara</label>
+                            <input type="text" id="kode_negara_display" readonly placeholder="-" value="<?php echo $ranting_data['negara_kode'] ?? ''; ?>">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Provinsi</label>
+                            <?php if ($is_ranting_role && !empty($ranting_provinsi_id)): ?>
+                                <input type="text" value="<?php echo htmlspecialchars($ranting_data['provinsi_nama'] ?? ''); ?>" readonly>
+                                <input type="hidden" name="filter_provinsi" id="filter_provinsi" value="<?php echo $ranting_provinsi_id; ?>">
+                            <?php else: ?>
+                                <select name="filter_provinsi" id="filter_provinsi" onchange="updateKotaForm()" disabled class="select2-searchable">
+                                    <option value="">-- Pilih Provinsi --</option>
+                                </select>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kode Provinsi</label>
+                            <input type="text" id="kode_provinsi_display" readonly placeholder="-" value="<?php echo $ranting_data['provinsi_kode'] ?? ''; ?>">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kota/Kabupaten</label>
+                            <?php if ($is_ranting_role && !empty($ranting_kota_id)): ?>
+                                <input type="text" value="<?php echo htmlspecialchars($ranting_data['kota_nama'] ?? ''); ?>" readonly>
+                                <input type="hidden" name="filter_kota" id="filter_kota" value="<?php echo $ranting_kota_id; ?>">
+                            <?php else: ?>
+                                <select name="filter_kota" id="filter_kota" onchange="updateRantingForm()" disabled class="select2-searchable">
+                                    <option value="">-- Pilih Kota --</option>
+                                </select>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kode Kota</label>
+                            <input type="text" id="kode_kota_display" readonly placeholder="-" value="<?php echo $ranting_kota_kode; ?>">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Unit/Ranting Saat Ini <span class="required">*</span></label>
+                            <?php if ($is_ranting_role && !empty($ranting_id)): ?>
+                                <input type="text" value="<?php echo htmlspecialchars($ranting_kode . ' - ' . $ranting_nama); ?>" readonly>
+                                <input type="hidden" name="ranting_saat_ini_id" id="ranting_saat_ini_id" value="<?php echo $ranting_id; ?>">
+                            <?php else: ?>
+                                <select name="ranting_saat_ini_id" id="ranting_saat_ini_id" required disabled onchange="updateRantingKode()" class="select2-searchable">
+                                    <option value="">-- Pilih Ranting --</option>
+                                </select>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Kode Ranting</label>
+                            <input type="text" id="kode_ranting_display" readonly placeholder="-" value="<?php echo $ranting_kode; ?>">
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
-                        <label>Negara</label>
-                        <?php if ($is_ranting_role && !empty($ranting_negara_id)): ?>
-                            <input type="text" value="Indonesia" readonly>
-                            <input type="hidden" name="filter_negara" id="filter_negara" value="<?php echo $ranting_negara_id; ?>">
-                        <?php else: ?>
-                            <select name="filter_negara" id="filter_negara" onchange="updateProvinsiForm()" class="select2-searchable">
-                                <option value="">-- Pilih Negara --</option>
-                                <?php 
-                                $negara_result->data_seek(0);
-                                while ($row = $negara_result->fetch_assoc()): 
-                                ?>
-                                    <option value="<?php echo $row['id']; ?>" data-kode="<?php echo $row['kode']; ?>"><?php echo htmlspecialchars($row['kode'] . ' - ' . $row['nama']); ?></option>
+                        <label>Unit/Ranting Awal Masuk <span class="required">*</span></label>
+                        
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="ranting_database" name="ranting_awal_pilihan" value="database" checked onchange="toggleRantingAwal()">
+                                <label for="ranting_database">Pilih dari Database</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="ranting_manual" name="ranting_awal_pilihan" value="manual" onchange="toggleRantingAwal()">
+                                <label for="ranting_manual">Input Manual</label>
+                            </div>
+                        </div>
+                        
+                        <div id="ranting_awal_select_container" class="form-group">
+                            <select name="ranting_awal_id" id="ranting_awal_id" class="select2-searchable" style="width: 100%;">
+                                <option value="">-- Pilih Unit/Ranting Awal --</option>
+                            </select>
+                            <div class="form-hint">Cari Unit/Ranting yang tersedia di database (Menampilkan semua ranting)</div>
+                        </div>
+                        
+                        <div id="ranting_awal_manual" class="conditional-field">
+                            <input type="text" name="ranting_awal_manual" placeholder="Masukkan nama Unit/Ranting">
+                            <div class="form-hint">Masukkan nama Unit/Ranting secara manual</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">                                       
+                        <div class="form-group">
+                            <label>Tingkat <span class="required">*</span></label>
+                            <select name="tingkat_id" required>
+                                <option value="">-- Pilih Tingkat --</option>
+                                <?php while ($row = $tingkatan_result->fetch_assoc()): ?>
+                                    <option value="<?php echo $row['urutan']; ?>">
+                                        <?php echo htmlspecialchars($row['nama_tingkat']); ?>
+                                    </option>
                                 <?php endwhile; ?>
                             </select>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Kode Negara</label>
-                        <input type="text" id="kode_negara_display" readonly placeholder="-" value="<?php echo $ranting_data['negara_kode'] ?? ''; ?>">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Provinsi</label>
-                        <?php if ($is_ranting_role && !empty($ranting_provinsi_id)): ?>
-                            <input type="text" value="<?php echo htmlspecialchars($ranting_data['provinsi_nama'] ?? ''); ?>" readonly>
-                            <input type="hidden" name="filter_provinsi" id="filter_provinsi" value="<?php echo $ranting_provinsi_id; ?>">
-                        <?php else: ?>
-                            <select name="filter_provinsi" id="filter_provinsi" onchange="updateKotaForm()" disabled class="select2-searchable">
-                                <option value="">-- Pilih Provinsi --</option>
-                            </select>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Kode Provinsi</label>
-                        <input type="text" id="kode_provinsi_display" readonly placeholder="-" value="<?php echo $ranting_data['provinsi_kode'] ?? ''; ?>">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Kota/Kabupaten</label>
-                        <?php if ($is_ranting_role && !empty($ranting_kota_id)): ?>
-                            <input type="text" value="<?php echo htmlspecialchars($ranting_data['kota_nama'] ?? ''); ?>" readonly>
-                            <input type="hidden" name="filter_kota" id="filter_kota" value="<?php echo $ranting_kota_id; ?>">
-                        <?php else: ?>
-                            <select name="filter_kota" id="filter_kota" onchange="updateRantingForm()" disabled class="select2-searchable">
-                                <option value="">-- Pilih Kota --</option>
-                            </select>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Kode Kota</label>
-                        <input type="text" id="kode_kota_display" readonly placeholder="-" value="<?php echo $ranting_kota_kode; ?>">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Unit/Ranting Saat Ini <span class="required">*</span></label>
-                        <?php if ($is_ranting_role && !empty($ranting_id)): ?>
-                            <input type="text" value="<?php echo htmlspecialchars($ranting_kode . ' - ' . $ranting_nama); ?>" readonly>
-                            <input type="hidden" name="ranting_saat_ini_id" id="ranting_saat_ini_id" value="<?php echo $ranting_id; ?>">
-                        <?php else: ?>
-                            <select name="ranting_saat_ini_id" id="ranting_saat_ini_id" required disabled onchange="updateRantingKode()" class="select2-searchable">
-                                <option value="">-- Pilih Ranting --</option>
-                            </select>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Kode Ranting</label>
-                        <input type="text" id="kode_ranting_display" readonly placeholder="-" value="<?php echo $ranting_kode; ?>">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>Unit/Ranting Awal Masuk <span class="required">*</span></label>
-                    
-                    <div class="radio-group">
-                        <div class="radio-option">
-                            <input type="radio" id="ranting_database" name="ranting_awal_pilihan" value="database" checked onchange="toggleRantingAwal()">
-                            <label for="ranting_database">Pilih dari Database</label>
+                            <div class="form-hint">Pilih dari 13 tingkatan resmi</div>
                         </div>
-                        <div class="radio-option">
-                            <input type="radio" id="ranting_manual" name="ranting_awal_pilihan" value="manual" onchange="toggleRantingAwal()">
-                            <label for="ranting_manual">Input Manual</label>
-                        </div>
-                    </div>
-                    
-                    <div id="ranting_awal_select_container" class="form-group">
-                        <select name="ranting_awal_id" id="ranting_awal_id" class="select2-searchable" style="width: 100%;">
-                            <option value="">-- Pilih Unit/Ranting Awal --</option>
-                        </select>
-                        <div class="form-hint">Cari Unit/Ranting yang tersedia di database (Menampilkan semua ranting)</div>
-                    </div>
-                    
-                    <div id="ranting_awal_manual" class="conditional-field">
-                        <input type="text" name="ranting_awal_manual" placeholder="Masukkan nama Unit/Ranting">
-                        <div class="form-hint">Masukkan nama Unit/Ranting secara manual</div>
-                    </div>
-                </div>
-                
-                <div class="form-row">                                       
-                    <div class="form-group">
-                        <label>Tingkat <span class="required">*</span></label>
-                        <select name="tingkat_id" required>
-                            <option value="">-- Pilih Tingkat --</option>
-                            <?php while ($row = $tingkatan_result->fetch_assoc()): ?>
-                                <option value="<?php echo $row['urutan']; ?>">
-                                    <?php echo htmlspecialchars($row['nama_tingkat']); ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                        <div class="form-hint">Pilih dari 13 tingkatan resmi</div>
-                    </div>
 
-                    <div class="form-group">
-                        <label>Jenis Anggota <span class="required">*</span></label>
-                        <select name="jenis_anggota" required>
-                            <option value="">-- Pilih Jenis Anggota --</option>
-                            <?php
-                            if ($jenis_result && $jenis_result->num_rows > 0) {
-                                $jenis_result->data_seek(0);
-                                while ($row = $jenis_result->fetch_assoc()) {
-                                    echo '<option value="' . htmlspecialchars($row['id']) . '">' . htmlspecialchars($row['nama_jenis']) . '</option>';
+                        <div class="form-group">
+                            <label>Jenis Anggota <span class="required">*</span></label>
+                            <select name="jenis_anggota" required>
+                                <option value="">-- Pilih Jenis Anggota --</option>
+                                <?php
+                                if ($jenis_result && $jenis_result->num_rows > 0) {
+                                    $jenis_result->data_seek(0);
+                                    while ($row = $jenis_result->fetch_assoc()) {
+                                        echo '<option value="' . htmlspecialchars($row['id']) . '">' . htmlspecialchars($row['nama_jenis']) . '</option>';
+                                    }
                                 }
-                            }
-                            ?>
-                        </select>
-                        <div class="form-hint">Tentukan status anggota</div>
-                    </div>                    
-                </div>
-                
-                <div class="form-row">                    
-                    <div class="form-group">
-                        <label>Tahun Bergabung <span class="required">*</span></label>
-                        <input type="number" name="tahun_bergabung" min="1900" max="2100" required placeholder="Contoh: 2024">
-                        <div class="form-hint">Tahun anggota bergabung</div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>UKT Terakhir</label>
-                        <input type="text" name="ukt_terakhir" placeholder="Format: dd/mm/yyyy atau yyyy">
-                        <div class="form-hint">Format: 15/07/2024 atau 2024</div>
-                    </div>
-                </div>                
-                
-                <hr>
-                
-                <!-- Bagian 2: Data Pribadi -->
-                <h3>📋 Data Pribadi</h3>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>No Anggota <span class="required">*</span></label>
-                        <input type="text" id="no_anggota_display" readonly style="background-color: #e0e0e0;" placeholder="Contoh lengkap : ID002001.001-2024001">
-                        <input type="hidden" name="no_anggota" id="no_anggota">
-                        <div class="form-hint">No Anggota akan otomatis dibuat setelah memilih Unit/Ranting dan Tahun Bergabung. Format mengikuti pengaturan sistem.</div>
+                                ?>
+                            </select>
+                            <div class="form-hint">Tentukan status anggota</div>
+                        </div>                    
                     </div>
                     
-                    <div class="form-group">
-                        <label>Nama Lengkap <span class="required">*</span></label>
-                        <input type="text" name="nama_lengkap" required placeholder="Masukkan nama lengkap">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Tempat Lahir <span class="required">*</span></label>
-                        <input type="text" name="tempat_lahir" required placeholder="Contoh: Jakarta">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Tanggal Lahir <span class="required">*</span></label>
-                        <input type="date" name="tanggal_lahir" required>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Jenis Kelamin <span class="required">*</span></label>
-                        <select name="jenis_kelamin" required>
-                            <option value="">-- Pilih Jenis Kelamin --</option>
-                            <option value="L">Laki-laki</option>
-                            <option value="P">Perempuan</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>No. Handphone</label>
-                        <input type="tel" name="no_handphone" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Contoh: 08xxxxxxxxxx">
-                        <div class="form-hint">Nomor telepon yang dapat dihubungi</div>
-                    </div>
-                </div>
-                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Foto Profil</label>
-                        <input type="file" name="foto" accept="image/*">
-                        <div class="form-hint">Format: JPG, PNG (Ukuran maksimal 5MB) | Nama file akan menjadi: NoAnggota_NamaLengkap.jpg</div>
-                    </div>
-                </div>
-                
-                <hr>
-                
-                
-                <!-- Bagian 3: Prestasi yang Diraih [BARU] -->
-                <h3>🏆 Prestasi yang Diraih (Opsional)</h3>
-                
-                <p class="form-hint" style="margin-bottom: 20px;">Tambahkan prestasi yang pernah diraih anggota ini. Anda dapat menambahkan lebih dari satu prestasi.</p>
-                
-                <div class="prestasi-container">
-                    <div id="prestasiList"></div>
-                    <button type="button" class="btn btn-add-prestasi" onclick="addPrestasi()">+ Tambah Prestasi</button>
-                </div>
-                
-                <!-- Template Prestasi [HIDDEN] -->
-                <div class="prestasi-item template" id="prestasiTemplate">
-                    <div class="form-row full">
+                    <div class="form-row">                    
                         <div class="form-group">
-                            <label>Nama Event</label>
-                            <input type="text" name="event_name[]" placeholder="Contoh: Kejuaraan Nasional">
+                            <label>Tahun Bergabung <span class="required">*</span></label>
+                            <input type="number" name="tahun_bergabung" min="1900" max="2100" required placeholder="Contoh: 2024">
+                            <div class="form-hint">Tahun anggota bergabung</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>UKT Terakhir</label>
+                            <input type="text" name="ukt_terakhir" placeholder="Format: dd/mm/yyyy atau yyyy">
+                            <div class="form-hint">Format: 15/07/2024 atau 2024</div>
+                        </div>
+                    </div>                
+                    
+                    <hr>
+                    
+                    <!-- Bagian 2: Data Pribadi -->
+                    <h3>📋 Data Pribadi</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>No Anggota <span class="required">*</span></label>
+                            <input type="text" id="no_anggota_display" readonly style="background-color: #e0e0e0;" placeholder="Contoh lengkap : ID002001.001-2024001">
+                            <input type="hidden" name="no_anggota" id="no_anggota">
+                            <div class="form-hint">No Anggota akan otomatis dibuat setelah memilih Unit/Ranting dan Tahun Bergabung. Format mengikuti pengaturan sistem.</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Nama Lengkap <span class="required">*</span></label>
+                            <input type="text" name="nama_lengkap" required placeholder="Masukkan nama lengkap">
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Tanggal Pelaksanaan</label>
-                            <input type="date" name="tanggal_pelaksanaan[]">
+                            <label>Tempat Lahir <span class="required">*</span></label>
+                            <input type="text" name="tempat_lahir" required placeholder="Contoh: Jakarta">
                         </div>
                         
                         <div class="form-group">
-                            <label>Penyelenggara</label>
-                            <input type="text" name="penyelenggara[]" placeholder="Contoh: KONI, Pengprov, dll">
+                            <label>Tanggal Lahir <span class="required">*</span></label>
+                            <input type="date" name="tanggal_lahir" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Kategori yang Diikuti</label>
-                            <input type="text" name="kategori[]" placeholder="Contoh: Putra -60kg">
+                            <label>Jenis Kelamin <span class="required">*</span></label>
+                            <select name="jenis_kelamin" required>
+                                <option value="">-- Pilih Jenis Kelamin --</option>
+                                <option value="L">Laki-laki</option>
+                                <option value="P">Perempuan</option>
+                            </select>
                         </div>
-                        
+
                         <div class="form-group">
-                            <label>Prestasi</label>
-                            <input type="text" name="prestasi[]" placeholder="Contoh: Juara 1, Juara 2, dll">
+                            <label>No. Handphone</label>
+                            <input type="tel" name="no_handphone" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Contoh: 08xxxxxxxxxx">
+                            <div class="form-hint">Nomor telepon yang dapat dihubungi</div>
                         </div>
                     </div>
                     
-                    <button type="button" class="btn btn-remove-prestasi" onclick="removePrestasi(this)">🗑️ Hapus Prestasi</button>
-                </div>
-                
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">💾 Simpan Data Anggota</button>
-                    <a href="anggota.php" class="btn btn-secondary">Batal</a>
-                </div>
-            </form>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Foto Profil</label>
+                            <input type="file" name="foto" accept="image/*">
+                            <div class="form-hint">Format: JPG, PNG (Ukuran maksimal 5MB) | Nama file akan menjadi: NoAnggota_NamaLengkap.jpg</div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    
+                    <!-- Bagian 3: Prestasi yang Diraih [BARU] -->
+                    <h3>🏆 Prestasi yang Diraih (Opsional)</h3>
+                    
+                    <p class="form-hint" style="margin-bottom: 20px;">Tambahkan prestasi yang pernah diraih anggota ini. Anda dapat menambahkan lebih dari satu prestasi.</p>
+                    
+                    <div class="prestasi-container">
+                        <div id="prestasiList"></div>
+                        <button type="button" class="btn btn-add-prestasi" onclick="addPrestasi()">+ Tambah Prestasi</button>
+                    </div>
+                    
+                    <!-- Template Prestasi [HIDDEN] -->
+                    <div class="prestasi-item template" id="prestasiTemplate">
+                        <div class="form-row full">
+                            <div class="form-group">
+                                <label>Nama Event</label>
+                                <input type="text" name="event_name[]" placeholder="Contoh: Kejuaraan Nasional">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Tanggal Pelaksanaan</label>
+                                <input type="date" name="tanggal_pelaksanaan[]">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Penyelenggara</label>
+                                <input type="text" name="penyelenggara[]" placeholder="Contoh: KONI, Pengprov, dll">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Kategori yang Diikuti</label>
+                                <input type="text" name="kategori[]" placeholder="Contoh: Putra -60kg">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Prestasi</label>
+                                <input type="text" name="prestasi[]" placeholder="Contoh: Juara 1, Juara 2, dll">
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn btn-remove-prestasi" onclick="removePrestasi(this)">🗑️ Hapus Prestasi</button>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">💾 Simpan Data Anggota</button>
+                        <a href="anggota.php" class="btn btn-secondary">Batal</a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     
