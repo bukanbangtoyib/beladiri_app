@@ -132,21 +132,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                 $imported = 0;
                 $skipped = 0;
                 
-                while ($row = fgetcsv($handle, 0, ';')) {
-                    $row_num++;
-                    
-                    if (empty($row[0])) {
-                        continue;
-                    }
-                    
-                    // Ambil no_anggota
-                    $no_anggota = trim($row[$no_anggota_col] ?? '');
-                    
-                    if (empty($no_anggota)) {
-                        $import_log[] = "Baris $row_num: ⚠️ No Anggota kosong - di-skip";
-                        $skipped++;
-                        continue;
-                    }
+                 // Track no_anggota seen in this import to prevent duplicates within CSV
+                 $seen_no_anggota = [];
+                 
+                 while ($row = fgetcsv($handle, 0, ';')) {
+                     $row_num++;
+                     
+                     if (empty($row[0])) {
+                         continue;
+                     }
+                     
+                     // Ambil no_anggota
+                     $no_anggota = trim($row[$no_anggota_col] ?? '');
+                     
+                     // Check for duplicate no_anggota within this CSV import
+                     if (!empty($no_anggota) && in_array($no_anggota, $seen_no_anggota)) {
+                         $import_log[] = "Baris $row_num: ⚠️ No Anggota '$no_anggota' sudah ada - dilewati";
+                         $skipped++;
+                         continue;
+                     }
+                     
+                     // Add to seen list
+                     if (!empty($no_anggota)) {
+                         $seen_no_anggota[] = $no_anggota;
+                     }
+                     
+                     if (empty($no_anggota)) {
+                         $import_log[] = "Baris $row_num: ⚠️ No Anggota kosong - di-skip";
+                         $skipped++;
+                         continue;
+                     }
                     
                     // Cari peserta di UKT ini
                     $peserta_stmt = $conn->prepare("
@@ -158,49 +173,61 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                     $peserta_stmt->execute();
                     $peserta_result = $peserta_stmt->get_result();
                     
-                    if ($peserta_result->num_rows == 0) {
-                        // AUTO-REGISTER: Cari anggota di sistem (tabel anggota)
-                        $anggota_stmt = $conn->prepare("SELECT id, tingkat_id FROM anggota WHERE no_anggota = ? LIMIT 1");
-                        $anggota_stmt->bind_param("s", $no_anggota);
-                        $anggota_stmt->execute();
-                        $anggota_res = $anggota_stmt->get_result();
-                        
-                        if ($anggota_res->num_rows > 0) {
-                            $anggota_data = $anggota_res->fetch_assoc();
-                            $anggota_id = $anggota_data['id'];
-                            $tingkat_dari_id = $anggota_data['tingkat_id'];
-                            
-                            // Hitung tingkat_ke
-                            $tingkat_ke_id = null;
-                            if ($tingkat_dari_id) {
-                                $next_t = $conn->query("SELECT id FROM tingkatan WHERE urutan = (SELECT urutan + 1 FROM tingkatan WHERE id = $tingkat_dari_id) LIMIT 1");
-                                if ($next_t->num_rows > 0) {
-                                    $tingkat_ke_id = $next_t->fetch_assoc()['id'];
-                                }
-                            }
-                            
-                            // Daftar sebagai peserta baru
-                            $ins_peserta = $conn->prepare("INSERT INTO ukt_peserta (ukt_id, anggota_id, tingkat_dari_id, tingkat_ke_id, status) VALUES (?, ?, ?, ?, 'peserta')");
-                            $ins_peserta->bind_param("iiii", $ukt_id, $anggota_id, $tingkat_dari_id, $tingkat_ke_id);
-                            
-                            if ($ins_peserta->execute()) {
-                                $peserta_id = $conn->insert_id;
-                                $import_log[] = "Baris $row_num: 🆕 Anggota '" . formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) . "' berhasil didaftarkan sebagai peserta baru";
-                            } else {
-                                $import_log[] = "Baris $row_num: ❌ Gagal mendaftarkan anggota '$no_anggota' - " . $ins_peserta->error;
-                                $skipped++;
-                                continue;
-                            }
-                        } else {
-                            $import_log[] = "Baris $row_num: ❌ No Anggota '" . formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) . "' tidak terdaftar di sistem";
-                            $skipped++;
-                            continue;
-                        }
-                    } else {
-                        $peserta_data = $peserta_result->fetch_assoc();
-                        $peserta_id = $peserta_data['id'];
-                        $anggota_id = $peserta_data['anggota_id'];
-                    }
+                     if ($peserta_result->num_rows == 0) {
+                         // AUTO-REGISTER: Cari anggota di sistem (tabel anggota)
+                         $anggota_stmt = $conn->prepare("SELECT id, tingkat_id FROM anggota WHERE no_anggota = ? LIMIT 1");
+                         $anggota_stmt->bind_param("s", $no_anggota);
+                         $anggota_stmt->execute();
+                         $anggota_res = $anggota_stmt->get_result();
+                         
+                         if ($anggota_res->num_rows > 0) {
+                             $anggota_data = $anggota_res->fetch_assoc();
+                             $anggota_id = $anggota_data['id'];
+                             $tingkat_dari_id = $anggota_data['tingkat_id'];
+                             
+                             // Hitung tingkat_ke
+                             $tingkat_ke_id = null;
+                             if ($tingkat_dari_id) {
+                                 $next_t = $conn->query("SELECT id FROM tingkatan WHERE urutan = (SELECT urutan + 1 FROM tingkatan WHERE id = $tingkat_dari_id) LIMIT 1");
+                                 if ($next_t->num_rows > 0) {
+                                     $tingkat_ke_id = $next_t->fetch_assoc()['id'];
+                                 }
+                             }
+                             
+                             // Daftar sebagai peserta baru
+                             $ins_peserta = $conn->prepare("INSERT INTO ukt_peserta (ukt_id, anggota_id, tingkat_dari_id, tingkat_ke_id, status) VALUES (?, ?, ?, ?, 'peserta')");
+                             $ins_peserta->bind_param("iiii", $ukt_id, $anggota_id, $tingkat_dari_id, $tingkat_ke_id);
+                             
+                             if ($ins_peserta->execute()) {
+                                 $peserta_id = $conn->insert_id;
+                                 $import_log[] = "Baris $row_num: 🆕 Anggota '" . formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) . "' berhasil didaftarkan sebagai peserta baru";
+                             } else {
+                                 $import_log[] = "Baris $row_num: ❌ Gagal mendaftarkan anggota '$no_anggota' - " . $ins_peserta->error;
+                                 $skipped++;
+                                 continue;
+                             }
+                         } else {
+                             $import_log[] = "Baris $row_num: ❌ No Anggota '" . formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) . "' tidak terdaftar di sistem";
+                             $skipped++;
+                             continue;
+                         }
+                     } else {
+                         // Peserta sudah ada untuk UKT ini - skip dengan notifikasi
+                         $peserta_data = $peserta_result->fetch_assoc();
+                         $peserta_id = $peserta_data['id'];
+                         $anggota_id = $peserta_data['anggota_id'];
+                         
+                         // Ambil nama anggota untuk notifikasi
+                         $anggota_nama_stmt = $conn->prepare("SELECT nama_lengkap FROM anggota WHERE id = ?");
+                         $anggota_nama_stmt->bind_param("i", $anggota_id);
+                         $anggota_nama_stmt->execute();
+                         $anggota_nama_result = $anggota_nama_stmt->get_result();
+                         $anggota_nama = $anggota_nama_result->fetch_assoc()['nama_lengkap'] ?? 'Unknown';
+                         
+                         $import_log[] = "Baris $row_num: ⚠️ No Anggota '$no_anggota' (Nama: $anggota_nama) sudah terdaftar sebagai peserta UKT ini - di-skip";
+                         $skipped++;
+                         continue;
+                     }
                     
                     // Ambil nilai A-J
                     $letters = ['a','b','c','d','e','f','g','h','i','j'];

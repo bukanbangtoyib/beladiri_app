@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                 $skipped = 0;
 
                 // Prepared statement check duplikat
-                $check_stmt = $conn->prepare("SELECT id FROM kerohanian WHERE anggota_id = ?");
+                $check_stmt = $conn->prepare("SELECT id FROM kerohanian WHERE anggota_id = ? AND tanggal_pembukaan = ?");
 
                 // Prepared statement insert
                 $insert_stmt = $conn->prepare(
@@ -181,9 +181,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                     $anggota_id   = (int)$anggota_data['id'];
                     $nama_anggota = $anggota_data['nama_lengkap'];
 
-                    // Cek duplikat: anggota sudah punya data kerohanian
-                    $check_stmt->bind_param("i", $anggota_id);
-                    $check_stmt->execute();
+                     // Cek duplikat: anggota sudah punya data kerohanian dengan tanggal pembukaan yang sama
+                     $check_stmt->bind_param("is", $anggota_id, $tanggal);
+                     $check_stmt->execute();
                     $check_result = $check_stmt->get_result();
                     if ($check_result->num_rows > 0) {
                         log_import_kerohanian($row_num, "Anggota '$nama_anggota' (ID: $anggota_id) sudah memiliki data kerohanian - dilewati", 'warning');

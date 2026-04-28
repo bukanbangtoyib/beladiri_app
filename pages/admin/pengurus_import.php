@@ -156,8 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     
                     // Ambil data dari CSV
                     $kode = strtoupper(trim($row[$kode_col] ?? ''));
-                    $nama = trim($row[$nama_col] ?? '');
-                    $ketua_nama = isset($ketua_nama_col) ? trim($row[$ketua_nama_col] ?? '') : '';
+                    $nama = ucwords(strtolower(trim($row[$nama_col] ?? '')));
+                    $ketua_nama = isset($ketua_nama_col) ? ucwords(strtolower(trim($row[$ketua_nama_col] ?? ''))) : '';
                     $sk = isset($sk_col) ? trim($row[$sk_col] ?? '') : '';
                     $mulai = isset($mulai_col) ? trim($row[$mulai_col] ?? '') : '';
                     $akhir = isset($akhir_col) ? trim($row[$akhir_col] ?? '') : '';
@@ -170,10 +170,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                         continue;
                     }
                     
-                    // Cek duplikasi
+                    // Cek duplikasi kode
                     $check = $conn->query("SELECT id FROM negara WHERE kode = '$kode'");
                     if ($check->num_rows > 0) {
                         $import_log[] = "Baris $row_num: ⚠️ Kode '$kode' sudah ada - di-skip";
+                        $skipped++;
+                        continue;
+                    }
+                    
+                    // Cek duplikasi nama
+                    $nama_check = $conn->query("SELECT id FROM negara WHERE nama = '$nama'");
+                    if ($nama_check->num_rows > 0) {
+                        $import_log[] = "Baris $row_num: ⚠️ Nama '$nama' sudah ada - di-skip";
                         $skipped++;
                         continue;
                     }
@@ -264,8 +272,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     
                     // Ambil data dari CSV
                     $negara_kode = strtoupper(trim($row[$negara_kode_col] ?? ''));
-                    $nama = trim($row[$nama_col] ?? '');
-                    $ketua_nama = isset($ketua_nama_col) ? trim($row[$ketua_nama_col] ?? '') : '';
+                    $nama = ucwords(strtolower(trim($row[$nama_col] ?? '')));
+                    $ketua_nama = isset($ketua_nama_col) ? ucwords(strtolower(trim($row[$ketua_nama_col] ?? ''))) : '';
                     $sk = isset($sk_col) ? trim($row[$sk_col] ?? '') : '';
                     $mulai = isset($mulai_col) ? trim($row[$mulai_col] ?? '') : '';
                     $akhir = isset($akhir_col) ? trim($row[$akhir_col] ?? '') : '';
@@ -287,6 +295,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     }
                     $negara = $negara_result->fetch_assoc();
                     $negara_id = $negara['id'];
+                    
+                    // Cek duplikasi nama provinsi di negara yang sama
+                    $nama_check = $conn->query("SELECT id FROM provinsi WHERE nama = '$nama' AND negara_id = $negara_id");
+                    if ($nama_check->num_rows > 0) {
+                        $import_log[] = "Baris $row_num: ⚠️ Nama provinsi '$nama' sudah ada di negara '$negara_kode' - di-skip";
+                        $skipped++;
+                        continue;
+                    }
                     
                     // Parse tanggal
                     $mulai_parsed = parse_date($mulai);
@@ -382,8 +398,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     // Ambil data dari CSV
                     $negara_kode = strtoupper(trim($row[$negara_kode_col] ?? ''));
                     $provinsi_kode = strtoupper(trim($row[$provinsi_kode_col] ?? ''));
-                    $nama = trim($row[$nama_col] ?? '');
-                    $ketua_nama = isset($ketua_nama_col) ? trim($row[$ketua_nama_col] ?? '') : '';
+                    $nama = ucwords(strtolower(trim($row[$nama_col] ?? '')));
+                    $ketua_nama = isset($ketua_nama_col) ? ucwords(strtolower(trim($row[$ketua_nama_col] ?? ''))) : '';
                     $sk = isset($sk_col) ? trim($row[$sk_col] ?? '') : '';
                     $mulai = isset($mulai_col) ? trim($row[$mulai_col] ?? '') : '';
                     $akhir = isset($akhir_col) ? trim($row[$akhir_col] ?? '') : '';
@@ -396,7 +412,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                         continue;
                     }
                     
-                    // Cari provinsi_id dari negara_kode dan provinsi_kode
+                     // Cari provinsi_id dari negara_kode dan provinsi_kode
                     $provinsi_result = $conn->query("
                         SELECT p.id, p.negara_id 
                         FROM provinsi p 
@@ -412,6 +428,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     $provinsi_id = $provinsi['id'];
                     $negara_id = $provinsi['negara_id'];
                     
+                    // Cek duplikasi nama kota di provinsi yang sama
+                    $nama_check = $conn->query("SELECT id FROM kota WHERE nama = '$nama' AND provinsi_id = $provinsi_id");
+                    if ($nama_check->num_rows > 0) {
+                        $import_log[] = "Baris $row_num: ⚠️ Nama kota '$nama' sudah ada di provinsi '$provinsi_kode' - di-skip";
+                        $skipped++;
+                        continue;
+                    }
+                    
                     // Parse tanggal
                     $mulai_parsed = parse_date($mulai);
                     $akhir_parsed = parse_date($akhir);
@@ -423,7 +447,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     
                     // Insert kota
                     $insert_sql = "INSERT INTO kota (negara_id, provinsi_id, kode, nama, ketua_nama, sk_kepengurusan, periode_mulai, periode_akhir, alamat_sekretariat, aktif) 
-                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
                     $insert_stmt = $conn->prepare($insert_sql);
                     $insert_stmt->bind_param("iisssssss", $negara_id, $provinsi_id, $kode, $nama, $ketua_nama, $sk, $mulai_parsed, $akhir_parsed, $alamat);
                     

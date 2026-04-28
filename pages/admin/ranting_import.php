@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                     $negara_kode = isset($negara_kode_col) ? strtoupper(trim($row[$negara_kode_col] ?? '')) : '';
                     $provinsi_kode = isset($provinsi_kode_col) ? strtoupper(trim($row[$provinsi_kode_col] ?? '')) : '';
                     $kota_kode = isset($kota_kode_col) ? strtoupper(trim($row[$kota_kode_col] ?? '')) : '';
-                    $nama_ranting = isset($nama_ranting_col) ? trim($row[$nama_ranting_col] ?? '') : '';
+                    $nama_ranting = isset($nama_ranting_col) ? ucwords(strtolower(trim($row[$nama_ranting_col] ?? ''))) : '';
                     $jenis = isset($jenis_col) ? trim($row[$jenis_col] ?? '') : '';
                     $tanggal_sk = isset($tanggal_sk_col) ? trim($row[$tanggal_sk_col] ?? '') : '';
                     $no_sk = isset($no_sk_col) ? trim($row[$no_sk_col] ?? '') : '';

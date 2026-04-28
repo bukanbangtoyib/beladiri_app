@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_excel'])) {
                     $provinsi_kode = isset($provinsi_kode_col) ? strtoupper(trim($row[$provinsi_kode_col] ?? '')) : '';
                     $kota_kode = isset($kota_kode_col) ? strtoupper(trim($row[$kota_kode_col] ?? '')) : '';
                     $ranting_kode = isset($ranting_kode_col) ? strtoupper(trim($row[$ranting_kode_col] ?? '')) : '';
-                    $nama_lengkap = isset($nama_lengkap_col) ? trim($row[$nama_lengkap_col] ?? '') : '';
+                    $nama_lengkap = isset($nama_lengkap_col) ? ucwords(strtolower(trim($row[$nama_lengkap_col] ?? ''))) : '';
                     $tempat_lahir = isset($tempat_lahir_col) ? trim($row[$tempat_lahir_col] ?? '') : '';
                     $tanggal_lahir_raw = isset($tanggal_lahir_col) ? trim($row[$tanggal_lahir_col] ?? '') : '';
                     $jenis_kelamin = isset($jenis_kelamin_col) ? strtoupper(trim($row[$jenis_kelamin_col] ?? '')) : '';
@@ -268,7 +268,7 @@ if (!empty($tingkat_urutan)) {
                     // Insert data
                     // Set ranting_awal_id same as ranting_saat_ini_id for import
                     $ranting_awal_id = $ranting_id;
-$insert_stmt->bind_param("sssssssiissss", 
+                    $insert_stmt->bind_param("sssssssiissss", 
                          $no_anggota,           // s
                          $nama_lengkap,         // s
                          $tempat_lahir,         // s
