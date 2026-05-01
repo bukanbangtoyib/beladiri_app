@@ -62,8 +62,8 @@ switch ($action) {
             
             // Auto-create user for Provinsi
             createOrUpdateUser($conn, [
-                'username' => $nama,
-                'password' => $nama . '1955',
+                'username' => formatPwd($nama),
+                'password' => formatPwd($nama) . '1955',
                 'nama_lengkap' => "Pengurus Provinsi $nama",
                 'role' => 'pengprov',
                 'pengurus_id' => $provinsi_id
@@ -89,8 +89,8 @@ switch ($action) {
         if ($conn->query("UPDATE provinsi SET nama = '$nama', negara_id = $id_negara, kode = '$kode' WHERE id = $id")) {
             // Auto-update user for Provinsi
             createOrUpdateUser($conn, [
-                'username' => $nama,
-                'password' => $nama . '1955',
+                'username' => formatPwd($nama),
+                'password' => formatPwd($nama) . '1955',
                 'nama_lengkap' => "Pengurus Provinsi $nama",
                 'role' => 'pengprov',
                 'pengurus_id' => $id

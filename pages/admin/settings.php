@@ -798,7 +798,7 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                                 <th>No</th>
                                 <th>Nama Tingkat</th>
                                 <th>Singkatan</th>
-                                <th style="display: none;">Urutan</th>
+                                <th>Urutan</th>
                                 <th>Waktu UKT (Bulan)</th>
                                 <th>Jumlah Anggota</th>
                                 <th>Aksi</th>
@@ -810,7 +810,7 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                                 <td><?php echo $i + 1; ?></td>
                                 <td><strong><?php echo htmlspecialchars($tingkat['nama_tingkat']); ?></strong></td>
                                 <td><?php echo htmlspecialchars($tingkat['singkatan'] ?? '-'); ?></td>
-                                <td style="display: none;"><?php echo $tingkat['urutan']; ?></td>
+                                <td><?php echo $tingkat['urutan']; ?></td>
                                 <td><?php echo $tingkat['waktu_ukt'] ?? '0'; ?> bulan</td>
                                 <td>
                                     <?php if ($tingkat['jumlah_anggota'] > 0): ?>
@@ -1295,7 +1295,7 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                     <input type="number" name="waktu_ukt" id="tingkatan_waktu" placeholder="Contoh: 6, 12, 24" min="0">
                     <div class="form-hint">Interval bulan untuk kelayakan UKT berikutnya.</div>
                 </div>
-                <div class="form-group" style="display: none;">
+                <div class="form-group">
                     <label>Urutan</label>
                     <input type="number" name="urutan" id="tingkatan_urutan" value="<?php echo $next_urutan; ?>" required>
                 </div>

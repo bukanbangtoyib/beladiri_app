@@ -355,7 +355,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         'password' => formatPwd($nama_lengkap) . $pwd_tgl,
                         'nama_lengkap' => $nama_lengkap,
                         'role' => 'anggota',
-                        'no_anggota' => $no_anggota
+                        'no_anggota' => $no_anggota,
+                        'anggota_id' => $anggota_id
                     ]);
                     
                     $success = "Anggota berhasil ditambahkan!";

@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'supe
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../helpers/user_auto_creation.php';
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -286,6 +287,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_excel'])) {
                      );
                     
                     if ($insert_stmt->execute()) {
+                        $new_anggota_id = $conn->insert_id;
+                        
+                        // Auto-create user for Anggota
+                        $pwd_tgl = (!empty($tanggal_lahir) && $tanggal_lahir !== '0000-00-00') ? date('dmY', strtotime($tanggal_lahir)) : '';
+                        createOrUpdateUser($conn, [
+                            'username' => $no_anggota,
+                            'password' => formatPwd($nama_lengkap) . $pwd_tgl,
+                            'nama_lengkap' => $nama_lengkap,
+                            'role' => 'anggota',
+                            'no_anggota' => $no_anggota,
+                            'anggota_id' => $new_anggota_id
+                        ]);
+                        
                         log_import_anggota($row_num, "'$nama_lengkap' berhasil ditambahkan (No: $no_anggota)", 'success');
                         $imported++;
                     } else {

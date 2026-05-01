@@ -78,8 +78,8 @@ switch ($action) {
             
             // Auto-create user for Unit/Ranting
             createOrUpdateUser($conn, [
-                'username' => $nama,
-                'password' => $nama . '1955',
+                'username' => formatPwd($nama),
+                'password' => formatPwd($nama) . '1955',
                 'nama_lengkap' => "Pengurus Unit/Ranting $nama",
                 'role' => 'unit',
                 'ranting_id' => $ranting_id
@@ -126,8 +126,8 @@ switch ($action) {
         if ($conn->query($sql)) {
             // Auto-update user for Unit/Ranting
             createOrUpdateUser($conn, [
-                'username' => $nama,
-                'password' => $nama . '1955',
+                'username' => formatPwd($nama),
+                'password' => formatPwd($nama) . '1955',
                 'nama_lengkap' => "Pengurus Unit/Ranting $nama",
                 'role' => 'unit',
                 'ranting_id' => $id

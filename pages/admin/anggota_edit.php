@@ -393,7 +393,8 @@ $sql = "UPDATE anggota SET
                     'password' => formatPwd($nama_lengkap) . $pwd_tgl,
                     'nama_lengkap' => $nama_lengkap,
                     'role' => 'anggota',
-                    'no_anggota' => $no_anggota
+                    'no_anggota' => $no_anggota,
+                    'anggota_id' => $id
                 ]);
                 
                 $success = "Data anggota berhasil diupdate!";
