@@ -145,6 +145,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                 }
                 
+                // Auto-create user for Unit/Ranting
+                include_once '../../helpers/user_auto_creation.php';
+                createOrUpdateUser($conn, [
+                    'username' => $nama_ranting,
+                    'password' => formatPwd($nama_ranting) . '1955',
+                    'nama_lengkap' => "Pengurus Unit/Ranting $nama_ranting",
+                    'role' => $jenis, // 'unit' or 'ranting'
+                    'ranting_id' => $ranting_id_baru
+                ]);
+                
                 header("refresh:2;url=ranting_detail.php?id=$ranting_id_baru");
             } else {
                 $error = "Error: " . $stmt->error;

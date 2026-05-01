@@ -231,6 +231,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                     if ($insert_stmt->execute()) {
                         log_import($row_num, "'$nama_ranting' berhasil ditambahkan (kode: $kode_ranting, kota_id: $kota_id)", 'success');
                         $imported++;
+                        $new_id = $conn->insert_id;
+                        include_once '../../helpers/user_auto_creation.php';
+                        createOrUpdateUser($conn, [
+                            'username' => $nama_ranting,
+                            'password' => formatPwd($nama_ranting) . '1955',
+                            'nama_lengkap' => "Pengurus Unit/Ranting $nama_ranting",
+                            'role' => $jenis,
+                            'ranting_id' => $new_id
+                        ]);
                     } else {
                         log_import($row_num, "Error insert - " . $insert_stmt->error, 'error');
                         $skipped++;

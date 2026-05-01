@@ -74,6 +74,23 @@ function parse_date($date_str) {
     return null;
 }
 
+// Helper function to sync user after import
+function syncUserAfterImport($conn, $nama, $id, $active_tab) {
+    include_once '../../helpers/user_auto_creation.php';
+    $role_map = ['negara' => 'negara', 'provinsi' => 'pengprov', 'kota' => 'pengkot'];
+    $label_map = ['negara' => 'Negara', 'provinsi' => 'Provinsi', 'kota' => 'Kota'];
+    
+    if (isset($role_map[$active_tab])) {
+        createOrUpdateUser($conn, [
+            'username' => $nama,
+            'password' => formatPwd($nama) . '1955',
+            'nama_lengkap' => "Pengurus " . $label_map[$active_tab] . " $nama",
+            'role' => $role_map[$active_tab],
+            'pengurus_id' => $id
+        ]);
+    }
+}
+
 // Handle download template
 if (isset($_GET['download'])) {
     $template = $_GET['download'];
@@ -202,6 +219,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                         continue;
                     }
                     
+                    $new_id = $conn->insert_id;
+                    syncUserAfterImport($conn, $nama, $new_id, $active_tab);
+                    
                     $import_log[] = "Baris $row_num: ✅ '$nama' ($kode) berhasil ditambahkan";
                     $imported++;
                     $insert_stmt->close();
@@ -324,6 +344,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                         $skipped++;
                         continue;
                     }
+                    
+                    $new_id = $conn->insert_id;
+                    syncUserAfterImport($conn, $nama, $new_id, $active_tab);
                     
                     $import_log[] = "Baris $row_num: ✅ '$nama' ($negara_kode-$kode) berhasil ditambahkan (kode otomatis)";
                     $imported++;
@@ -456,6 +479,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                         $skipped++;
                         continue;
                     }
+                    
+                    $new_id = $conn->insert_id;
+                    syncUserAfterImport($conn, $nama, $new_id, $active_tab);
                     
                     $import_log[] = "Baris $row_num: ✅ '$nama' ($negara_kode-$provinsi_kode-$kode) berhasil ditambahkan (kode otomatis)";
                     $imported++;

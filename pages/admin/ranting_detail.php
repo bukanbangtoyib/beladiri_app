@@ -194,6 +194,142 @@ function get_revision_number($filename) {
     }
     return 0;
 }
+
+// Handle SK upload
+$upload_error = '';
+$upload_success = '';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['sk_file'])) {
+    // Permission check for upload (calculated later but we need it here)
+    $can_upload = false;
+    $user_role = $_SESSION['role'] ?? '';
+    $user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+    
+    if (in_array($user_role, ['admin', 'superadmin'])) {
+        $can_upload = true;
+    } elseif ($user_role === 'pengkot') {
+        $can_upload = ($ranting['kota_id'] ?? 0) == $user_pengurus_id;
+    } elseif (($user_role === 'ranting' || $user_role === 'unit') && isset($_SESSION['ranting_id']) && $_SESSION['ranting_id'] == $id) {
+        $can_upload = true;
+    }
+
+    if (!$can_upload) {
+        $upload_error = "Akses ditolak! Anda tidak memiliki izin untuk mengupload SK.";
+    } else {
+        $file = $_FILES['sk_file'];
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $upload_error = "Error upload file!";
+        } else {
+            $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if ($file_ext != 'pdf') {
+                $upload_error = "Hanya file PDF yang diperbolehkan!";
+            } elseif ($file['size'] > 5242880) { // 5MB
+                $upload_error = "Ukuran file maksimal 5MB!";
+            } else {
+                $upload_dir = '../../uploads/sk_pembentukan/';
+                if (!is_dir($upload_dir)) {
+                    mkdir($upload_dir, 0755, true);
+                }
+                
+                $ranting_clean = preg_replace("/[^a-z0-9 -]/i", "_", $ranting['nama_ranting']);
+                $ranting_clean = str_replace(" ", "_", $ranting_clean);
+                $kota_clean = preg_replace("/[^a-z0-9 -]/i", "_", $ranting['nama_kota'] ?? 'Unknown');
+                $kota_clean = str_replace(" ", "_", $kota_clean);
+                
+                $pattern = 'SK-' . $ranting_clean . '-' . $kota_clean . '-';
+                $max_revision = 0;
+                
+                if (is_dir($upload_dir)) {
+                    $files = scandir($upload_dir);
+                    foreach ($files as $f) {
+                        if (strpos($f, $pattern) === 0) {
+                            $rev = get_revision_number($f);
+                            if ($rev > $max_revision) $max_revision = $rev;
+                        }
+                    }
+                }
+                
+                $next_revision = $max_revision + 1;
+                $file_name = $pattern . str_pad($next_revision, 2, '0', STR_PAD_LEFT) . '.pdf';
+                $file_path = $upload_dir . $file_name;
+                
+                if (move_uploaded_file($file['tmp_name'], $file_path)) {
+                    $upload_success = "SK berhasil diupload! (Revisi " . str_pad($next_revision, 2, '0', STR_PAD_LEFT) . ")";
+                    // Refresh file list
+                    $sk_files = [];
+                    if (is_dir($upload_dir)) {
+                        $files = scandir($upload_dir);
+                        foreach ($files as $f) {
+                            if (strpos($f, 'SK-') === 0) $sk_files[] = $f;
+                        }
+                    }
+                    rsort($sk_files);
+                    if (count($sk_files) > 0) $sk_file = $sk_files[0];
+                } else {
+                    $upload_error = "Gagal menyimpan file!";
+                }
+            }
+        }
+    }
+}
+
+// Handle Reset Password
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type']) && $_POST['action_type'] == 'reset_to_default') {
+    $target_user_id = (int)($_POST['user_id'] ?? 0);
+    
+    $check = $conn->query("SELECT u.id, u.username, u.nama_lengkap, u.role, u.no_anggota, a.tanggal_lahir 
+                           FROM users u 
+                           LEFT JOIN anggota a ON u.no_anggota = a.no_anggota 
+                           WHERE u.id = $target_user_id");
+    
+    if ($check->num_rows > 0) {
+        $target_user = $check->fetch_assoc();
+        
+        $is_allowed = false;
+        if (in_array($_SESSION['role'], ['admin', 'superadmin'])) {
+            $is_allowed = true;
+        } elseif (in_array($_SESSION['role'], ['unit', 'ranting', 'pengkot'])) {
+            if (in_array($_SESSION['role'], ['unit', 'ranting'])) {
+                $anggota_check = $conn->query("SELECT ranting_saat_ini_id FROM anggota WHERE no_anggota = '" . $target_user['no_anggota'] . "'")->fetch_assoc();
+                if ($anggota_check && $anggota_check['ranting_saat_ini_id'] == $_SESSION['ranting_id']) $is_allowed = true;
+            } elseif ($_SESSION['role'] == 'pengkot') {
+                $anggota_check = $conn->query("SELECT r.kota_id FROM anggota a JOIN ranting r ON a.ranting_saat_ini_id = r.id WHERE a.no_anggota = '" . $target_user['no_anggota'] . "'")->fetch_assoc();
+                if ($anggota_check && $anggota_check['kota_id'] == $_SESSION['pengurus_id']) $is_allowed = true;
+            }
+        }
+        
+        if ($is_allowed) {
+            $username = $target_user['username'];
+            $role = $target_user['role'];
+            $nama_lengkap = $target_user['nama_lengkap'];
+            
+            include_once '../../helpers/user_auto_creation.php';
+            
+            $password_default = '';
+            if ($role === 'anggota') {
+                $tgl = (!empty($target_user['tanggal_lahir']) && $target_user['tanggal_lahir'] !== '0000-00-00') ? date('dmY', strtotime($target_user['tanggal_lahir'])) : '';
+                $password_default = formatPwd($nama_lengkap) . $tgl;
+            }
+            
+            if ($password_default !== '') {
+                $hashed = password_hash($password_default, PASSWORD_BCRYPT);
+                $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+                $stmt->bind_param("si", $hashed, $target_user_id);
+                if ($stmt->execute()) {
+                    $upload_success = "Password anggota " . htmlspecialchars($username) . " berhasil direset ke default!";
+                } else {
+                    $upload_error = "Gagal reset password: " . $stmt->error;
+                }
+            } else {
+                $upload_error = "Role ini tidak memiliki aturan password default.";
+            }
+        } else {
+            $upload_error = "Akses ditolak! Anda tidak memiliki izin untuk mereset password user ini.";
+        }
+    } else {
+        $upload_error = "User tidak ditemukan.";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -428,6 +564,17 @@ function get_revision_number($filename) {
     
     <div style="display: flex; justify-content: center;">
         <div class="container" style="width: 100%;">
+            <?php if ($upload_error): ?>
+                <div style="background: #fff5f5; color: #c00; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #dc3545;">
+                    ⚠️ <?php echo $upload_error; ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if ($upload_success): ?>
+                <div style="background: #f0fdf4; color: #060; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #28a745;">
+                    ✅ <?php echo $upload_success; ?>
+                </div>
+            <?php endif; ?>
             <!-- Header Card -->
             <div class="header-card">
                 <div class="header-info">
@@ -541,6 +688,22 @@ function get_revision_number($filename) {
             <!-- SK PEMBENTUKAN SECTION - HANYA SK TERAKHIR -->
             <div class="info-card">
                 <h3>📄 SK Pembentukan</h3>
+                
+                <?php if ($can_edit): ?>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 2px dashed #667eea; margin-bottom: 20px;">
+                    <form method="POST" enctype="multipart/form-data">
+                        <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #333;">Upload SK Baru (PDF)</label>
+                        <input type="file" name="sk_file" accept=".pdf" required style="display: block; margin-bottom: 15px;">
+                        <div style="font-size: 12px; color: #999; margin-bottom: 15px;">
+                            Format: PDF | Ukuran maksimal: 5MB<br>
+                            Setiap upload baru akan otomatis menambah nomor revisi
+                        </div>
+                        <button type="submit" class="btn btn-download">
+                            <i class="fas fa-upload"></i> Upload SK
+                        </button>
+                    </form>
+                </div>
+                <?php endif; ?>
                 
                 <div class="sk-section">
                     <?php if ($sk_file): 
@@ -700,7 +863,8 @@ function get_revision_number($filename) {
                                 <th style="width: 200px;">No Anggota</th>
                                 <th>Nama Anggota</th>
                                 <th style="width: 125px;">Tingkat</th>
-                                <th style="width: 200px; text-align: center;">Status</th>
+                                <th style="width: 150px; text-align: center;">Status</th>
+                                <th style="width: 100px; text-align: center;">Reset</th>
                             </tr>
                         </thead>
                         <tbody id="membersTableBody">
@@ -835,9 +999,10 @@ function get_revision_number($filename) {
                     $has_is_active = $check_column->num_rows > 0;
                     
                     $members_sql = "SELECT a.id, a.no_anggota, a.nama_lengkap, a.tingkat_id, 
-                                        t.nama_tingkat" . ($has_is_active ? ", a.is_active" : ", 1 as is_active") . "
+                                        t.nama_tingkat, u.id as user_id, u.username as username" . ($has_is_active ? ", a.is_active" : ", 1 as is_active") . "
                                     FROM anggota a
                                     LEFT JOIN tingkatan t ON a.tingkat_id = t.urutan
+                                    LEFT JOIN users u ON a.no_anggota = u.no_anggota AND u.role = 'anggota'
                                     WHERE a.ranting_saat_ini_id = $id
                                     ORDER BY a.nama_lengkap";
                     $members_result = $conn->query($members_sql);
@@ -852,6 +1017,7 @@ function get_revision_number($filename) {
                 ?>;
                 
                 const ratingId = <?php echo $id; ?>;
+                const canReset = <?php echo ($can_edit) ? 'true' : 'false'; ?>;
                 
                 // Initialize table
                 function renderTable() {
@@ -890,6 +1056,17 @@ function get_revision_number($filename) {
                                     ${isActive ? '✓ Aktif' : '✗ Non Aktif'}
                                 </span>
                                 <span class="saving-status" id="saving-${member.id}"></span>
+                            </td>
+                            <td style="text-align: center;">
+                                ${canReset && member.user_id ? `
+                                <form method="POST" onsubmit="return confirm('Reset password akun ${member.username} ke default?')">
+                                    <input type="hidden" name="action_type" value="reset_to_default">
+                                    <input type="hidden" name="user_id" value="${member.user_id}">
+                                    <button type="submit" class="btn-detail" style="background: #f1c40f; color: #333; padding: 4px 8px;">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                </form>
+                                ` : '-'}
                             </td>
                         `;
                         

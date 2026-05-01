@@ -195,6 +195,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } else {
                 $success .= " | Data unit/ranting juga berhasil diupdate!";
             }
+            // Sync user account for Unit/Ranting
+            include_once '../../helpers/user_auto_creation.php';
+            createOrUpdateUser($conn, [
+                'username' => $nama_ranting,
+                'password' => formatPwd($nama_ranting) . '1955',
+                'nama_lengkap' => "Pengurus Unit/Ranting $nama_ranting",
+                'role' => $jenis, // 'unit' or 'ranting'
+                'ranting_id' => $id
+            ]);
+
             header("refresh:2;url=ranting_detail.php?id=$id");
         } else {
             $error = "Error: " . $stmt->error;

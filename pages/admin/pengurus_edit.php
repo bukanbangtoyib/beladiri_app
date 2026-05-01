@@ -151,6 +151,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     if ($stmt->execute()) {
+        // Sync user account
+        include_once '../../helpers/user_auto_creation.php';
+        $user_role = '';
+        if ($jenis == 'pusat') $user_role = 'negara';
+        elseif ($jenis == 'provinsi') $user_role = 'pengprov';
+        elseif ($jenis == 'kota') $user_role = 'pengkot';
+
+        if ($user_role) {
+            createOrUpdateUser($conn, [
+                'username' => $nama,
+                'password' => formatPwd($nama) . '1955',
+                'nama_lengkap' => "Pengurus $label_jenis $nama",
+                'role' => $user_role,
+                'pengurus_id' => $id
+            ]);
+        }
+
         $success = "Data berhasil diupdate!";
         header("refresh:2;url=pengurus_list.php?jenis=$jenis");
     } else {

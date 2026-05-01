@@ -182,6 +182,32 @@ if (empty($final_kode) && $jenis == 'kota') {
         }
         
         if ($success) {
+            // Auto-create user based on type
+            include_once '../../helpers/user_auto_creation.php';
+            $user_role = '';
+            $pengurus_id = 0;
+            
+            if ($jenis == 'pusat') {
+                $user_role = 'negara';
+                $pengurus_id = $conn->insert_id;
+            } elseif ($jenis == 'provinsi') {
+                $user_role = 'pengprov';
+                $pengurus_id = $conn->insert_id;
+            } elseif ($jenis == 'kota') {
+                $user_role = 'pengkot';
+                $pengurus_id = $conn->insert_id;
+            }
+
+            if ($user_role && $pengurus_id) {
+                createOrUpdateUser($conn, [
+                    'username' => $nama,
+                    'password' => formatPwd($nama) . '1955',
+                    'nama_lengkap' => "Pengurus $label_jenis $nama",
+                    'role' => $user_role,
+                    'pengurus_id' => $pengurus_id
+                ]);
+            }
+            
             header("refresh:2;url=pengurus_list.php?jenis=$jenis");
         }
     }

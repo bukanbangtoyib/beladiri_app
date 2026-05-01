@@ -78,7 +78,7 @@ switch ($action) {
             
             // Auto-create user for Unit/Ranting
             createOrUpdateUser($conn, [
-                'username' => formatPwd($nama),
+                'username' => $nama,
                 'password' => formatPwd($nama) . '1955',
                 'nama_lengkap' => "Pengurus Unit/Ranting $nama",
                 'role' => 'unit',
@@ -126,40 +126,8 @@ switch ($action) {
         if ($conn->query($sql)) {
             // Auto-update user for Unit/Ranting
             createOrUpdateUser($conn, [
-                'username' => formatPwd($nama),
-                'password' => formatPwd($nama) . '1955',
-                'nama_lengkap' => "Pengurus Unit/Ranting $nama",
-                'role' => 'unit',
-                'ranting_id' => $id
-            ]);
-            
-            echo json_encode(['success' => true, 'message' => 'Unit/Ranting berhasil diperbarui!']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Gagal memperbarui unit/ranting: ' . $conn->error]);
-        }
-        break;
-        
-        if (empty($id_kota)) {
-            echo json_encode(['success' => false, 'message' => 'Kota harus dipilih!']);
-            exit();
-        }
-        
-        if (empty($nama)) {
-            echo json_encode(['success' => false, 'message' => 'Nama unit/ranting tidak boleh kosong!']);
-            exit();
-        }
-        
-        // Get current urutan for code preservation
-        $current = $conn->query("SELECT urutan FROM ranting WHERE jenis = 'unit' AND id = $id")->fetch_assoc();
-        $urutan = $current['urutan'];
-        $kode = generateRantingCode($conn, $urutan);
-        
-        $sql = "UPDATE ranting SET id_kota = $id_kota, kode = '$kode', nama = '$nama' WHERE id = $id";
-        if ($conn->query($sql)) {
-            // Auto-update user for Unit/Ranting
-            createOrUpdateUser($conn, [
                 'username' => $nama,
-                'password' => $nama . '1955',
+                'password' => formatPwd($nama) . '1955',
                 'nama_lengkap' => "Pengurus Unit/Ranting $nama",
                 'role' => 'unit',
                 'ranting_id' => $id

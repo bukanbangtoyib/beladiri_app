@@ -1,0 +1,664 @@
+[2026-05-01 05:54:43] Role: negara, Username: testnegara21777607683, AnggotaID: , PengurusID: 18
+Action: INSERT, Success: YES
+[2026-05-01 08:51:38] Role: negara, Username: koreautara, AnggotaID: , PengurusID: 19
+Action: INSERT, Success: YES
+[2026-05-01 08:53:44] Role: pengprov, Username: banten, AnggotaID: , PengurusID: 121
+Action: INSERT, Success: YES
+[2026-05-01 09:58:18] Role: negara, Username: Indonesia, AnggotaID: , PengurusID: 13
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:18] Role: negara, Username: Malaysia, AnggotaID: , PengurusID: 14
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:18] Role: negara, Username: Jepang, AnggotaID: , PengurusID: 15
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:18] Role: negara, Username: Australia, AnggotaID: , PengurusID: 16
+Action: INSERT, Success: YES
+[2026-05-01 09:58:19] Role: negara, Username: Singapura, AnggotaID: , PengurusID: 17
+Action: INSERT, Success: YES
+[2026-05-01 09:58:19] Role: negara, Username: Korea Utara, AnggotaID: , PengurusID: 19
+Action: INSERT, Success: YES
+[2026-05-01 09:58:19] Role: pengprov, Username: Provinsi DKI Jakarta, AnggotaID: , PengurusID: 110
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:19] Role: pengprov, Username: Provinsi Jawa Barat, AnggotaID: , PengurusID: 111
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:19] Role: pengprov, Username: Provinsi Jawa Timuran, AnggotaID: , PengurusID: 112
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:19] Role: pengprov, Username: Prefektur Tokyo, AnggotaID: , PengurusID: 113
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:20] Role: pengprov, Username: Prefektur Osaka, AnggotaID: , PengurusID: 114
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:20] Role: pengprov, Username: Prefektur Hokkaido, AnggotaID: , PengurusID: 115
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:20] Role: pengprov, Username: Selangor, AnggotaID: , PengurusID: 116
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:20] Role: pengprov, Username: Pulau Pinang, AnggotaID: , PengurusID: 117
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:20] Role: pengprov, Username: Johor, AnggotaID: , PengurusID: 118
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:20] Role: pengprov, Username: Queensland, AnggotaID: , PengurusID: 119
+Action: INSERT, Success: YES
+[2026-05-01 09:58:20] Role: pengprov, Username: North West, AnggotaID: , PengurusID: 120
+Action: INSERT, Success: YES
+[2026-05-01 09:58:20] Role: pengprov, Username: Banten, AnggotaID: , PengurusID: 121
+Action: INSERT, Success: YES
+[2026-05-01 09:58:21] Role: pengkot, Username: Kota Jakarta Pusat, AnggotaID: , PengurusID: 96
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:21] Role: pengkot, Username: Kota Jakarta Selatan, AnggotaID: , PengurusID: 97
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:21] Role: pengkot, Username: Kota Jakarta Timur, AnggotaID: , PengurusID: 98
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:21] Role: pengkot, Username: Kota Bandung, AnggotaID: , PengurusID: 99
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:21] Role: pengkot, Username: Kota Cimahi, AnggotaID: , PengurusID: 100
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:21] Role: pengkot, Username: Kota Bogor, AnggotaID: , PengurusID: 101
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:21] Role: pengkot, Username: Kota Surabaya, AnggotaID: , PengurusID: 102
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:22] Role: pengkot, Username: Kota Malang, AnggotaID: , PengurusID: 103
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:22] Role: pengkot, Username: Kota Kediri, AnggotaID: , PengurusID: 104
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:22] Role: pengkot, Username: Kota Shinjuku, AnggotaID: , PengurusID: 105
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:22] Role: pengkot, Username: Kota Shibuya, AnggotaID: , PengurusID: 106
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:22] Role: pengkot, Username: Kota Minato, AnggotaID: , PengurusID: 107
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:22] Role: pengkot, Username: Kota Osaka, AnggotaID: , PengurusID: 108
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:23] Role: pengkot, Username: Kota Sakai, AnggotaID: , PengurusID: 109
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:23] Role: pengkot, Username: Kota Higashiosaka, AnggotaID: , PengurusID: 110
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:23] Role: pengkot, Username: Kota Sapporo, AnggotaID: , PengurusID: 111
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:23] Role: pengkot, Username: Kota Asahikawa, AnggotaID: , PengurusID: 112
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:23] Role: pengkot, Username: Kota Hakodate, AnggotaID: , PengurusID: 113
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:23] Role: pengkot, Username: Kota Shah Alam, AnggotaID: , PengurusID: 114
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:23] Role: pengkot, Username: Kota Petaling Jaya, AnggotaID: , PengurusID: 115
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:24] Role: pengkot, Username: Kota Subang Jaya, AnggotaID: , PengurusID: 116
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:24] Role: pengkot, Username: Kota George Town, AnggotaID: , PengurusID: 117
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:24] Role: pengkot, Username: Kota Butterworth, AnggotaID: , PengurusID: 118
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:24] Role: pengkot, Username: Kota Bukit Mertajam, AnggotaID: , PengurusID: 119
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:24] Role: pengkot, Username: Kota Johor Bahru, AnggotaID: , PengurusID: 120
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:24] Role: pengkot, Username: Kota Iskandar Puteri, AnggotaID: , PengurusID: 121
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:24] Role: pengkot, Username: Kota Batu Pahat, AnggotaID: , PengurusID: 122
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:24] Role: pengkot, Username: Sidoarjo, AnggotaID: , PengurusID: 123
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:25] Role: unit, Username: Adinda, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:25] Role: unit, Username: ITS, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:25] Role: unit, Username: MI Mutiara Bunda, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:25] Role: unit, Username: Ranting Adinda, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:25] Role: unit, Username: Ranting Akasaka, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:25] Role: unit, Username: Ranting Asahikawa/Ekimae, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:26] Role: unit, Username: Ranting Bagan, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:26] Role: unit, Username: Ranting Barata Jaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:26] Role: unit, Username: Ranting Blimbing, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:26] Role: unit, Username: Ranting BM/Pusat, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:26] Role: unit, Username: Ranting Bogor Barat, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:26] Role: unit, Username: Ranting Bogor Tengah, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:26] Role: unit, Username: Ranting BP/Pusat, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:26] Role: unit, Username: Ranting Bukit Jelutong, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:27] Role: unit, Username: Ranting Cibeunying, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:27] Role: unit, Username: Ranting Cikini, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:27] Role: unit, Username: Ranting Cilandak, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:27] Role: unit, Username: Ranting Cimahi Tengah, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:27] Role: unit, Username: Ranting Cimahi Utara, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:27] Role: unit, Username: Ranting Damansara, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:27] Role: unit, Username: Ranting Dojima, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:28] Role: unit, Username: Ranting Duren Sawit, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:28] Role: unit, Username: Ranting Ebisu, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:28] Role: unit, Username: Ranting Fuse, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:28] Role: unit, Username: Ranting Gelang Patah, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:28] Role: unit, Username: Ranting George Town/Pusat, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:28] Role: unit, Username: Ranting Gubeng, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:29] Role: unit, Username: Ranting Hakodate/Port, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:29] Role: unit, Username: Ranting JB/Centra, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:29] Role: unit, Username: Ranting Jelutong, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:29] Role: unit, Username: Ranting Kebayoran, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:29] Role: unit, Username: Ranting Klojen, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:29] Role: unit, Username: Ranting Kosaka, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:30] Role: unit, Username: Ranting Lengkong, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:30] Role: unit, Username: Ranting Machang Bubok, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:30] Role: unit, Username: Ranting Mak Mandin, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:30] Role: unit, Username: Ranting Menteng, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:30] Role: unit, Username: Ranting Minato/Koen, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:30] Role: unit, Username: Ranting Mojoroto, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:30] Role: unit, Username: Ranting Motomachi, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:30] Role: unit, Username: Ranting Nakanoshima, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:30] Role: unit, Username: Ranting Nishi/Shinjuku, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:30] Role: unit, Username: Ranting Odori/Park, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:31] Role: unit, Username: Ranting Otori, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:31] Role: unit, Username: Ranting Pesantren, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:31] Role: unit, Username: Ranting Petaling Jaya/Utara, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:31] Role: unit, Username: Ranting Pulogadung, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:31] Role: unit, Username: Ranting Puteri Harbour, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:31] Role: unit, Username: Ranting Putra Heights, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:31] Role: unit, Username: Ranting Sakai/Higashi, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:32] Role: unit, Username: Ranting Sapporo/Ekimae, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:32] Role: unit, Username: Ranting Seksyen 14, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:32] Role: unit, Username: Ranting Senggarang, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:32] Role: unit, Username: Ranting Shibuya/Ekimae, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:32] Role: unit, Username: Ranting Shinjuku/Minami, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:32] Role: unit, Username: Ranting Sukolilo, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:32] Role: unit, Username: Ranting Tebrau, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:32] Role: unit, Username: Ranting Tokiwa, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:33] Role: unit, Username: Ranting USJ, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:33] Role: unit, Username: SD Tri Tunggal III Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:33] Role: unit, Username: SDN Jepara I Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:33] Role: unit, Username: SDN Kedung Baruk 1/275 Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:33] Role: unit, Username: SDN Kendang Sari IV Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:33] Role: unit, Username: SDN Lakarsantri 2 Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:33] Role: unit, Username: SDN Menanggal 601 Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:33] Role: unit, Username: SDN Ngagel Rejo III Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:34] Role: unit, Username: SDN Petemon X Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:34] Role: unit, Username: SDN Simokerto I Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:34] Role: unit, Username: SDN Siwalan Kerto II/419 Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:34] Role: unit, Username: SDN Ujung XIII Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:34] Role: unit, Username: SMA Negeri 17 Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:34] Role: unit, Username: SMA Negeri 19 Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:34] Role: unit, Username: SMK Farmasi, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:34] Role: unit, Username: SMP Kartika IV - 10, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:35] Role: unit, Username: SMP Taman Pelajar Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:35] Role: unit, Username: SMP YP 17, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:35] Role: unit, Username: SMPN 20 Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:35] Role: unit, Username: SMPN 26 Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:35] Role: unit, Username: SMPN 5 Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:35] Role: unit, Username: Unit Alma, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:36] Role: unit, Username: Unit Arakawa, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:36] Role: unit, Username: Unit Bogor Timur, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:36] Role: unit, Username: Unit Buah Batu, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:36] Role: unit, Username: Unit Cakung, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:36] Role: unit, Username: Unit Cimahi Selatan, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:36] Role: unit, Username: Unit Gondangdia, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:36] Role: unit, Username: Unit Goryokaku, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:36] Role: unit, Username: Unit Jingu/Mae, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:37] Role: unit, Username: Unit Kabukicho, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:37] Role: unit, Username: Unit Kagura, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:37] Role: unit, Username: Unit Kelana Jaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:37] Role: unit, Username: Unit Kota Kediri, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:37] Role: unit, Username: Unit Lowokwaru, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:37] Role: unit, Username: Unit Medini, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:37] Role: unit, Username: Unit Nakamozu, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:38] Role: unit, Username: Unit Parit Raja, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:38] Role: unit, Username: Unit Pondok Indah, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:38] Role: unit, Username: Unit Raja Uda, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:38] Role: unit, Username: Unit Roppongi, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:38] Role: unit, Username: Unit Shah Alam City, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:38] Role: unit, Username: Unit Skudai, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:38] Role: unit, Username: Unit SS15, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:38] Role: unit, Username: Unit Susukino, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:39] Role: unit, Username: Unit Tanjung Tokong, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:39] Role: unit, Username: Unit Umeda, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:39] Role: unit, Username: Unit Wonokromo, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:39] Role: unit, Username: Unitomo, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:39] Role: unit, Username: UNIVERSITAS AIRLANGGA, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:39] Role: unit, Username: Universitas Dr. Soetomo, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:39] Role: unit, Username: Universitas Negeri Surabaya, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:40] Role: unit, Username: Universitas PGRI Adi Buana, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:40] Role: anggota, Username: ID001001.001-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:40] Role: anggota, Username: ID001001.001-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:40] Role: anggota, Username: ID001001.001-2018001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:40] Role: anggota, Username: ID001001.002-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:40] Role: anggota, Username: ID001001.002-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:40] Role: anggota, Username: ID001001.002-2017001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:40] Role: anggota, Username: ID001001.003-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:41] Role: anggota, Username: ID001001.003-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:41] Role: anggota, Username: ID001001.003-2015001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:41] Role: anggota, Username: ID001002.001-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:41] Role: anggota, Username: ID001002.001-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:41] Role: anggota, Username: ID001002.001-2017001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:41] Role: anggota, Username: ID001002.002-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:41] Role: anggota, Username: ID001002.002-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:41] Role: anggota, Username: ID001002.002-2016001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:42] Role: anggota, Username: ID001002.003-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:42] Role: anggota, Username: ID001002.003-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:42] Role: anggota, Username: ID001002.003-2015001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:42] Role: anggota, Username: ID001003.001-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:42] Role: anggota, Username: ID001003.001-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:42] Role: anggota, Username: ID001003.001-2017001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:43] Role: anggota, Username: ID001003.002-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:43] Role: anggota, Username: ID001003.002-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:43] Role: anggota, Username: ID001003.002-2016001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:43] Role: anggota, Username: ID001003.003-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:43] Role: anggota, Username: ID001003.003-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:43] Role: anggota, Username: ID001003.003-2015001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:44] Role: anggota, Username: ID002001.001-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:44] Role: anggota, Username: ID002001.001-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:44] Role: anggota, Username: ID002001.001-2017001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:44] Role: anggota, Username: ID002001.002-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:44] Role: anggota, Username: ID002001.002-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:45] Role: anggota, Username: ID002001.002-2015001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:45] Role: anggota, Username: ID002001.003-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:45] Role: anggota, Username: ID002001.003-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:45] Role: anggota, Username: ID002001.003-2014001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:45] Role: anggota, Username: ID002002.001-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:46] Role: anggota, Username: ID002002.001-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:46] Role: anggota, Username: ID002002.001-2016001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:46] Role: anggota, Username: ID002002.002-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:46] Role: anggota, Username: ID002002.002-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:46] Role: anggota, Username: ID002002.002-2015001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:46] Role: anggota, Username: ID002002.003-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:47] Role: anggota, Username: ID002002.003-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:47] Role: anggota, Username: ID002002.003-2016001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:47] Role: anggota, Username: ID002003.001-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:47] Role: anggota, Username: ID002003.001-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:47] Role: anggota, Username: ID002003.001-2015001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:47] Role: anggota, Username: ID002003.002-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:47] Role: anggota, Username: ID002003.002-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:47] Role: anggota, Username: ID002003.002-2017001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:48] Role: anggota, Username: ID002003.003-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:48] Role: anggota, Username: ID002003.003-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:48] Role: anggota, Username: ID002003.003-2016001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:48] Role: anggota, Username: ID003001.001-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:48] Role: anggota, Username: ID003001.001-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:48] Role: anggota, Username: ID003001.001-2015001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:48] Role: anggota, Username: ID003001.002-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:49] Role: anggota, Username: ID003001.002-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:49] Role: anggota, Username: ID003001.002-2017001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:49] Role: anggota, Username: ID003001.003-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:49] Role: anggota, Username: ID003001.003-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:49] Role: anggota, Username: ID003001.003-2015001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:49] Role: anggota, Username: ID003002.001-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:49] Role: anggota, Username: ID003002.001-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:50] Role: anggota, Username: ID003002.001-2014001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:50] Role: anggota, Username: ID003002.002-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:50] Role: anggota, Username: ID003002.002-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:50] Role: anggota, Username: ID003002.002-2016001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:50] Role: anggota, Username: ID003002.003-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:50] Role: anggota, Username: ID003002.003-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:51] Role: anggota, Username: ID003002.003-2015001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:51] Role: anggota, Username: ID003003.001-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:51] Role: anggota, Username: ID003003.001-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:51] Role: anggota, Username: ID003003.001-2016001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:51] Role: anggota, Username: ID003003.002-2021001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:51] Role: anggota, Username: ID003003.002-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:52] Role: anggota, Username: ID003003.002-2015001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:52] Role: anggota, Username: ID003003.003-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:52] Role: anggota, Username: ID003003.003-2020001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:52] Role: anggota, Username: ID003003.003-2017001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:52] Role: anggota, Username: ID001001.001-2025001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:52] Role: anggota, Username: ID001001.001-2022001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:53] Role: anggota, Username: ID001001.003-2023002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:53] Role: anggota, Username: ID001001.001-2025002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:53] Role: anggota, Username: ID001001.003-2023003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:53] Role: anggota, Username: ID001001.002-2025001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:53] Role: anggota, Username: ID001001.001-2025003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:53] Role: anggota, Username: ID001001.003-2023004, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:53] Role: anggota, Username: ID001001.002-2025002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:54] Role: anggota, Username: ID001001.009-2025001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:54] Role: anggota, Username: ID001001.009-2025002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:54] Role: anggota, Username: ID001001.009-2025003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:54] Role: anggota, Username: ID001001.009-2025004, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:54] Role: anggota, Username: ID001001.009-2025005, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:54] Role: anggota, Username: ID001001.009-2025006, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:55] Role: anggota, Username: ID001001.009-2025007, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:55] Role: anggota, Username: ID001001.009-2025008, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:55] Role: anggota, Username: ID001001.009-2025009, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:55] Role: anggota, Username: ID001001.009-2025010, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:55] Role: anggota, Username: ID001001.009-2025011, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:55] Role: anggota, Username: ID001001.009-2024001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:55] Role: anggota, Username: ID001001.009-2025012, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:56] Role: anggota, Username: ID001001.009-2025013, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:56] Role: anggota, Username: ID001001.009-2025014, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:56] Role: anggota, Username: ID001001.002-2025003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:56] Role: anggota, Username: ID001001.002-2024001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:56] Role: anggota, Username: ID001001.001-2025004, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:56] Role: anggota, Username: ID001001.001-2025005, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:57] Role: anggota, Username: ID001001.001-2025006, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:57] Role: anggota, Username: ID001001.001-2025007, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:57] Role: anggota, Username: ID001001.001-2025008, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:57] Role: anggota, Username: ID001001.001-2022002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:57] Role: anggota, Username: ID001001.001-2025009, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:57] Role: anggota, Username: ID001001.001-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:57] Role: anggota, Username: ID001001.001-2025010, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:58] Role: anggota, Username: ID001001.001-2017001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:58] Role: anggota, Username: ID001001.001-2025011, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:58] Role: anggota, Username: ID001001.001-2025012, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:58] Role: anggota, Username: ID001001.006-2025001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:58] Role: anggota, Username: ID001001.006-2024001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:58] Role: anggota, Username: ID001001.006-2025002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:58] Role: anggota, Username: ID001001.006-2025003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:58] Role: anggota, Username: ID001001.006-2025004, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:58] Role: anggota, Username: ID001001.006-2025005, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:59] Role: anggota, Username: ID001001.006-2025006, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:59] Role: anggota, Username: ID001001.006-2025007, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:59] Role: anggota, Username: ID001001.006-2025008, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:59] Role: anggota, Username: ID001001.006-2025009, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:59] Role: anggota, Username: ID001001.004-2024001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:58:59] Role: anggota, Username: ID001001.004-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:00] Role: anggota, Username: ID001001.004-2023002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:00] Role: anggota, Username: ID001001.004-2023003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:00] Role: anggota, Username: ID001001.004-2023004, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:00] Role: anggota, Username: ID001001.004-2023005, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:00] Role: anggota, Username: ID001001.004-2025001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:00] Role: anggota, Username: ID001001.004-2025002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:00] Role: anggota, Username: ID001001.004-2024002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:00] Role: anggota, Username: ID001001.005-2023001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:00] Role: anggota, Username: ID001001.005-2023002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:00] Role: anggota, Username: ID001001.005-2024001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:01] Role: anggota, Username: ID001001.005-2024002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:01] Role: anggota, Username: ID001001.005-2024003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:01] Role: anggota, Username: ID001001.005-2024004, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:01] Role: anggota, Username: ID001001.005-2025001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:01] Role: anggota, Username: ID001001.005-2024005, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:01] Role: anggota, Username: ID001001.005-2025002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:01] Role: anggota, Username: ID001001.005-2023003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:01] Role: anggota, Username: ID001001.005-2024006, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:02] Role: anggota, Username: ID001001.016-2025001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:02] Role: anggota, Username: ID001001.016-2024001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:02] Role: anggota, Username: ID001001.016-2025002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:02] Role: anggota, Username: ID001001.016-2024002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:02] Role: anggota, Username: ID001001.016-2024003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:02] Role: anggota, Username: ID001001.016-2024004, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:02] Role: anggota, Username: ID001001.016-2024005, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:02] Role: anggota, Username: ID001001.016-2025003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:03] Role: anggota, Username: ID001001.016-2024006, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:03] Role: anggota, Username: ID001001.016-2025004, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:03] Role: anggota, Username: ID001001.014-2025001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:03] Role: anggota, Username: ID001001.012-2025001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:03] Role: anggota, Username: ID001001.012-2025002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:03] Role: anggota, Username: ID001001.012-2025003, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:03] Role: anggota, Username: ID001001.012-2025004, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:04] Role: anggota, Username: ID001001.012-2025005, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:04] Role: anggota, Username: ID001001.012-2025006, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:04] Role: anggota, Username: ID001001.012-2025007, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:04] Role: anggota, Username: ID001001.012-2025008, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:04] Role: anggota, Username: ID003001.010-1996001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:04] Role: anggota, Username: JP002003.003-2000001, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 09:59:04] Role: anggota, Username: ID003001.010-1996002, AnggotaID: , PengurusID: 
+Action: UPDATE, Success: YES
+[2026-05-01 12:33:26] Role: negara, Username: Singapura, AnggotaID: , PengurusID: 17
+Action: UPDATE, Success: YES

@@ -88,7 +88,7 @@ switch ($action) {
             
             // Auto-create user for Kota
             createOrUpdateUser($conn, [
-                'username' => formatPwd($nama),
+                'username' => $nama,
                 'password' => formatPwd($nama) . '1955',
                 'nama_lengkap' => "Pengurus Kota / Kabupaten $nama",
                 'role' => 'pengkot',
@@ -132,7 +132,7 @@ switch ($action) {
         if ($conn->query($sql)) {
             // Auto-update user for Kota
             createOrUpdateUser($conn, [
-                'username' => formatPwd($nama),
+                'username' => $nama,
                 'password' => formatPwd($nama) . '1955',
                 'nama_lengkap' => "Pengurus Kota / Kabupaten $nama",
                 'role' => 'pengkot',

@@ -165,6 +165,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type'])) {
     }
 }
 
+// Proses reset password ke default
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type']) && $_POST['action_type'] == 'reset_to_default') {
+    $target_user_id = (int)($_POST['user_id'] ?? 0);
+    
+    $check = $conn->query("SELECT u.id, u.username, u.nama_lengkap, u.role, u.no_anggota, a.tanggal_lahir 
+                           FROM users u 
+                           LEFT JOIN anggota a ON u.no_anggota = a.no_anggota 
+                           WHERE u.id = $target_user_id");
+    
+    if ($check->num_rows > 0) {
+        $user = $check->fetch_assoc();
+        $username = $user['username'];
+        $role = $user['role'];
+        $nama_lengkap = $user['nama_lengkap'];
+        
+        include_once '../../helpers/user_auto_creation.php';
+        
+        $password_default = '';
+        if (in_array($role, ['negara', 'pengprov', 'pengkot', 'unit', 'ranting'])) {
+            $password_default = formatPwd($username) . '1955';
+        } elseif ($role === 'anggota') {
+            $tgl = (!empty($user['tanggal_lahir']) && $user['tanggal_lahir'] !== '0000-00-00') ? date('dmY', strtotime($user['tanggal_lahir'])) : '';
+            $password_default = formatPwd($nama_lengkap) . $tgl;
+        }
+        
+        if ($password_default !== '') {
+            $hashed = password_hash($password_default, PASSWORD_BCRYPT);
+            $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+            $stmt->bind_param("si", $hashed, $target_user_id);
+            if ($stmt->execute()) {
+                $success = "Password user " . htmlspecialchars($username) . " berhasil direset ke default!";
+            } else {
+                $error = "Gagal reset password: " . $stmt->error;
+            }
+        } else {
+            $error = "Role ini tidak memiliki aturan password default.";
+        }
+    } else {
+        $error = "User tidak ditemukan.";
+    }
+}
+
 // Proses reset password admin (hanya superadmin)
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type']) && $_POST['action_type'] == 'reset_admin_password') {
     $target_user_id = (int)($_POST['user_id'] ?? 0);
@@ -636,6 +678,14 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
                                     <a href="#" onclick="openPasswordModal(<?php echo $row['id']; ?>, '<?php echo htmlspecialchars($row['username'], ENT_QUOTES); ?>')" class="icon-btn icon-reset" title="Reset Password Admin">
                                         <i class="fas fa-key"></i>
                                     </a>
+                                    <?php elseif (!in_array($row['role'], ['admin', 'superadmin'])): ?>
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Reset password user ini ke default?')">
+                                        <input type="hidden" name="action_type" value="reset_to_default">
+                                        <input type="hidden" name="user_id" value="<?php echo $row['id']; ?>">
+                                        <button type="submit" class="icon-btn icon-reset" style="border:none; cursor:pointer;" title="Reset ke Password Default">
+                                            <i class="fas fa-undo"></i>
+                                        </button>
+                                    </form>
                                     <?php endif; ?>
                                 <a href="user_management.php?delete=<?php echo $row['id']; ?>" onclick="return confirm('Yakin hapus?')" class="icon-btn icon-delete" title="Hapus User">
                                     <i class="fas fa-trash"></i>

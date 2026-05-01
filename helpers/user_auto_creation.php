@@ -38,27 +38,36 @@ function createOrUpdateUser($conn, $data) {
     
     $check->execute();
     $result = $check->get_result();
+    
+    // Debug logging
+    $log_file = dirname(__DIR__) . '/scratch/user_creation.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $log_data = "[$timestamp] Role: $role, Username: $username, AnggotaID: $anggota_id, PengurusID: $pengurus_id\n";
 
     if ($result->num_rows > 0) {
         $user = $result->fetch_assoc();
         $user_id = $user['id'];
         
-        // Update user
-        $sql = "UPDATE users SET username = ?, password = ?, nama_lengkap = ?, role = ?, pengurus_id = ?, ranting_id = ?, no_anggota = ?, anggota_id = ? WHERE id = ?";
+        // Update user (tanpa mengubah username dan password agar tetap permanen sesuai data awal)
+        $sql = "UPDATE users SET nama_lengkap = ?, role = ?, pengurus_id = ?, ranting_id = ?, no_anggota = ?, anggota_id = ? WHERE id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssssiissi", $username, $hashed_password, $nama_lengkap, $role, $pengurus_id, $ranting_id, $no_anggota, $anggota_id, $user_id);
-        return $stmt->execute();
+        $stmt->bind_param("ssiissi", $nama_lengkap, $role, $pengurus_id, $ranting_id, $no_anggota, $anggota_id, $user_id);
+        $res = $stmt->execute();
+        file_put_contents($log_file, $log_data . "Action: UPDATE, Success: " . ($res ? 'YES' : 'NO - ' . $conn->error) . "\n", FILE_APPEND);
+        return $res;
     } else {
         // Insert new user
         $sql = "INSERT INTO users (username, password, nama_lengkap, role, pengurus_id, ranting_id, no_anggota, anggota_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ssssiisi", $username, $hashed_password, $nama_lengkap, $role, $pengurus_id, $ranting_id, $no_anggota, $anggota_id);
-        return $stmt->execute();
+        $res = $stmt->execute();
+        file_put_contents($log_file, $log_data . "Action: INSERT, Success: " . ($res ? 'YES' : 'NO - ' . $conn->error) . "\n", FILE_APPEND);
+        return $res;
     }
 }
 
 /**
- * Format string menjadi lowercase dan tanpa spasi untuk username/password
+ * Format string menjadi lowercase dan tanpa spasi untuk password standar
  */
 function formatPwd($str) {
     if (empty($str)) return '';

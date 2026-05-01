@@ -42,16 +42,39 @@ $table_map = [
 $table_info = $table_map[$jenis];
 $table_name = $table_info['table'];
 $label = $table_info['label'];
+$label_jenis = $label;
 
-// Label jenis - for display
-$label_jenis = $table_info['label'];
+// Permission check
+$can_edit = false;
+$user_role = $_SESSION['role'] ?? '';
+$user_pengurus_id = $_SESSION['pengurus_id'] ?? 0;
+
+if (in_array($user_role, ['admin', 'superadmin'])) {
+    $can_edit = true;
+} elseif ($user_role == 'pengprov' && $jenis == 'provinsi' && $id == $user_pengurus_id) {
+    $can_edit = true;
+} elseif ($user_role == 'pengkot' && $jenis == 'kota' && $id == $user_pengurus_id) {
+    $can_edit = true;
+} elseif ($user_role == 'negara') {
+    if ($jenis == 'pusat' && $id == $user_pengurus_id) {
+        $can_edit = true;
+    } elseif ($jenis == 'provinsi') {
+        $prov_check = $conn->query("SELECT negara_id FROM provinsi WHERE id = $id")->fetch_assoc();
+        if ($prov_check && $prov_check['negara_id'] == $user_pengurus_id) {
+            $can_edit = true;
+        }
+    }
+}
 
 $error = '';
 $success = '';
 
 // Handle SK upload
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['sk_file'])) {
-    $file = $_FILES['sk_file'];
+    if (!$can_edit) {
+        $error = "Akses ditolak! Anda tidak memiliki izin untuk mengupload SK.";
+    } else {
+        $file = $_FILES['sk_file'];
     
     if ($file['error'] !== UPLOAD_ERR_OK) {
         $error = "Error upload file!";
@@ -103,16 +126,85 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['sk_file'])) {
         }
     }
 }
+}
 
 // Handle SK delete
-if (isset($_GET['delete_sk']) && in_array($_SESSION['role'], ['admin', 'superadmin'])) {
-    $sk_file = basename($_GET['delete_sk']);
-    $upload_dir = '../../uploads/sk_pengurus/';
-    $file_path = $upload_dir . $sk_file;
+if (isset($_GET['delete_sk'])) {
+    if (!$can_edit) {
+        $error = "Akses ditolak!";
+    } else {
+        $sk_file = basename($_GET['delete_sk']);
+        $upload_dir = '../../uploads/sk_pengurus/';
+        $file_path = $upload_dir . $sk_file;
+        
+        if (file_exists($file_path) && is_file($file_path)) {
+            unlink($file_path);
+            $success = "SK berhasil dihapus!";
+        }
+    }
+}
+
+// Handle Reset Password
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_type']) && $_POST['action_type'] == 'reset_to_default') {
+    $target_user_id = (int)($_POST['user_id'] ?? 0);
     
-    if (file_exists($file_path) && is_file($file_path)) {
-        unlink($file_path);
-        $success = "SK berhasil dihapus!";
+    $check = $conn->query("SELECT u.id, u.username, u.nama_lengkap, u.role, u.no_anggota, u.pengurus_id, u.ranting_id, a.tanggal_lahir 
+                           FROM users u 
+                           LEFT JOIN anggota a ON u.no_anggota = a.no_anggota 
+                           WHERE u.id = $target_user_id");
+    
+    if ($check->num_rows > 0) {
+        $target_user = $check->fetch_assoc();
+        
+        $is_allowed = false;
+        if (in_array($_SESSION['role'], ['admin', 'superadmin'])) {
+            $is_allowed = true;
+        } else {
+            // Check hierarchy
+            if ($_SESSION['role'] == 'negara' && $target_user['role'] == 'pengprov') {
+                $prov_check = $conn->query("SELECT negara_id FROM provinsi WHERE id = " . $target_user['pengurus_id'])->fetch_assoc();
+                if ($prov_check && $prov_check['negara_id'] == $_SESSION['pengurus_id']) $is_allowed = true;
+            } elseif ($_SESSION['role'] == 'pengprov' && $target_user['role'] == 'pengkot') {
+                $kota_check = $conn->query("SELECT provinsi_id FROM kota WHERE id = " . $target_user['pengurus_id'])->fetch_assoc();
+                if ($kota_check && $kota_check['provinsi_id'] == $_SESSION['pengurus_id']) $is_allowed = true;
+            } elseif ($_SESSION['role'] == 'pengkot' && $target_user['role'] == 'unit') {
+                $ranting_check = $conn->query("SELECT kota_id FROM ranting WHERE id = " . $target_user['ranting_id'])->fetch_assoc();
+                if ($ranting_check && $ranting_check['kota_id'] == $_SESSION['pengurus_id']) $is_allowed = true;
+            }
+        }
+        
+        if ($is_allowed) {
+            $username = $target_user['username'];
+            $role = $target_user['role'];
+            $nama_lengkap = $target_user['nama_lengkap'];
+            
+            include_once '../../helpers/user_auto_creation.php';
+            
+            $password_default = '';
+            if (in_array($role, ['negara', 'pengprov', 'pengkot', 'unit', 'ranting'])) {
+                $password_default = formatPwd($username) . '1955';
+            } elseif ($role === 'anggota') {
+                $tgl = (!empty($target_user['tanggal_lahir']) && $target_user['tanggal_lahir'] !== '0000-00-00') ? date('dmY', strtotime($target_user['tanggal_lahir'])) : '';
+                $password_default = formatPwd($nama_lengkap) . $tgl;
+            }
+            
+            if ($password_default !== '') {
+                $hashed = password_hash($password_default, PASSWORD_BCRYPT);
+                $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+                $stmt->bind_param("si", $hashed, $target_user_id);
+                if ($stmt->execute()) {
+                    $success = "Password user " . htmlspecialchars($username) . " berhasil direset ke default!";
+                } else {
+                    $error = "Gagal reset password: " . $stmt->error;
+                }
+            } else {
+                $error = "Role ini tidak memiliki aturan password default.";
+            }
+        } else {
+            $error = "Akses ditolak! Anda tidak memiliki izin untuk mereset password user ini.";
+        }
+    } else {
+        $error = "User tidak ditemukan.";
     }
 }
 
@@ -273,6 +365,7 @@ function getRevisionNumber($filename) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail <?php echo $label_jenis; ?> - Sistem Beladiri</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -723,31 +816,7 @@ function getRevisionNumber($filename) {
                             <span class="<?php echo $status_class; ?>">● <?php echo $status; ?></span>
                         </div>
                         <div>
-                            <?php
-                            // Check if user can edit this pengurus
-                            $can_edit = false;
-                            if (in_array($_SESSION['role'], ['admin', 'superadmin'])) {
-                                $can_edit = true;
-                            } elseif ($_SESSION['role'] == 'pengprov' && $jenis == 'provinsi' && $id == $_SESSION['pengurus_id']) {
-                                $can_edit = true;
-                            } elseif ($_SESSION['role'] == 'pengkot' && $jenis == 'kota' && $id == $_SESSION['pengurus_id']) {
-                                $can_edit = true;
-                            } elseif ($_SESSION['role'] == 'negara') {
-                                // Negara can edit their own negara and provinces under them, but NOT kota
-                                if ($jenis == 'pusat' && $id == $_SESSION['pengurus_id']) {
-                                    $can_edit = true;
-                                } elseif ($jenis == 'provinsi') {
-                                    // Check if this province belongs to this negara
-                                    $prov = $conn->query("SELECT negara_id FROM provinsi WHERE id = $id")->fetch_assoc();
-                                    if ($prov && $prov['negara_id'] == $_SESSION['pengurus_id']) {
-                                        $can_edit = true;
-                                    }
-                                }
-                                // kota - cannot edit
-                            }
-
-                            if ($can_edit):
-                            ?>
+                            <?php if ($can_edit): ?>
                             <a href="pengurus_edit.php?id=<?php echo $id; ?>&jenis=<?php echo $jenis; ?>" class="btn btn-warning" style="float: right;">✏️ Edit</a>
                             <?php endif; ?>
                         </div>
@@ -872,7 +941,7 @@ function getRevisionNumber($filename) {
             <div class="info-card">
                 <h3>📄 SK Pembentukan</h3>
                 
-                <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
+                <?php if ($can_edit): ?>
                 <div class="sk-upload-form">
                     <form method="POST" enctype="multipart/form-data">
                         <label>Upload SK Baru (PDF)</label>
@@ -909,8 +978,8 @@ function getRevisionNumber($filename) {
                             <div class="sk-actions">
                                 <a href="sk_download_pengurus.php?file=<?php echo urlencode($sk_file); ?>&id=<?php echo $id; ?>" 
                                 class="btn btn-download">📥 Download</a>
-                                <?php if (in_array($_SESSION['role'], ['admin', 'superadmin'])): ?>
-                                <a href="pengurus_detail.php?id=<?php echo $id; ?>&delete_sk=<?php echo urlencode($sk_file); ?>" 
+                                <?php if ($can_edit): ?>
+                                <a href="pengurus_detail.php?id=<?php echo $id; ?>&delete_sk=<?php echo urlencode($sk_file); ?>&jenis=<?php echo $jenis; ?>" 
                                 class="btn btn-danger-small" onclick="return confirm('Hapus SK ini?')">Hapus</a>
                                 <?php endif; ?>
                             </div>
@@ -941,10 +1010,11 @@ function getRevisionNumber($filename) {
             </div>
             
             <!-- Struktur yang Dinaungi -->
-            <?php if ($jenis != 'kota' && $anak_result && $anak_result->num_rows > 0): ?>
+            <?php if ($jenis != 'kota'): ?>
             <div class="info-card">
                 <h3>📊 Struktur yang Dinaungi</h3>
                 
+                <?php if ($anak_result && $anak_result->num_rows > 0): ?>
                 <div class="stat-grid">
                     <div class="stat-card">
                         <div class="stat-number"><?php echo $anak_result->num_rows; ?></div>
@@ -967,6 +1037,7 @@ function getRevisionNumber($filename) {
                             <th>Jenis</th>
                             <th>Ketua</th>
                             <th>Periode</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -975,16 +1046,50 @@ function getRevisionNumber($filename) {
                         while ($row = $anak_result->fetch_assoc()): 
                             $child_table = ($jenis == 'pusat' ? 'provinsi' : 'kota');
                             $child_detail = $conn->query("SELECT nama, kode, ketua_nama, periode_mulai, periode_akhir FROM $child_table WHERE id = " . $row['id'])->fetch_assoc();
+                            $child_label = ($child_table === 'provinsi') ? 'Provinsi' : 'Kota/Kabupaten';
+                            
+                            // Cari user id untuk reset password
+                            $child_user_role = ($child_table === 'provinsi') ? 'pengprov' : 'pengkot';
+                            $child_user = $conn->query("SELECT id, username FROM users WHERE role = '$child_user_role' AND pengurus_id = " . $row['id'])->fetch_assoc();
+                            
+                            // Check permission for reset button
+                            $can_reset_child = false;
+                            if (in_array($_SESSION['role'], ['admin', 'superadmin'])) {
+                                $can_reset_child = true;
+                            } elseif ($_SESSION['role'] == 'negara' && $jenis == 'pusat' && $id == $_SESSION['pengurus_id'] && $child_table == 'provinsi') {
+                                $can_reset_child = true;
+                            } elseif ($_SESSION['role'] == 'pengprov' && $jenis == 'provinsi' && $id == $_SESSION['pengurus_id'] && $child_table == 'kota') {
+                                $can_reset_child = true;
+                            }
                         ?>
                         <tr>
                             <td><strong><a href="pengurus_detail.php?id=<?php echo $row['id']; ?>&jenis=<?php echo $jenis == 'pusat' ? 'provinsi' : 'kota'; ?>" class="link-nav"><?php echo htmlspecialchars($row['nama']); ?></a></strong></td>
-                            <td><?php echo $label_jenis_text[$jenis]; ?></td>
+                            <td><?php echo htmlspecialchars($child_label); ?></td>
                             <td><?php echo htmlspecialchars($child_detail['ketua_nama'] ?? '-'); ?></td>
                             <td><?php echo formatTanggal($child_detail['periode_mulai'] ?? ''); ?> - <?php echo formatTanggal($child_detail['periode_akhir'] ?? ''); ?></td>
+                            <td>
+                                <?php if ($can_reset_child && $child_user): ?>
+                                <form method="POST" onsubmit="return confirm('Reset password akun <?php echo $child_user['username']; ?> ke default?')">
+                                    <input type="hidden" name="action_type" value="reset_to_default">
+                                    <input type="hidden" name="user_id" value="<?php echo $child_user['id']; ?>">
+                                    <button type="submit" class="btn btn-danger-small" style="background: #f1c40f; color: #333; padding: 4px 8px;">
+                                        <i class="fas fa-key"></i> Reset Pwd
+                                    </button>
+                                </form>
+                                <?php else: ?>
+                                -
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <?php endwhile; ?>
                     </tbody>
                 </table>
+                <?php else: ?>
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <p>Belum ada struktur yang dinaungi</p>
+                </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
             
@@ -1007,14 +1112,40 @@ function getRevisionNumber($filename) {
                             <th>Nama Unit/Ranting</th>
                             <th>Jenis</th>
                             <th>Ketua</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($row = $ranting_result->fetch_assoc()): ?>
+                        <?php 
+                        while ($row = $ranting_result->fetch_assoc()): 
+                            // Cari user id untuk reset password
+                            $ranting_user = $conn->query("SELECT id, username FROM users WHERE role = 'unit' AND ranting_id = " . $row['id'])->fetch_assoc();
+                            
+                            // Check permission for reset button
+                            $can_reset_ranting = false;
+                            if (in_array($_SESSION['role'], ['admin', 'superadmin'])) {
+                                $can_reset_ranting = true;
+                            } elseif ($_SESSION['role'] == 'pengkot' && $jenis == 'kota' && $id == $_SESSION['pengurus_id']) {
+                                $can_reset_ranting = true;
+                            }
+                        ?>
                         <tr>
                             <td><strong><a href="ranting_detail.php?id=<?php echo $row['id']; ?>" class="link-nav"><?php echo htmlspecialchars($row['nama_ranting']); ?></a></strong></td>
                             <td><span class="badge badge-<?php echo $row['jenis']; ?>"><?php echo strtoupper($row['jenis']); ?></span></td>
                             <td><?php echo htmlspecialchars($row['ketua_nama'] ?? '-'); ?></td>
+                            <td>
+                                <?php if ($can_reset_ranting && $ranting_user): ?>
+                                <form method="POST" onsubmit="return confirm('Reset password akun <?php echo $ranting_user['username']; ?> ke default?')">
+                                    <input type="hidden" name="action_type" value="reset_to_default">
+                                    <input type="hidden" name="user_id" value="<?php echo $ranting_user['id']; ?>">
+                                    <button type="submit" class="btn btn-danger-small" style="background: #f1c40f; color: #333; padding: 4px 8px;">
+                                        <i class="fas fa-key"></i> Reset Pwd
+                                    </button>
+                                </form>
+                                <?php else: ?>
+                                -
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <?php endwhile; ?>
                     </tbody>
