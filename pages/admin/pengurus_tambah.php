@@ -311,8 +311,8 @@ if (empty($final_kode) && $jenis == 'kota') {
                             <?php endif; ?>
                         </div>
                         <div class="form-group">
-                            <label>Kode</label>
-                            <input type="text" id="kode_otomatis" readonly placeholder="Otomatis dari negara">
+                            <label>Kode Negara</label>
+                            <input type="text" id="kode_negara" readonly placeholder="Otomatis dari negara">
                         </div>
                     </div>
                     <?php elseif ($jenis == 'kota'): ?>
@@ -484,12 +484,7 @@ if (empty($final_kode) && $jenis == 'kota') {
         <?php if ($jenis == 'provinsi'): ?>
         const negaraIdEl = document.getElementById('negara_id');
         const negaraId = negaraIdEl.value;
-        if (negaraId) {
-            const nextCode = await getNextCode('provinsi', negaraId, 'negara_id');
-            document.getElementById('kode_otomatis').value = nextCode;
-        } else {
-            document.getElementById('kode_otomatis').value = '';
-        }
+        document.getElementById('kode_negara').value = negaraId ? (negaraKodeMap[negaraId] || '') : '';
         <?php elseif ($jenis == 'kota'): ?>
         const opt2 = document.getElementById('provinsi_id').selectedOptions[0];
         const kode2 = opt2 ? opt2.getAttribute('data-kode') : '';

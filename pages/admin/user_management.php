@@ -411,7 +411,16 @@ $ranting_result = $conn->query("SELECT id, nama_ranting FROM ranting ORDER BY na
             <div class="alert alert-success">✓ <?php echo $success; ?></div>
         <?php endif; ?>
         
+        <!-- Migration Banner -->
+        <div class="alert alert-info" style="background: #e3f2fd; color: #0d47a1; border-left-color: #2196f3; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <div>
+                <i class="fas fa-info-circle"></i> <strong>Migrasi Data:</strong> Belum semua anggota dan pengurus memiliki akun user? Jalankan migrasi otomatis untuk membuatkan akun default (username & password) sesuai aturan.
+            </div>
+            <a href="../../scripts/migrate_users.php" class="btn" style="background: #2196f3; color: white; white-space: nowrap; margin-left: 15px;">🚀 Jalankan Migrasi</a>
+        </div>
+
         <!-- Form Tambah User -->
+
         <div class="form-container">
             <h3>➕ Tambah User Baru</h3>
             
