@@ -12,6 +12,7 @@ if (!isset($_SESSION['user_id']) || !in_array($user_role, ['superadmin', 'admin'
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../helpers/import_helper.php';
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -44,35 +45,6 @@ if ($user_role === 'negara' && !isset($_GET['tab'])) {
 $error = '';
 $success = '';
 $import_log = [];
-
-// Helper function untuk parse tanggal dari CSV
-function parse_date($date_str) {
-    if (empty($date_str)) {
-        return null;
-    }
-    
-    $date_str = trim($date_str);
-    
-    // Format dd/mm/yyyy
-    if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $date_str, $m)) {
-        $result = $m[3] . '-' . $m[2] . '-' . $m[1];
-        return $result;
-    }
-    
-    // Format YYYY-MM-DD
-    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date_str, $m)) {
-        $result = $m[1] . '-' . $m[2] . '-' . $m[3];
-        return $result;
-    }
-    
-    // Format d-m-yyyy or d/m/yyyy with single digits
-    if (preg_match('/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/', $date_str, $m)) {
-        $result = $m[3] . '-' . str_pad($m[2], 2, '0', STR_PAD_LEFT) . '-' . str_pad($m[1], 2, '0', STR_PAD_LEFT);
-        return $result;
-    }
-    
-    return null;
-}
 
 // Helper function to sync user after import
 function syncUserAfterImport($conn, $nama, $id, $active_tab) {
@@ -204,8 +176,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     }
                     
                     // Parse tanggal
-                    $mulai_parsed = parse_date($mulai);
-                    $akhir_parsed = parse_date($akhir);
+                    $mulai_parsed = parse_import_date($mulai);
+                    $akhir_parsed = parse_import_date($akhir);
                     
                     // Insert negara
                     $insert_sql = "INSERT INTO negara (kode, nama, ketua_nama, sk_kepengurusan, periode_mulai, periode_akhir, alamat_sekretariat, aktif) 
@@ -325,8 +297,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     }
                     
                     // Parse tanggal
-                    $mulai_parsed = parse_date($mulai);
-                    $akhir_parsed = parse_date($akhir);
+                    $mulai_parsed = parse_import_date($mulai);
+                    $akhir_parsed = parse_import_date($akhir);
                     
                     // Get count per negara to generate kode (001, 002, 003... per country)
                     $count = $conn->query("SELECT COUNT(*) as cnt FROM provinsi WHERE negara_id = $negara_id")->fetch_assoc();
@@ -420,7 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     
                     // Ambil data dari CSV
                     $negara_kode = strtoupper(trim($row[$negara_kode_col] ?? ''));
-                    $provinsi_kode = strtoupper(trim($row[$provinsi_kode_col] ?? ''));
+                    $provinsi_kode = str_pad(trim($row[$provinsi_kode_col] ?? ''), 3, '0', STR_PAD_LEFT);
                     $nama = ucwords(strtolower(trim($row[$nama_col] ?? '')));
                     $ketua_nama = isset($ketua_nama_col) ? ucwords(strtolower(trim($row[$ketua_nama_col] ?? ''))) : '';
                     $sk = isset($sk_col) ? trim($row[$sk_col] ?? '') : '';
@@ -460,8 +432,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && $activ
                     }
                     
                     // Parse tanggal
-                    $mulai_parsed = parse_date($mulai);
-                    $akhir_parsed = parse_date($akhir);
+                    $mulai_parsed = parse_import_date($mulai);
+                    $akhir_parsed = parse_import_date($akhir);
                     
                     // Get count per province to generate kode (001, 002, 003... per province)
                     $count = $conn->query("SELECT COUNT(*) as cnt FROM kota WHERE provinsi_id = $provinsi_id")->fetch_assoc();

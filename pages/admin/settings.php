@@ -756,6 +756,7 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                             <div class="form-hint">Pesan yang akan ditampilkan di kotak info pada halaman dashboard (index.php). Gunakan tombol di atas untuk format: <b>Tebal</b>, <i>Miring</i>, <u>Garis Bawah</u>, <br>Baris Baru, <a>Link</a></div>
                         </div>
                         
+                        <?php if ($_SESSION['role'] === 'superadmin'): ?>
                         <div class="form-group">
                             <label>Footer - Nama Aplikasi/Sistem</label>
                             <input type="text" name="footer_text" value="<?php echo htmlspecialchars($settings['footer_text'] ?? ''); ?>">
@@ -771,6 +772,7 @@ while ($row = $ranting_result->fetch_assoc()) { $ranting_list[] = $row; }
                                 <input type="text" name="footer_tahun" value="<?php echo htmlspecialchars($settings['footer_tahun'] ?? ''); ?>">
                             </div>
                         </div>
+                        <?php endif; ?>
                         
                         <div class="button-group">
                             <button type="submit" class="btn btn-primary">💾 Simpan Pengaturan</button>

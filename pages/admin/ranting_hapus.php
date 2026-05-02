@@ -64,6 +64,9 @@ if ($anggota_count['count'] > 0) {
 // Hapus jadwal latihan dulu
 $conn->query("DELETE FROM jadwal_latihan WHERE ranting_id = $id");
 
+// Hapus user terkait
+$conn->query("DELETE FROM users WHERE ranting_id = $id AND role = 'unit'");
+
 // Hapus ranting
 $conn->query("DELETE FROM ranting WHERE id = $id");
 

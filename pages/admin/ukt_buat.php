@@ -286,7 +286,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <?php if ($is_readonly && $user_jenis_peny): ?>
                                     <input type="hidden" name="jenis_penyelenggara" value="<?php echo htmlspecialchars($user_jenis_peny); ?>">
                                     <input type="text" value="<?php 
-                                        if ($user_jenis_peny === 'pusat') echo 'Pusat (PP)';
+                                        if ($user_jenis_peny === 'pusat') echo 'Negara';
                                         elseif ($user_jenis_peny === 'provinsi') echo 'Provinsi';
                                         elseif ($user_jenis_peny === 'kota') echo 'Kota / Kabupaten';
                                     ?>" readonly style="background:#e9ecef;">
@@ -294,7 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <select name="jenis_penyelenggara" id="jenisPenyelenggara" onchange="handleJenisPenyelenggaraChange()">
                                     <option value="">-- Pilih Jenis Penyelenggara --</option>
                                     <?php if ($show_pusat): ?>
-                                    <option value="pusat" <?php echo $user_jenis_peny === 'pusat' ? 'selected' : ''; ?>>Pusat (PP)</option>
+                                    <option value="pusat" <?php echo $user_jenis_peny === 'pusat' ? 'selected' : ''; ?>>Negara</option>
                                     <?php endif; ?>
                                     <?php if ($show_provinsi): ?>
                                     <option value="provinsi" <?php echo $user_jenis_peny === 'provinsi' ? 'selected' : ''; ?>>Provinsi (PengProv)</option>

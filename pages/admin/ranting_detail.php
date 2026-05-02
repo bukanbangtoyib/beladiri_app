@@ -1,4 +1,7 @@
 <?php
+/**
+ * @var array $pengaturan_nomor Number format settings from config/settings.php
+ */
 session_start();
 
 if (!isset($_SESSION['user_id'])) {

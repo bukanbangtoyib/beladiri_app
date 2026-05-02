@@ -7,7 +7,13 @@ function createOrUpdateUser($conn, $data) {
     $username = $data['username'];
     $password = $data['password'];
     $nama_lengkap = $data['nama_lengkap'];
-    $role = $data['role'];
+    $role = strtolower(trim($data['role']));
+    
+    // Map organizational types (ukm, ranting) to 'unit' role for permissions and DB compatibility
+    if (in_array($role, ['ukm', 'ranting'])) {
+        $role = 'unit';
+    }
+
     $pengurus_id = $data['pengurus_id'] ?? null;
     $ranting_id = $data['ranting_id'] ?? null;
     $no_anggota = $data['no_anggota'] ?? null;
@@ -22,31 +28,56 @@ function createOrUpdateUser($conn, $data) {
     // 3. username
     
     $user_id = null;
+    $found = false;
+
+    // 1. Try to find by specific ID first
     if ($anggota_id && $role === 'anggota') {
         $check = $conn->prepare("SELECT id FROM users WHERE anggota_id = ?");
         $check->bind_param("i", $anggota_id);
+        $check->execute();
+        $res = $check->get_result();
+        if ($res->num_rows > 0) {
+            $user_id = $res->fetch_assoc()['id'];
+            $found = true;
+        }
     } elseif ($pengurus_id && in_array($role, ['negara', 'pengprov', 'pengkot'])) {
         $check = $conn->prepare("SELECT id FROM users WHERE pengurus_id = ? AND role = ?");
         $check->bind_param("is", $pengurus_id, $role);
+        $check->execute();
+        $res = $check->get_result();
+        if ($res->num_rows > 0) {
+            $user_id = $res->fetch_assoc()['id'];
+            $found = true;
+        }
     } elseif ($ranting_id && in_array($role, ['ranting', 'unit'])) {
         $check = $conn->prepare("SELECT id FROM users WHERE ranting_id = ? AND role = ?");
         $check->bind_param("is", $ranting_id, $role);
-    } else {
+        $check->execute();
+        $res = $check->get_result();
+        if ($res->num_rows > 0) {
+            $user_id = $res->fetch_assoc()['id'];
+            $found = true;
+        }
+    }
+
+    // 2. Fallback to find by username if not found by ID
+    if (!$found) {
         $check = $conn->prepare("SELECT id FROM users WHERE username = ?");
         $check->bind_param("s", $username);
+        $check->execute();
+        $res = $check->get_result();
+        if ($res->num_rows > 0) {
+            $user_id = $res->fetch_assoc()['id'];
+            $found = true;
+        }
     }
-    
-    $check->execute();
-    $result = $check->get_result();
     
     // Debug logging
     $log_file = dirname(__DIR__) . '/scratch/user_creation.log';
     $timestamp = date('Y-m-d H:i:s');
     $log_data = "[$timestamp] Role: $role, Username: $username, AnggotaID: $anggota_id, PengurusID: $pengurus_id\n";
 
-    if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
-        $user_id = $user['id'];
+    if ($found) {
         
         // Update user (tanpa mengubah username dan password agar tetap permanen sesuai data awal)
         $sql = "UPDATE users SET nama_lengkap = ?, role = ?, pengurus_id = ?, ranting_id = ?, no_anggota = ?, anggota_id = ? WHERE id = ?";

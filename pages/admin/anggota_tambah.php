@@ -185,8 +185,8 @@ function formatNoAnggotaDisplay($no_anggota, $pengaturan_nomor) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $no_anggota = $conn->real_escape_string($_POST['no_anggota']);
-    $nama_lengkap = $conn->real_escape_string($_POST['nama_lengkap']);
-    $tempat_lahir = $conn->real_escape_string($_POST['tempat_lahir']);
+    $nama_lengkap = $conn->real_escape_string(ucwords(strtolower($_POST['nama_lengkap'])));
+    $tempat_lahir = $conn->real_escape_string(ucwords(strtolower($_POST['tempat_lahir'])));
     $tanggal_lahir = $_POST['tanggal_lahir'];
     $jenis_kelamin = $_POST['jenis_kelamin'];
     $ranting_awal_id = !empty($_POST['ranting_awal_id']) ? (int)$_POST['ranting_awal_id'] : NULL;
@@ -295,6 +295,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $check = $conn->query("SELECT id FROM anggota WHERE no_anggota = '$no_anggota'");
             if ($check->num_rows > 0) {
                 $error = "No Anggota sudah terdaftar!";
+            }
+        }
+
+        // Cek duplikasi nama & tanggal lahir
+        if (!$error) {
+            $check_dup = $conn->query("SELECT id FROM anggota WHERE nama_lengkap = '$nama_lengkap' AND tanggal_lahir = '$tanggal_lahir'");
+            if ($check_dup->num_rows > 0) {
+                $error = "Anggota dengan nama '$nama_lengkap' dan tanggal lahir tersebut sudah terdaftar!";
             }
         }
         
@@ -913,7 +921,7 @@ $jenis_result = $conn->query("SELECT id, nama_jenis FROM jenis_anggota ORDER BY 
                         </div>
                     </div>
                     
-<div class="form-row">
+                    <div class="form-row">
                             <div class="form-group">
                                 <label>Jenis Kelamin <span class="required">*</span></label>
                                 <select name="jenis_kelamin" required>

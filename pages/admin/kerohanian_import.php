@@ -11,6 +11,7 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], $allowed_roles)
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../helpers/import_helper.php';
 
 $permission_manager = new PermissionManager(
     $conn, 
@@ -45,21 +46,6 @@ if (isset($_GET['download']) && $_GET['download'] === 'kerohanian') {
     
     fclose($output);
     exit();
-}
-
-// Helper: parse tanggal
-function parse_date_kerohanian($date_str) {
-    if (empty($date_str)) return null;
-    $date_str = trim($date_str);
-    // Format dd/mm/yyyy atau dd-mm-yyyy
-    if (preg_match('/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/', $date_str, $m)) {
-        return $m[3] . '-' . $m[2] . '-' . $m[1];
-    }
-    // Format YYYY-MM-DD
-    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date_str)) {
-        return $date_str;
-    }
-    return null;
 }
 
 // Helper: log import
@@ -152,14 +138,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                     }
 
                     // Parse tanggal
-                    $tanggal = parse_date_kerohanian($tanggal_raw);
+                    $tanggal = parse_import_date($tanggal_raw);
                     if (!$tanggal) {
-                        log_import_kerohanian($row_num, "Format tanggal '$tanggal_raw' tidak valid (gunakan YYYY-MM-DD atau DD/MM/YYYY) - dilewati", 'error');
+                        log_import_kerohanian($row_num, "Format tanggal '$tanggal_raw' tidak valid - dilewati", 'error');
                         $skipped++;
                         continue;
                     }
 
-                    // Cari anggota: bisa berupa integer ID atau no_anggota (string)
+                    // Cari anggota: bisa berupa integer ID or no_anggota (string)
                     $anggota_id = null;
                     $nama_anggota = '';
                     if (ctype_digit($anggota_raw)) {
@@ -181,12 +167,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                     $anggota_id   = (int)$anggota_data['id'];
                     $nama_anggota = $anggota_data['nama_lengkap'];
 
-                     // Cek duplikat: anggota sudah punya data kerohanian dengan tanggal pembukaan yang sama
-                     $check_stmt->bind_param("is", $anggota_id, $tanggal);
-                     $check_stmt->execute();
-                    $check_result = $check_stmt->get_result();
-                    if ($check_result->num_rows > 0) {
-                        log_import_kerohanian($row_num, "Anggota '$nama_anggota' (ID: $anggota_id) sudah memiliki data kerohanian - dilewati", 'warning');
+                    // Cek duplikasi: Nama Anggota & Tanggal Pembukaan (Sesuai permintaan: Kerohanian cek nama & tanggal pembukaan)
+                    $check_dup = $conn->query("
+                        SELECT k.id FROM kerohanian k 
+                        JOIN anggota a ON k.anggota_id = a.id 
+                        WHERE a.nama_lengkap = '" . $conn->real_escape_string($nama_anggota) . "' 
+                        AND k.tanggal_pembukaan = '$tanggal'
+                    ");
+                    
+                    if ($check_dup && $check_dup->num_rows > 0) {
+                        log_import_kerohanian($row_num, "Data kerohanian untuk '$nama_anggota' pada tanggal $tanggal sudah ada - dilewati", 'warning');
+                        $skipped++;
+                        continue;
+                    }
+
+                    // Cek duplikasi tambahan: anggota_id yang sama (satu anggota hanya boleh punya satu record kerohanian)
+                    $check_id = $conn->query("SELECT id FROM kerohanian WHERE anggota_id = $anggota_id");
+                    if ($check_id && $check_id->num_rows > 0) {
+                        log_import_kerohanian($row_num, "Anggota '$nama_anggota' (ID: $anggota_id) sudah memiliki catatan kerohanian - dilewati", 'warning');
                         $skipped++;
                         continue;
                     }
@@ -376,7 +374,7 @@ $tingkatan_list = $conn->query("SELECT id, nama_tingkat FROM tingkatan ORDER BY 
                     <p><strong>Kolom yang diperlukan dalam file CSV:</strong></p>
                     <ol>
                         <li><strong>anggota_id</strong> <span style="color:#dc3545;">*</span> — ID anggota (angka, mis: <code>5</code>) <strong>atau</strong> No. Anggota (mis: <code>ID001001.002-2017003</code>)</li>
-                        <li><strong>tanggal_pembukaan</strong> <span style="color:#dc3545;">*</span> — Format: YYYY-MM-DD atau DD/MM/YYYY</li>
+                        <li><strong>tanggal_pembukaan</strong> <span style="color:#dc3545;">*</span> — Berbagai format tanggal (dd/mm/yyyy, dd-mm-yyyy, d-mmm-yyyy, d mmm yyyy, ddmmyyyy, serial excel)</li>
                         <li><strong>lokasi</strong> <span style="color:#dc3545;">*</span> — Tempat pelaksanaan pembukaan</li>
                         <li><strong>pembuka_nama</strong> <span style="color:#dc3545;">*</span> — Nama pembuka kerohanian</li>
                         <li><strong>penyelenggara</strong> — Nama penyelenggara</li>

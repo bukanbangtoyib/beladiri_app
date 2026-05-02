@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['superadmin','
 include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
+include '../../helpers/import_helper.php';
 
 $permission_manager = new PermissionManager(
     $conn, 
@@ -43,27 +44,6 @@ if (isset($_GET['download']) && $_GET['download'] === 'ranting') {
     
     fclose($output);
     exit();
-}
-
-// Helper function untuk parse tanggal
-function parse_date_ranting($date_str) {
-    if (empty($date_str)) {
-        return null;
-    }
-    
-    $date_str = trim($date_str);
-    
-    // Format dd/mm/yyyy
-    if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $date_str, $m)) {
-        return $m[3] . '-' . $m[2] . '-' . $m[1];
-    }
-    
-    // Format YYYY-MM-DD
-    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date_str, $m)) {
-        return $m[1] . '-' . $m[2] . '-' . $m[3];
-    }
-    
-    return null;
 }
 
 // Helper function untuk mencatat log import
@@ -144,10 +124,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                     
                     // Ambil data dari CSV
                     $negara_kode = isset($negara_kode_col) ? strtoupper(trim($row[$negara_kode_col] ?? '')) : '';
-                    $provinsi_kode = isset($provinsi_kode_col) ? strtoupper(trim($row[$provinsi_kode_col] ?? '')) : '';
-                    $kota_kode = isset($kota_kode_col) ? strtoupper(trim($row[$kota_kode_col] ?? '')) : '';
+                    $provinsi_kode = isset($provinsi_kode_col) ? str_pad(trim($row[$provinsi_kode_col] ?? ''), 3, '0', STR_PAD_LEFT) : '';
+                    $kota_kode = isset($kota_kode_col) ? str_pad(trim($row[$kota_kode_col] ?? ''), 3, '0', STR_PAD_LEFT) : '';
                     $nama_ranting = isset($nama_ranting_col) ? trim($row[$nama_ranting_col] ?? '') : '';
-                    $jenis = isset($jenis_col) ? trim($row[$jenis_col] ?? '') : '';
+                    $jenis = isset($jenis_col) ? strtolower(trim($row[$jenis_col] ?? '')) : '';
                     $tanggal_sk = isset($tanggal_sk_col) ? trim($row[$tanggal_sk_col] ?? '') : '';
                     $no_sk = isset($no_sk_col) ? trim($row[$no_sk_col] ?? '') : '';
                     $alamat = isset($alamat_col) ? trim($row[$alamat_col] ?? '') : '';
@@ -198,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file'])) {
                     $kode_ranting = str_pad($sequence, 3, '0', STR_PAD_LEFT);
                     
                     // Parse tanggal
-                    $tanggal_sk_parsed = parse_date_ranting($tanggal_sk);
+                    $tanggal_sk_parsed = parse_import_date($tanggal_sk);
                     
                     // Check duplikat nama
                     $check_nama_stmt->bind_param("s", $nama_ranting);

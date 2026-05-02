@@ -46,6 +46,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $error = "No SK ini sudah digunakan!";
         }
     }
+
+    // Cek duplikasi nama ranting
+    if (!$error) {
+        $check_nama = $conn->query("SELECT id FROM ranting WHERE nama_ranting = '$nama_ranting'");
+        if ($check_nama->num_rows > 0) {
+            $error = "Nama Unit/Ranting '$nama_ranting' sudah terdaftar!";
+        }
+    }
     
     if (!$error) {
         // Get kota name for SK naming
@@ -476,7 +484,7 @@ $hari_options = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
                         </div>
 
                         <div class="form-group">
-                            <label>No SK Pembentukan</label>
+                            <label>No SK Pembentukan <span class="required">*</span></label>
                             <input type="text" name="no_sk_pembentukan" placeholder="Contoh: 001/SK/KOTA/2024">
                             <div class="form-hint">Nomor Surat Keputusan pembentukan (harus unik)</div>
                         </div>

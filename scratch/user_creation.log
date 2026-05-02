@@ -662,3 +662,11 @@ Action: UPDATE, Success: YES
 Action: UPDATE, Success: YES
 [2026-05-01 12:33:26] Role: negara, Username: Singapura, AnggotaID: , PengurusID: 17
 Action: UPDATE, Success: YES
+[2026-05-02 05:55:17] Role: anggota, Username: ID003001.001-2021002, AnggotaID: 934, PengurusID: 
+Action: INSERT, Success: YES
+[2026-05-02 05:56:18] Role: anggota, Username: JP003003.010-1998001, AnggotaID: 935, PengurusID: 
+Action: INSERT, Success: YES
+[2026-05-02 06:01:24] Role: pengprov, Username: Banten, AnggotaID: , PengurusID: 123
+Action: UPDATE, Success: YES
+[2026-05-02 06:29:26] Role: pengkot, Username: Surabaya, AnggotaID: , PengurusID: 124
+Action: INSERT, Success: YES

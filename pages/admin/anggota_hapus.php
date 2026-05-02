@@ -38,7 +38,7 @@ if (!$permission_manager->can('anggota_read')) {
 
 $id = (int)$_GET['id'];
 
-$result = $conn->query("SELECT nama_lengkap, ranting_saat_ini_id FROM anggota WHERE id = $id");
+$result = $conn->query("SELECT nama_lengkap, ranting_saat_ini_id, no_anggota FROM anggota WHERE id = $id");
 if ($result->num_rows == 0) {
     die("Anggota tidak ditemukan!");
 }
@@ -51,6 +51,9 @@ if ($user_role === 'ranting' || $user_role === 'unit') {
         die("❌ Anda hanya bisa menghapus anggota dari ranting Anda sendiri!");
     }
 }
+
+// Hapus user terkait
+$conn->query("DELETE FROM users WHERE anggota_id = $id OR (no_anggota IS NOT NULL AND no_anggota = '" . $conn->real_escape_string($anggota['no_anggota'] ?? '') . "')");
 
 $conn->query("DELETE FROM anggota WHERE id = $id");
 

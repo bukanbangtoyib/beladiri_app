@@ -97,8 +97,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Cek apakah sudah pernah pembukaan kerohanian
     $check = $conn->query("SELECT id FROM kerohanian WHERE anggota_id = $anggota_id");
     if ($check->num_rows > 0) {
-        $error = "Anggota sudah memiliki pembukaan kerohanian!";
+        $error = "Anggota ini sudah memiliki catatan pembukaan kerohanian!";
     } else {
+        // Cek duplikasi Nama & Tanggal Pembukaan (sesuai permintaan user)
+        // Kita perlu ambil nama anggota dulu
+        $anggota_res = $conn->query("SELECT nama_lengkap FROM anggota WHERE id = $anggota_id");
+        $nama_anggota = ($anggota_res && $ar = $anggota_res->fetch_assoc()) ? $ar['nama_lengkap'] : '';
+        
+        $check_dup = $conn->query("
+            SELECT k.id FROM kerohanian k 
+            JOIN anggota a ON k.anggota_id = a.id 
+            WHERE a.nama_lengkap = '" . $conn->real_escape_string($nama_anggota) . "' 
+            AND k.tanggal_pembukaan = '$tanggal_pembukaan'
+        ");
+        
+        if ($check_dup->num_rows > 0) {
+            $error = "Data kerohanian untuk nama '$nama_anggota' pada tanggal tersebut sudah terdaftar!";
+        }
+    }
+
+    if (!$error) {
         $sql = "INSERT INTO kerohanian (anggota_id, tanggal_pembukaan, lokasi, pembuka_nama, penyelenggara, tingkat_pembuka_id, tingkat_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?)";
         

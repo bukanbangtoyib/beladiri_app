@@ -127,10 +127,10 @@ if ($jenis == 'kota') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $nama = $conn->real_escape_string($_POST['nama'] ?? '');
+    $nama = $conn->real_escape_string(ucwords(strtolower($_POST['nama'] ?? '')));
     $kode = isset($_POST['kode']) ? strtoupper($conn->real_escape_string($_POST['kode'])) : '';
     $kode_otomatis = !empty($_POST['kode_otomatis']) ? $conn->real_escape_string($_POST['kode_otomatis']) : '';
-    $ketua_nama = $conn->real_escape_string($_POST['ketua_nama'] ?? '');
+    $ketua_nama = $conn->real_escape_string(ucwords(strtolower($_POST['ketua_nama'] ?? '')));
     $sk_kepengurusan = $conn->real_escape_string($_POST['sk_kepengurusan'] ?? '');
     $periode_mulai = !empty($_POST['periode_mulai']) ? $conn->real_escape_string($_POST['periode_mulai']) : NULL;
     $periode_akhir = !empty($_POST['periode_akhir']) ? $conn->real_escape_string($_POST['periode_akhir']) : NULL;
@@ -156,28 +156,44 @@ if (empty($final_kode) && $jenis == 'kota') {
     } elseif (empty($final_kode)) {
         $error = "Kode tidak boleh kosong!";
     } else {
+        // Cek duplikasi nama
+        $check_nama = false;
         if ($jenis == 'pusat') {
-            // Insert into negara
-            $conn->query("INSERT INTO negara (kode, nama, ketua_nama, sk_kepengurusan, periode_mulai, periode_akhir, alamat_sekretariat, aktif) 
-                          VALUES ('$final_kode', '$nama', '$ketua_nama', '$sk_kepengurusan', " . ($periode_mulai ? "'$periode_mulai'" : "NULL") . ", " . ($periode_akhir ? "'$periode_akhir'" : "NULL") . ", '$alamat', 1)");
-            $success = "Negara berhasil ditambahkan!";
+            $check_nama = $conn->query("SELECT id FROM negara WHERE nama = '$nama'");
         } elseif ($jenis == 'provinsi') {
-            $negara_id = (int)$_POST['negara_id'];
-            if (empty($negara_id)) {
-                $error = "Harap pilih negara!";
-            } else {
-                $conn->query("INSERT INTO provinsi (kode, nama, ketua_nama, negara_id, sk_kepengurusan, periode_mulai, periode_akhir, alamat_sekretariat, aktif) 
-                              VALUES ('$final_kode', '$nama', '$ketua_nama', $negara_id, '$sk_kepengurusan', " . ($periode_mulai ? "'$periode_mulai'" : "NULL") . ", " . ($periode_akhir ? "'$periode_akhir'" : "NULL") . ", '$alamat', 1)");
-                $success = "Provinsi berhasil ditambahkan!";
-            }
+            $negara_id = (int)($_POST['negara_id'] ?? 0);
+            $check_nama = $conn->query("SELECT id FROM provinsi WHERE nama = '$nama' AND negara_id = $negara_id");
         } elseif ($jenis == 'kota') {
-            $provinsi_id = (int)$_POST['provinsi_id'];
-            if (empty($provinsi_id)) {
-                $error = "Harap pilih provinsi!";
-            } else {
-                $conn->query("INSERT INTO kota (kode, nama, ketua_nama, provinsi_id, sk_kepengurusan, periode_mulai, periode_akhir, alamat_sekretariat, aktif) 
-                              VALUES ('$final_kode', '$nama', '$ketua_nama', $provinsi_id, '$sk_kepengurusan', " . ($periode_mulai ? "'$periode_mulai'" : "NULL") . ", " . ($periode_akhir ? "'$periode_akhir'" : "NULL") . ", '$alamat', 1)");
-                $success = "Kota berhasil ditambahkan!";
+            $provinsi_id = (int)($_POST['provinsi_id'] ?? 0);
+            $check_nama = $conn->query("SELECT id FROM kota WHERE nama = '$nama' AND provinsi_id = $provinsi_id");
+        }
+
+        if ($check_nama && $check_nama->num_rows > 0) {
+            $error = "Nama $label_jenis '$nama' sudah terdaftar!";
+        } else {
+            if ($jenis == 'pusat') {
+                // Insert into negara
+                $conn->query("INSERT INTO negara (kode, nama, ketua_nama, sk_kepengurusan, periode_mulai, periode_akhir, alamat_sekretariat, aktif) 
+                              VALUES ('$final_kode', '$nama', '$ketua_nama', '$sk_kepengurusan', " . ($periode_mulai ? "'$periode_mulai'" : "NULL") . ", " . ($periode_akhir ? "'$periode_akhir'" : "NULL") . ", '$alamat', 1)");
+                $success = "Negara berhasil ditambahkan!";
+            } elseif ($jenis == 'provinsi') {
+                $negara_id = (int)$_POST['negara_id'];
+                if (empty($negara_id)) {
+                    $error = "Harap pilih negara!";
+                } else {
+                    $conn->query("INSERT INTO provinsi (kode, nama, ketua_nama, negara_id, sk_kepengurusan, periode_mulai, periode_akhir, alamat_sekretariat, aktif) 
+                                  VALUES ('$final_kode', '$nama', '$ketua_nama', $negara_id, '$sk_kepengurusan', " . ($periode_mulai ? "'$periode_mulai'" : "NULL") . ", " . ($periode_akhir ? "'$periode_akhir'" : "NULL") . ", '$alamat', 1)");
+                    $success = "Provinsi berhasil ditambahkan!";
+                }
+            } elseif ($jenis == 'kota') {
+                $provinsi_id = (int)$_POST['provinsi_id'];
+                if (empty($provinsi_id)) {
+                    $error = "Harap pilih provinsi!";
+                } else {
+                    $conn->query("INSERT INTO kota (kode, nama, ketua_nama, provinsi_id, sk_kepengurusan, periode_mulai, periode_akhir, alamat_sekretariat, aktif) 
+                                  VALUES ('$final_kode', '$nama', '$ketua_nama', $provinsi_id, '$sk_kepengurusan', " . ($periode_mulai ? "'$periode_mulai'" : "NULL") . ", " . ($periode_akhir ? "'$periode_akhir'" : "NULL") . ", '$alamat', 1)");
+                    $success = "Kota berhasil ditambahkan!";
+                }
             }
         }
         

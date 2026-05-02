@@ -10,6 +10,7 @@ include '../../config/database.php';
 include '../../auth/PermissionManager.php';
 include '../../helpers/navbar.php';
 include '../../helpers/user_auto_creation.php';
+include '../../helpers/import_helper.php';
 
 // Initialize permission manager
 $permission_manager = new PermissionManager(
@@ -48,27 +49,6 @@ if (isset($_GET['download']) && $_GET['download'] === 'anggota') {
     
     fclose($output);
     exit();
-}
-
-// Helper function untuk parse tanggal
-function parse_date_anggota($date_str) {
-    if (empty($date_str)) {
-        return null;
-    }
-    
-    $date_str = trim($date_str);
-    
-    // Format dd/mm/yyyy
-    if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $date_str, $m)) {
-        return $m[3] . '-' . $m[2] . '-' . $m[1];
-    }
-    
-    // Format YYYY-MM-DD
-    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date_str, $m)) {
-        return $m[1] . '-' . $m[2] . '-' . $m[3];
-    }
-    
-    return null;
 }
 
 // Helper function untuk mencatat log import
@@ -150,9 +130,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_excel'])) {
                     
                     // Ambil data dari CSV
                     $negara_kode = isset($negara_kode_col) ? strtoupper(trim($row[$negara_kode_col] ?? '')) : '';
-                    $provinsi_kode = isset($provinsi_kode_col) ? strtoupper(trim($row[$provinsi_kode_col] ?? '')) : '';
-                    $kota_kode = isset($kota_kode_col) ? strtoupper(trim($row[$kota_kode_col] ?? '')) : '';
-                    $ranting_kode = isset($ranting_kode_col) ? strtoupper(trim($row[$ranting_kode_col] ?? '')) : '';
+                    $provinsi_kode = isset($provinsi_kode_col) ? str_pad(trim($row[$provinsi_kode_col] ?? ''), 3, '0', STR_PAD_LEFT) : '';
+                    $kota_kode = isset($kota_kode_col) ? str_pad(trim($row[$kota_kode_col] ?? ''), 3, '0', STR_PAD_LEFT) : '';
+                    $ranting_kode = isset($ranting_kode_col) ? str_pad(trim($row[$ranting_kode_col] ?? ''), 3, '0', STR_PAD_LEFT) : '';
                     $nama_lengkap = isset($nama_lengkap_col) ? ucwords(strtolower(trim($row[$nama_lengkap_col] ?? ''))) : '';
                     $tempat_lahir = isset($tempat_lahir_col) ? ucwords(strtolower(trim($row[$tempat_lahir_col] ?? ''))) : '';
                     $tanggal_lahir_raw = isset($tanggal_lahir_col) ? trim($row[$tanggal_lahir_col] ?? '') : '';
@@ -185,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_excel'])) {
                     }
                     
                     // Parse tanggal lahir
-                    $tanggal_lahir = parse_date_anggota($tanggal_lahir_raw);
+                    $tanggal_lahir = parse_import_date($tanggal_lahir_raw);
                     
                     // Cari ranting berdasarkan kode (negara, provinsi, kota, ranting)
                     $ranting_result = $conn->query("

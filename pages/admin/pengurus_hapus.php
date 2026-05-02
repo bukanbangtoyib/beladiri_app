@@ -114,7 +114,18 @@ if ($jenis === 'pusat') {
     }
 }
 
-// Delete from new tables
+// Map role for user deletion
+$role_map = [
+    'pusat' => 'negara',
+    'provinsi' => 'pengprov',
+    'kota' => 'pengkot'
+];
+$target_role = $role_map[$jenis];
+
+// Delete associated user
+$conn->query("DELETE FROM users WHERE pengurus_id = $id AND role = '$target_role'");
+
+// Delete from organization tables
 $conn->query("DELETE FROM $table WHERE id = $id");
 
 header("Location: pengurus_list.php?jenis=$jenis");

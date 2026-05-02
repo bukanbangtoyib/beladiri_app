@@ -249,8 +249,56 @@ if (isset($_GET['delete'])) {
     if ($del_id == $_SESSION['user_id']) {
         $error = "Anda tidak bisa menghapus akun sendiri!";
     } else {
+        // Ambil data user sebelum dihapus untuk sinkronisasi hapus entitas
+        $user_info_res = $conn->query("SELECT role, pengurus_id, ranting_id, anggota_id, no_anggota FROM users WHERE id = $del_id");
+        if ($user_info_res && $user_info_res->num_rows > 0) {
+            $u = $user_info_res->fetch_assoc();
+            $role = $u['role'];
+            
+            // 1. Cek larangan penghapusan jika memiliki struktur di bawahnya
+            if ($role === 'negara' && !empty($u['pengurus_id'])) {
+                $check = $conn->query("SELECT COUNT(*) as count FROM provinsi WHERE negara_id = " . (int)$u['pengurus_id']);
+                if ($check->fetch_assoc()['count'] > 0) {
+                    die("❌ Tidak bisa menghapus user Negara! Masih ada provinsi di bawahnya.");
+                }
+                $conn->query("DELETE FROM negara WHERE id = " . (int)$u['pengurus_id']);
+            } elseif ($role === 'pengprov' && !empty($u['pengurus_id'])) {
+                $check = $conn->query("SELECT COUNT(*) as count FROM kota WHERE provinsi_id = " . (int)$u['pengurus_id']);
+                if ($check->fetch_assoc()['count'] > 0) {
+                    die("❌ Tidak bisa menghapus user Provinsi! Masih ada kota di bawahnya.");
+                }
+                $conn->query("DELETE FROM provinsi WHERE id = " . (int)$u['pengurus_id']);
+            } elseif ($role === 'pengkot' && !empty($u['pengurus_id'])) {
+                $check = $conn->query("SELECT COUNT(*) as count FROM ranting WHERE kota_id = " . (int)$u['pengurus_id']);
+                if ($check->fetch_assoc()['count'] > 0) {
+                    die("❌ Tidak bisa menghapus user Kota! Masih ada unit/ranting di bawahnya.");
+                }
+                $conn->query("DELETE FROM kota WHERE id = " . (int)$u['pengurus_id']);
+            } elseif ($role === 'unit' && !empty($u['ranting_id'])) {
+                $check = $conn->query("SELECT COUNT(*) as count FROM anggota WHERE ranting_saat_ini_id = " . (int)$u['ranting_id']);
+                if ($check->fetch_assoc()['count'] > 0) {
+                    die("❌ Tidak bisa menghapus user Unit/Ranting! Masih ada anggota di bawahnya.");
+                }
+                // Hapus jadwal latihan dulu
+                $conn->query("DELETE FROM jadwal_latihan WHERE ranting_id = " . (int)$u['ranting_id']);
+                $conn->query("DELETE FROM ranting WHERE id = " . (int)$u['ranting_id']);
+            } elseif ($role === 'anggota') {
+                $target_anggota_id = $u['anggota_id'];
+                if (!$target_anggota_id && !empty($u['no_anggota'])) {
+                    $get_id = $conn->query("SELECT id FROM anggota WHERE no_anggota = '" . $conn->real_escape_string($u['no_anggota']) . "'");
+                    if ($get_id && $get_id->num_rows > 0) {
+                        $target_anggota_id = $get_id->fetch_assoc()['id'];
+                    }
+                }
+                if ($target_anggota_id) {
+                    $conn->query("DELETE FROM anggota WHERE id = " . (int)$target_anggota_id);
+                }
+            }
+        }
+
+        // Hapus user
         $conn->query("DELETE FROM users WHERE id = $del_id");
-        $success = "User berhasil dihapus!";
+        $success = "User dan data terkait berhasil dihapus!";
         header("Location: user_management.php");
         exit();
     }
